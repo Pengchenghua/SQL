@@ -28,14 +28,21 @@ group by
    substr(a.sdt,1,6)
 ;
  
- 
+ drop table csx_tmp.tmp_goods_02 ;
  create temporary table csx_tmp.tmp_goods_02 as 
 -- 动销SKU
 select
 	dc_code,
+    mon,
+    a.division_code,
+	count( distinct case when a.sales_value>0 then goods_code end) sales_sku
+from (
+select
+	dc_code,
     substr(sdt,1,6) as mon,
     a.division_code,
-	count(distinct goods_code) sale_sku
+	a.goods_code,
+	sum(a.sales_value) sales_value
 from
 	csx_dw.dws_sale_r_d_detail a
 	join
@@ -44,8 +51,11 @@ from
 	product_code
 from
 	csx_dw.dws_basic_w_a_csx_product_info a
-	where sdt='current' and a.stock_properties_name ='存储' and a.root_category_code in ('11','10','12','13') )m on a.dc_code=m.shop_code and a.goods_code=m.product_code
-
+	where sdt='current' 
+	and a.stock_properties_name ='存储' 
+	and a.root_category_code in ('11','10','12','13')
+	and a.des_specific_product_status in ('0','2','1')
+	)m on a.dc_code=m.shop_code and a.goods_code=m.product_code
 where
 	sdt >= regexp_replace(to_date(${hiveconf:sdate}),'-','')
 	and sdt <= regexp_replace(to_date(${hiveconf:edate}),'-','')
@@ -53,10 +63,17 @@ where
 group by
 	dc_code,
 a.division_code ,
+a.goods_code,
  substr(sdt,1,6) 
+ )a 
+ group by
+	dc_code,
+a.division_code ,
+mon
  ;
  
  -- 周转
+ drop table  csx_tmp.tmp_goods_03;
  create temporary table csx_tmp.tmp_goods_03 as  
 select
 	a.dc_code ,
@@ -74,7 +91,11 @@ join
 	product_code
 from
 	csx_dw.dws_basic_w_a_csx_product_info a
-	where sdt='current' and a.stock_properties_name ='存储' and a.root_category_code in ('11','10','12','13') )m on a.dc_code=m.shop_code and a.goods_id=m.product_code
+	where sdt='current' 
+	    and a.stock_properties_name ='存储'
+	    and a.root_category_code in ('11','10','12','13')
+	    and a.des_specific_product_status in ('0','2','1')
+	)m on a.dc_code=m.shop_code and a.goods_id=m.product_code
 join 
  (select distinct regexp_replace(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd')),'-','') dt
 	    from csx_dw.dws_basic_w_a_date 
@@ -85,10 +106,10 @@ group by
 	a.division_code,
 		substr(a.sdt,1,6);
 
+drop table  csx_tmp.tmp_goods_04;
  create temporary table csx_tmp.tmp_goods_04 as 
 --缺货率问题：库存为0的商品，我取的口径是近3个月所在dc有销售记录的商品（排除从20201001后已经不在售卖的商品）
  select
-
 	a.dc_code,
 	substr(sdt,1,6) as mon,
 	division_code,
@@ -160,7 +181,10 @@ group by
 	product_code
 from
 	csx_dw.dws_basic_w_a_csx_product_info a
-	where sdt='current' and a.stock_properties_name ='存储' and a.root_category_code in ('11','10','12','13') )m on a.dc_code=m.shop_code and a.goods_code=m.product_code
+	where sdt='current' and a.stock_properties_name ='存储' 
+	    and a.root_category_code in ('11','10','12','13')
+  and	a.des_specific_product_status in ('0','2','1')
+	)m on a.dc_code=m.shop_code and a.goods_code=m.product_code
 
 	left join (
 		select
@@ -208,8 +232,8 @@ select
 	root_category_code,
 	division_name,
 	goods_sku,
-    sale_sku,
-    sale_sku/goods_sku as pin_rate, 
+    sales_sku,
+    sales_sku/goods_sku as pin_rate, 
     turnover_day,
     stock_out_rate
 from csx_tmp.tmp_goods_01 a 
