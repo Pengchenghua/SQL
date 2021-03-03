@@ -1,0 +1,44 @@
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL
+$ git config --global user.name "Pengchenghua"
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL
+$ git config --global user.email "jopch@163.com"
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL
+$ git config --global credential.helper store
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL
+$ git init
+Initialized empty Git repository in D:/彩食鲜数据结构/SQL/.git/
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
+$ touch README.md
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
+$ git add README.md
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
+$ git commit -m "first commit"
+[master (root-commit) 0f7da13] first commit
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 README.md
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
+$ git remote add origin https://github.com/Pengchenghua/SQL.git
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
+$ git push -u origin master
+Enumerating objects: 3, done.
+Counting objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 235 bytes | 235.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+remote:
+remote: Create a pull request for 'master' on GitHub by visiting:
+remote:      https://github.com/Pengchenghua/SQL/pull/new/master
+remote:
+To https://github.com/Pengchenghua/SQL.git
+ * [new branch]      master -> master
+Branch 'master' set up to track remote branch 'master' from 'origin'.
+
+peng_ch@peng-ch MINGW64 /d/彩食鲜数据结构/SQL (master)
