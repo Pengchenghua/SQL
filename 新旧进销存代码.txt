@@ -1,0 +1,360 @@
+-- 旧系统订单流，shop_id 逻辑规则除返配按照shop_id_out ，其他按shop_id_in,
+-- sdt分区按照apply_date即订单日期
+SET mapreduce.job.queuename         =caishixian;
+SET hive.exec.parallel              =TRUE; --（默认false）打开并发，多job无依赖时，并发执行
+SET hive.exec.parallel.thread.number=8;    --（默认8）设置job的并发数
+SET hive.cbo.enable                 =TRUE;
+SET hive.compute.query.USING.stats  =TRUE;
+SET hive.stats.fetch.column.stats   =TRUE;
+SET hive.stats.fetch.partition.stats=TRUE;
+SET hive.exec.mode.local.auto       =TRUE; --开启本地mr
+--设置local mr的最大输入数据量，当输入数据量小于这个值时采用local  mr的方式，默认为134217728，即128M
+SET hive.exec.mode.local.auto.inputbytes.max=50000000;
+--设置local mr的最大输入文件个数，当输入文件个数小于这个值时采用local mr的方式，默认为4
+SET hive.exec.mode.local.auto.input.files.max=10;
+SET hive.join.emit.interval                  = 1000;
+SET hive.mapjoin.size.key                    = 10000;
+SET hive.mapjoin.cache.numrows               = 10000;
+DROP TABLE IF EXISTS temp.order_old
+;
+
+CREATE TEMPORARY TABLE temp.order_old AS
+SELECT
+	apply_date,
+	CASE
+		WHEN pur_doc_type='ZN01'
+			THEN '采购订单'
+		WHEN pur_doc_type='ZNR1'
+			THEN '直送退货单'
+		WHEN pur_doc_type IN('ZN02',
+							 'ZN03',
+							 'ZU01',
+							 'ZU02',
+							 'ZC01',
+							 'ZC02')
+			THEN '配送订单'
+		WHEN pur_doc_type IN('ZNR2',
+							 'ZNR3',
+							 'ZUR1',
+							 'ZCR1',
+							 'ZCR2')
+			THEN '返配订单'
+			ELSE pur_doc_type
+	END        pur_doc_type_name                                    ,
+	shop_id AS dc_code                                              ,
+	pur_org                                                         ,
+	order_type                                                      ,
+	regexp_replace(vendor_id, '(^0*)', '')     AS vendor_code          ,
+	regexp_replace(org_vendor, '(^0*)', '')    AS org_vendor           ,
+	shop_id_in                                 AS receive_location_code,
+	shop_id_out                                AS send_location_code   ,
+	goodsid                                    AS goods_code           ,
+	sum(purchase_qty)                          AS apply_order_qty      ,
+	sum(approve_qty)                           AS order_qty            ,
+	sum(coalesce(pur_app_price*approve_qty,0)) AS order_amount         ,
+	sum(recpt_qty)                             AS receive_qty          ,
+	sum(tax_pur_val_in)                        AS receive_amount       ,
+	max_pstng_date_in                          AS receive_date         ,
+	sum(ship_qty)                              AS shipped_qty          ,
+	sum(tax_pur_val_out)                       AS shipped_amount       ,
+	max_pstng_date_out                         AS shipped_date         ,
+	apply_sts                                  AS order_status         ,
+	pur_vouche_sts                                                     ,
+	delivery_finish_flag                                               ,
+	pur_doc_catg                                                       ,
+	pur_doc_type
+FROM
+	b2b.ord_orderflow_t
+WHERE
+	sdt                    >='20191101'
+	and sdt                <='20191126'
+	AND delivery_finish_flag='X'
+	AND vendor_id    NOT LIKE '75%'
+	AND pur_org          LIKE 'P6%'
+	AND pur_org NOT IN ('P612',
+						'P613')
+GROUP BY
+	apply_date          ,
+	shop_id             ,
+	pur_org             ,
+	vendor_id           ,
+	org_vendor          ,
+	shop_id_in          ,
+	shop_id_out         ,
+	goodsid             ,
+	order_type          ,
+	apply_sts           ,
+	pur_vouche_sts      ,
+	delivery_finish_flag,
+	pur_doc_catg        ,
+	pur_doc_type        ,
+	max_pstng_date_in   ,
+	max_pstng_date_out  ,
+	CASE
+		WHEN pur_doc_type='ZN01'
+			THEN '采购订单'
+		WHEN pur_doc_type='ZNR1'
+			THEN '直送退货单'
+		WHEN pur_doc_type IN('ZN02',
+							 'ZN03',
+							 'ZU01',
+							 'ZU02',
+							 'ZC01',
+							 'ZC02')
+			THEN '配送订单'
+		WHEN pur_doc_type IN('ZNR2',
+							 'ZNR3',
+							 'ZUR1',
+							 'ZCR1',
+							 'ZCR2')
+			THEN '返配订单'
+			ELSE pur_doc_type
+	END
+;
+
+--select * from temp.order_old;
+-- SELECT CASE WHEN pur_doc_type='ZN01' THEN '采购订单'
+--             WHEN pur_doc_type='ZNR1' THEN '直送退货单'
+--             WHEN pur_doc_type IN('ZN02','ZN03',
+--                                          'ZU01',
+--                                          'ZU02',
+--                                          'ZC01',
+--                                          'ZC02') then '配送订单'
+--             WHEN pur_doc_type IN('ZNR2','ZNR3',
+--                                          'ZUR1',
+--                                          'ZCR1',
+--                                          'ZCR2') then '返配订单' ELSE pur_doc_type end pur_doc_type_name , * from temp.order_old;
+-- 新系统入库
+DROP TABLE IF EXISTS temp.order_flow_01
+;
+
+CREATE TEMPORARY TABLE temp.order_flow_01 AS
+SELECT
+	order_date                            ,
+	a.dc_code                             ,
+	a.purchase_org_code                   ,
+	a.super_class_name                    ,
+	a.vender_code                         ,
+	a.receive_location_code               ,
+	a.send_location_code                  ,
+	a.goods_code                          ,
+	sum(a.order_qty)     AS order_qty     ,
+	sum(a.order_amount)  AS order_amount  ,
+	sum(a.receive_qty)   AS receive_qty   ,
+	sum(a.receive_amount)AS receive_amount,
+	a.receive_date                        ,
+	sum(a.shipped_qty)    AS shipped_qty     ,
+	sum(a.shipped_amount) AS shipped_amount  ,
+	a.shipped_finish_time AS shipped_date    ,
+	a.order_status                           ,
+	a.source_type_name
+FROM
+	csx_dw.order_flow a
+WHERE
+	order_sdt        >='20191101'
+	AND a.order_date <='20191126'
+	AND a.order_status='4'
+GROUP BY
+	order_date             ,
+	a.dc_code              ,
+	a.purchase_org_code    ,
+	a.super_class_name     ,
+	a.vender_code          ,
+	a.receive_location_code,
+	a.send_location_code   ,
+	a.goods_code           ,
+	receive_date           ,
+	order_status           ,
+	shipped_finish_time    ,
+	source_type_name
+;
+
+--
+-- select * from csx_dw.order_flow where dc_code='W0J8' and goods_code='1131943' and order_date>='20191101';
+create temporary table temp.order_flow_02 as
+SELECT
+	order_date           ,
+	prov_code            ,
+	prov_name            ,
+	dc_code              ,
+	shop_name            ,
+	purchase_org_code    ,
+	super_class_name     ,
+	vender_code          ,
+	vendor_name          ,
+	org_vendor           ,
+	receive_location_code,
+	receive_name         ,
+	send_location_code   ,
+	shipped_name         ,
+	goods_code           ,
+	goodsname            ,
+	unit                 ,
+	bd_id                ,
+	bd_name              ,
+	category_code        ,
+	category_name        ,
+	dept_code            ,
+	dept_name            ,
+	category_big_code    ,
+	category_big_name    ,
+	category_small_code  ,
+	category_small_name  ,
+	order_qty            ,
+	order_amount         ,
+	receive_qty          ,
+	receive_amount       ,
+	receive_date         ,
+	shipped_qty          ,
+	shipped_amount       ,
+	shipped_date         ,
+	order_status         ,
+	source_type_name
+FROM
+	(
+		SELECT
+			order_date,
+			dc_code   ,
+			case
+				when dc_code like 'E%'
+					then regexp_replace(dc_code,'(^[A-Z]*)','9')
+					else dc_code
+			end shop_id          ,
+			purchase_org_code    ,
+			super_class_name     ,
+			vender_code          ,
+			'' as org_vendor     ,
+			receive_location_code,
+			send_location_code   ,
+			goods_code           ,
+			order_qty            ,
+			order_amount         ,
+			receive_qty          ,
+			receive_amount       ,
+			receive_date         ,
+			shipped_qty          ,
+			shipped_amount       ,
+			shipped_date         ,
+			order_status         ,
+			source_type_name
+		FROM
+			temp.order_flow_01
+		UNION ALL
+		SELECT
+			apply_date AS order_date    ,
+			dc_code                     ,
+			dc_code           as shop_id          ,
+			pur_org           AS purchase_org_code,
+			pur_doc_type_name AS super_class_name ,
+			vendor_code       AS vender_code      ,
+			org_vendor                            ,
+			receive_location_code                 ,
+			send_location_code                    ,
+			goods_code                            ,
+			order_qty                             ,
+			order_amount                          ,
+			receive_qty                           ,
+			receive_amount                        ,
+			receive_date                          ,
+			shipped_qty                           ,
+			shipped_amount                        ,
+			shipped_date                          ,
+			order_status                          ,
+			'' AS source_type_name
+		FROM
+			temp.order_old
+	)
+	a
+	JOIN
+		(
+			SELECT
+				goodsid                           ,
+				goodsname                         ,
+				unit                              ,
+				bd_id                             ,
+				bd_name                           ,
+				div_id   AS category_code         ,
+				div_name AS category_name         ,
+				dept_id  AS dept_code             ,
+				dept_name                         ,
+				catg_l_id   AS category_big_code  ,
+				catg_l_name AS category_big_name  ,
+				catg_m_id   as category_midd_code ,
+				catg_m_name as category_midd_name ,
+				catg_s_id   AS category_small_code,
+				catg_s_name AS category_small_name
+			FROM
+				dim.dim_shop_goods_latest
+		)
+		c
+		ON
+			a.goods_code=c.goodsid
+	JOIN
+		(
+			SELECT
+				shop_id  ,
+				shop_name,
+				CASE
+					WHEN shop_id='W0H4'
+						THEN '100'
+						ELSE prov_code
+				END prov_code,
+				CASE
+					WHEN shop_id='W0H4'
+						THEN '平台供应链'
+						ELSE prov_name
+				END prov_name
+			FROM
+				dim.dim_shop_latest
+		)
+		b
+		ON
+			a.shop_id=b.shop_id
+	LEFT JOIN
+		(
+			SELECT
+				vendor_id,
+				vendor_name
+			FROM
+				dim.dim_vendor
+		)
+		d
+		ON
+			a.vender_code=d.vendor_id
+	LEFT JOIN
+		(
+			SELECT
+				shop_id   as receive_code,
+				shop_name AS receive_name
+			FROM
+				dim.dim_shop_latest
+		)
+		e
+		ON
+				(
+					case
+						when a.receive_location_code like 'E%'
+							then regexp_replace(a.receive_location_code,'(^[A-Z]*)','9')
+							else a.receive_location_code
+					end
+				)
+			=e.receive_code
+	LEFT JOIN
+		(
+			SELECT
+				shop_id   as shipped_code,
+				shop_name AS shipped_name
+			FROM
+				dim.dim_shop_latest
+		)
+		f
+		ON
+				(
+					case
+						when a.send_location_code like 'E%'
+							then regexp_replace(a.send_location_code,'(^[A-Z]*)','9')
+							else a.send_location_code
+					end
+				)
+			=f.shipped_code
+;

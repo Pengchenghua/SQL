@@ -1,0 +1,77 @@
+create temporary table csx_dw.temp_sale_price
+as 
+select * ,sales_value/sales_qty as price from csx_dw.customer_sale_m where sdt>='20190801'
+;
+SELECT a.province_code,
+       province_name,
+       department_code,
+       department_name,
+       category_middle_code,
+       category_middle_name,
+       category_small_code,
+       category_small_name,
+       a.goods_code,
+       goods_name,
+       bar_code,
+       cust_num,
+       order_num,
+       avg_cost,
+       avg_price,
+       qty,
+       sale,
+       profit,
+       profit /sale profit_rate,
+       min_price,
+       max_price,
+       row_number()over( ORDER BY sale desc ) rank_sale
+FROM
+  (SELECT province_code,
+          province_name,
+          department_code,
+          department_name,
+          category_middle_code,
+          category_middle_name,
+          category_small_code,
+          category_small_name,
+          goods_code,
+          goods_name,
+          bar_code,
+          count(DISTINCT customer_no) cust_num,
+          count(DISTINCT order_no) order_num,
+          sum(sales_cost)/sum(sales_qty) AS avg_cost,
+          sum(sales_value)/sum(sales_qty) AS avg_price,
+          sum(sales_qty)qty,
+          sum(sales_value)sale,
+          sum(profit)profit
+   FROM csx_dw.customer_sale_m
+   WHERE sdt>='20190801'
+     AND sdt<='20200131'
+     AND channel='1'
+     AND division_code IN('12',
+                          '13')
+   GROUP BY province_code,
+            province_name,
+            department_code,
+            department_name,
+            category_middle_code,
+            category_middle_name,
+            category_small_code,
+            category_small_name,
+            goods_code,
+            goods_name,
+            bar_code) a
+LEFT JOIN
+(SELECT province_code,
+       goods_code,
+       max(price)max_price,
+       min(price)min_price
+FROM csx_dw.temp_sale_price
+WHERE sdt>='20190801'
+  AND sdt<='20200131'
+  AND channel='1'
+  AND division_code IN('12',
+                       '13')
+GROUP BY province_code,
+         goods_code ) b ON a.province_code=b.province_code
+AND a.goods_code=b.goods_code
+LIMIT 200

@@ -1,0 +1,674 @@
+ 
+ --生鲜商品除成品外销售现状
+
+ 
+drop table b2b_tmp.temp_hsale;
+CREATE temporary table b2b_tmp.temp_hsale
+as
+select 
+	'sale'gtype,	--自定义字段 （用于区分销售还是工厂领用） 这里是销售
+	a.* 
+from 
+(
+	select 
+		goods_code,				--商品编码
+		sum(sales_qty)qty,		--销售数量
+		sum(excluding_tax_sales)untax_sale,	--不含税销售额
+		sum(sales_value)sale	--含税销售额
+	from  
+		csx_dw.sale_b2b_item 
+	where 
+		sdt>=regexp_replace(date_sub(current_date,30),'-','')	--近三十天的分区数据 		分区日期就是销售日期
+		and 
+		sales_type in('qyg','gc','anhui','sc')		--anhui、gc 、md 、qyg 、sc 、wl								 疑问：sc标识什么？  解答：安徽商超、
+		and 
+		substr(category_large_code,1,2)='11'		--sap大类编码 前两位为11的商品  为什么不直接取部类编码等于11？   疑问：取11开头的含义？ 解答：部类是属于生鲜部、
+	group by 
+		goods_code		--商品维度做的销售汇总、
+)a 
+left join 
+(	
+	select distinct  --去重的商品维度
+		goodsid 
+	from 
+		csx_ods.marc_ecc 			--marc_ecc 表 中有成品标识 （sap和工厂分开、工厂有自己的成品表）
+	where 
+		mat_type='成品'				--获取商品属性是 成品
+)b 
+on 
+	a.goods_code=b.goodsid 
+where 
+	b.goodsid is null;			--商品编码为空的外层判断 					疑问：为什么是给商品类型是成品的商品编码为空、这里的含义是？ 解答：为了取生鲜商品 去除成品的销售数据
+
+--第一步思路总结：取销售表部类为生鲜的商品维度进行销售汇总 左关联 marc表为成品的商品   外层给右表商品为空的条件控制 得到左表生鲜商品的销售汇总数据
+
+
+--工厂生产订单领用
+insert into b2b_tmp.temp_hsale
+select 
+	'recip'gtype,	--自定义字段 （用于区分销售还是工厂领用） 这里是领用
+	a.goodsid goods_code,	
+	qty,
+	untax_sale,		--领用金额
+	untax_sale*(1+coalesce(c.taxrate,0)/100)sale --销售金额     逻辑： 领用金额*（1+销售税率）=销售金额（含税）   
+from 
+(
+--主表取 领用数据信息
+	select 
+		plant shop_id,		--地点 (门店编码)
+		goodsid,			--商品编码
+		sum(case when 
+				movetype='Z93'   --移动类型（详细库存管理）			疑问：为什么取移动类型为 ’Z93‘和’Z94‘ ？   解答：Z93为领料 、Z94标识退料   
+			then 
+				quant_b 		--数量
+			else -1*quant_b 
+			end
+			) as qty, 		--领用数量
+		sum(case when 
+				movetype='Z93' 
+			then 
+				rthfees 	--金额 （库存转储费用）
+			else -1*rthfees 
+			end
+			) as untax_sale --领用金额
+	from 
+		csx_ods.mseg_ecc_dtl_fct a			--凭证记账表 （包含 采购凭证、物流凭证、交货凭证 等凭证信息）
+	where 
+		sdt>=regexp_replace(date_sub(current_date,30),'-','')		--sdt分区日期就是记账日期   这里取记账日期为最近30天的记账数据
+		and 
+		pstng_date>=regexp_replace(date_sub(current_date,30),'-','')	--pstng_date 凭证记账日期   
+		and  
+		movetype in('Z93','Z94')    -- 移动类型（详细库存管理）  这里取这两个 当为Z93的时候 数量金额都为正、当不为Z93 (这里也就是为Z94的时候记作负数)
+	group by 
+		plant,		--地点				
+		goodsid		--商品编码
+	union all 
+	select 
+		location_code shop_id,		--地点编码 (门店编码)
+		product_code goodsid,		-- 商品编码
+		sum(case when 
+				status=0 			--状态 0-领用、1-退用    这里取得是领料 商品 为正、退料商品为负
+			then 
+				qty 
+			else 
+				-1*qty 
+			end
+			) qty,		--数量
+		sum(case when
+				status=0 
+			then 
+				qty*unit_price 		--数量*单价=金额
+			else 
+				-1*qty*unit_price 
+			end
+			) untax_sale		--领用金额
+	from 
+		csx_ods.factory_mr_receive_return_ods 		--领退料查询表 
+	where 
+		sdt=regexp_replace(date_sub(current_date,1),'-','')		--每天全量
+		and 
+		to_date(order_time)>=date_sub(current_date,30)		--领退料时间 大于等于最近30天
+		and 
+		to_date(order_time)<=date_sub(current_date,1)		--领退料时间 小于等于昨天
+	group by 
+		location_code,			--地点下的商品维度
+		product_code
+)a
+join 		--领用商品信息为主表  join 商品资料表   
+(				--商品资料表中的课组是H开头的标识部类为生鲜的商品
+	select 
+		goodsid 
+	from 
+		dim.dim_goods 	--商品资料表
+	where 
+		edate='9999-12-31' 			--结束日期   sdate ：开始日期   这里结束日期为固定标识 、开始时间会有变动（季节性等影响）
+	and 
+		dept_id like 'H%'			--课组为H开头   这里主要取部类为11 生鲜部 的商品 
+)x 
+on 
+	a.goodsid=x.goodsid 
+left join 
+(
+	SELECT 
+		shop_id,			--门店编码
+		goodsid,			--商品编码
+		tax_code 			--销售/购买税代码		JF、JH、JI、JJ、J0、J6、J8      疑问：这些标识都表示什么含义？  解答：税码、主要为了和后面的税率码表关联获取对应的税率
+	from 
+		dw.shop_goods_fct 			--门店商品事实表 
+	where 
+		sdt=regexp_replace(date_sub(current_date,1),'-','') 
+	and 
+		shop_id like 'W%'		--门店编码W开头、				疑问：为什么只取W开头的 ？ 解答：9开头的就是门店
+		--待理解：（九开头的就是门店，然后这个大分了两部分，如果是物流的话，我不不要限制那个那个订单类型，如果是门店入库的话，只要供应商的入库。）
+)b  
+on  
+	(
+		a.shop_id=b.shop_id 
+		and 
+		a.goodsid=b.goodsid
+	)
+left join 
+	b2b.dim_ztax as c 	--税率码表   这个表只有两个字段、 rt_taxcode 税码  taxrate：税率
+on 
+	b.tax_code=c.rt_taxcode;  --这个表关联只为了拿税率
+
+--第二步总结： 取凭证过账表中领退料和工厂领退料查询表的销售额和数量 合并 作为 a 表  join 商品资料表（H开头） 为生鲜的商品  left join 门店事实表 （W开头）取税码 左关联 税率码表取税率
+			--	最后获取外层指标 ： 地点、商品、数量、 领用金额 、销售金额=领用金额*（1+税率%） 
+
+
+
+drop table b2b_tmp.temp_hsale1;
+CREATE temporary table b2b_tmp.temp_hsale1
+as
+select 
+	goods_code,		--商品编码
+	qty,			--数量
+	untax_sale,		--不含税销售额
+	sale,			--含税销售额
+	row_number() OVER(ORDER BY sale desc)rno,	--根据含税销售额倒序排序 
+	sum(sale)over(order by sale desc)/sale_t zb_sale	--根据含税销售额倒序排序/总销售额      注：因为窗口函数是根据表的明细来进行汇总的、所以这里汇总的是商品维度的销售额 /总金额的占比
+from 
+(
+	select 
+		goods_code,		--商品编码
+		sum(qty)qty,	--数量
+		sum(untax_sale)untax_sale, --不含税销售额
+		sum(sale)sale 	--含税销售额
+	from 
+		b2b_tmp.temp_hsale 	--第一步的临时表
+	group by 
+		goods_code		--根据商品维度分组
+) a 
+join 
+(
+	select 
+		sum(sale)sale_t 	--含税销售额 （所有销售额总金额）
+	from 
+		b2b_tmp.temp_hsale
+)b on 1=1;		--这里表示 复制表数据    1<>1 就是复制表结构   这里是两个表自join、为了保证语法不报错所以给1=1 的写法、
+
+--第三步总结：这里取最开始的临时表做了两步： 首先取商品维度的汇总数据 join 总销售额 为了保证语法不错给  1=1 、其次 在此基础上得到一张新表数据、使用窗口函数做标识和计算销售比
+
+
+
+--筛选销售前80%的商品
+drop table b2b_tmp.temp_purprice;
+CREATE temporary table b2b_tmp.temp_purprice
+as
+select 
+	stype,				--销售归属
+	province_name,		--省份
+	shop_id_in,			--收获地点
+	shop_name,			--门店名称
+	goodsid,			--商品编码
+	pur_doc_id,			--采购单号
+	sdt,				--日期（入库取收获时间、订单流表明细取申请日期）
+	pur_qty_in,		--收货数量
+	tax_pur_val_in,	--含税收货金额
+	tax_pur_val_in/pur_qty_in pur_price		--单价
+from 
+(
+	select 
+		shop_id_in,		--收货地点
+		goodsid,		--商品编码
+		pur_doc_id,		--采购订单编号
+		sdt,			--申请日期
+		pur_qty_in,		--收货数量
+		tax_pur_val_in 	--含税收货金额
+	from 
+		b2b.ord_orderflow_t 	--订单流表明细 （看字段和采购相关）
+	where 
+		sdt>=regexp_replace(date_sub(current_date,30),'-','') 		--近三十天的分区数据 （所以可以判断是增量）
+		and 
+		(substr(goods_catg,1,2)='11' or goods_catg is null)	--小类编码 11开头的就是生鲜  疑问：为什么需要小类为NULL的  里面还有一个小类编码small_category_code  解答：
+		and 
+		shop_id_in like 'W%' 			--编码W开头 
+		and 
+		shop_id_in not in('W0H3','W0H7','W0H8','W0H6','W0H9','W0K2','W0G7','W0H4','W0G1')  --
+		and  
+		pur_qty_in>0 		--收货数量大于零
+		and 
+		ordertype not in ('返配','退货')		--单据类型	
+	union all 
+	select 
+		shop_id_in,
+		goodsid,
+		pur_doc_id,
+		sdt,
+		pur_qty_in,
+		tax_pur_val_in 
+	from 
+		b2b.ord_orderflow_t 	--订单流表明细 （看字段和采购相关）
+	where 
+		sdt>=regexp_replace(date_sub(current_date,30),'-','') 
+		and 
+		(substr(goods_catg,1,2)='11' or goods_catg is null)
+		and 
+		shop_id_in not like 'W%' 	--门店编码 开头不为 W的
+		and 
+		pur_doc_id like '40%'		--采购订单号  40 开头的    			疑问：40开头的又有什么故事？ 解答：生鲜课组 采购订单号为40开头
+		and  
+		pur_qty_in>0		--收货数量大于零
+	union all 
+	select 
+		location_code shop_id_in,		
+		product_code goodsid,	
+		a.order_code pur_doc_id,
+		a.sdate sdt,
+		receive_qty pur_qty_in,
+		amount tax_pur_val_in
+	from 
+	(
+		select 
+			order_code,		--入库单号
+			regexp_replace(to_date(receive_time),'-','')sdate 	--收货时间为基准
+		from 
+			csx_ods.wms_entry_order_header_ods a 		--入库头表
+		where 
+			sdt=regexp_replace(date_sub(current_date,1),'-','')  --之前每天是一个全量、从15号开始每天是一个增量
+			and 
+			entry_type LIKE 'P%'	--只取采购入库  T开头标识调拨 
+			and 
+			to_date(receive_time)>=date_sub(current_date,30)  --收货时间为最近30天
+			and 
+			return_flag<>'Y'   --不包含退货  只拿正常入库数据（采购入库）
+			and 
+			receive_status<>0	--收货状态不为0 、只有收货才会产生对应的批次号
+	)a 
+	join 
+	(
+		select 
+			order_code,		--入库单号
+			product_code,	--商品编码
+			location_code,	--收货地点
+			receive_qty,	--收货数量
+			price,			--单价
+			amount 			--金额
+		from 
+			csx_ods.wms_entry_order_item_ods 			--入库商品明细表 
+		where 
+			sdt=regexp_replace(date_sub(current_date,1),'-','')   --之前是一个全量、现在取全量取>=15号的数据、但是需要做去重、因为任务包含了跨天的数据
+			and 
+			receive_qty>0		--收货数量大于0   因为之前很多为0的是之前仓库中就有的
+			and 
+			to_date(update_time)>=date_sub(current_date,30)		--使用修改时间为基准
+	)b 
+		on a.order_code=b.order_code
+
+)a 
+join 
+(
+	select 
+		* 
+	from  
+		b2b_tmp.temp_hsale1 	--第三步创建的临时表
+	where 
+		zb_sale<=0.8		--商品销售额/总金额 小于等于 80%
+)b on a.goodsid=b.goods_code
+join 
+(
+	select 
+		shop_id,
+		shop_name,
+		province_name,		--省份
+		case when 
+			sales_belong_flag='1_云超' 
+		then 
+			'云超' 
+		else 
+			'彩食鲜'
+		end 
+			stype			--销售归属标识：1_云超,2_云创会员店,3_云创超级物种,4_企业购,5_彩食鲜,6_云创到家,7_上蔬托管联华,8_云超MINI
+	from 
+		csx_dw.shop_m 		--门店表		
+	where 
+		sdt='current' 		--这个分区是每天的备份分区
+		and 
+		sales_belong_flag in ('1_云超','4_企业购','5_彩食鲜') 
+		and 
+		shop_id not in('W0H3','W0H7','W0H8','W0H6','W0H9','W0K2','W0G7','W0H4','W0G1')
+)c on a.shop_id_in=c.shop_id;
+
+--第四步总结：首先取 订单流明细表 （门店W开头、小类是生鲜 11开头和为null 、单据类型 不为退货和返配、收货数量大于零的近30天的）
+			--合并 订单流明细表（不是W开头、采购订单号  40 开头的 、收货数量大于零、小类是11开头和null的）
+			--合并	入库头join入库商品明细 表 （头表以状态不为0、采购入库、收获时间为基准的近30天的 ）  三者合并作为A表 获取数量金额等信息
+			--其次  A表join关联  第三步创建的临时表 （条件为商品销售额/总金额 <=0.8） 
+			--再者  join 关联 门店表 获取门店和省区数据
+
+
+
+drop table b2b_tmp.temp_purprice1;
+CREATE temporary table b2b_tmp.temp_purprice1
+as
+select 
+	a.stype,				--销售归属标识
+	a.province_name,
+	shop_id_in,				--地点
+	a.goodsid,				
+	pur_doc_id,				--采购单号
+	a.sdt,					--日期（入库取收获时间、订单流表明细取申请日期）
+	pur_qty_in,				--数量
+	tax_pur_val_in,			--金额
+	pur_price				--单价
+from 
+	b2b_tmp.temp_purprice  a 		--第四步临时表
+join 
+(
+	select 
+		stype,						--销售归属 （云超、云创、彩食鲜等）
+		province_name,				--省份
+		goodsid,					--商品编码
+		max(sdt)sdt 				--最大日期
+	from 
+		b2b_tmp.temp_purprice 		--第四步临时表
+	group by 
+		stype,					--销售归属
+		province_name,			--省
+		goodsid					--商品
+)b 
+on 
+	(
+		a.stype=b.stype 
+		and 
+		a.province_name=b.province_name 
+		and 
+		a.goodsid=b.goodsid 
+		and 
+		a.sdt=b.sdt
+	);
+--第五步的总结：这里是一个逻辑：根据销售归属下的省的商品分组求最大日期 自 join  得到最近有进货记录的采购价格、（当天有取当天、没有会往前推、最大30天）
+	
+	
+
+drop table b2b_tmp.temp_purprice2;
+CREATE temporary table b2b_tmp.temp_purprice2
+as
+select 
+	a.stype,
+	a.province_name,
+	a.goodsid,
+	a.sdt,
+	a.pur_qty_in,		--数量
+	tax_pur_val_in,		--金额
+	pur_price			--价格
+from 
+	b2b_tmp.temp_purprice1 a 		--第五步临时表	自 join 
+join 
+(
+	select 
+		stype,				--销售归属 （云超、云创、彩食鲜等）
+		province_name,		
+		goodsid,
+		max(pur_qty_in)pur_qty_in 	--最大数量									一天内有多次入库的情况 、处理逻辑（取最大的一次入库数量）
+	from 
+		b2b_tmp.temp_purprice1  	--第五步临时表
+	group by 
+		stype,
+		province_name,
+		goodsid
+)b 
+on 
+	(
+		a.stype=b.stype 
+		and 
+		a.province_name=b.province_name 
+		and 
+		a.goodsid=b.goodsid 
+		and 
+		a.pur_qty_in=b.pur_qty_in
+	)
+join 
+(
+	select distinct 
+		goodsid,		--商品编码
+		dept_id 		--课组
+	from 
+		dim.dim_goods 	--商品资料表
+	where 
+		edate='9999-12-31' 
+	and 
+		dept_id like 'H%'		--生鲜
+)x
+on 
+	a.goodsid=x.goodsid 
+where 
+	(
+	x.dept_id in ('H02','H03','H05') 		--	H02	水果课、H03	蔬菜课、 H05 猪肉课
+	and 
+	sdt>=regexp_replace(date_sub(current_date,7),'-','')		--一周    	疑问：这一段取这三个课组 为什么要限定时间 ？ 解答：问过佩姐、这里是业务要求需要的
+	) 	
+	or 
+	x.dept_id not in ('H02','H03','H05');	
+
+--第六步总结： 取第五步临时表（最大日期的）自join获取得到  最大数量的（一天内可能有多个入库） 再join 商品资料表（生鲜课组商品）
+			-- 外层的条件 ：	H02	水果课、H03	蔬菜课、 H05 猪肉课 单独拿出限定7天为业务需要、
+
+
+
+
+drop table b2b_tmp.temp_purprice3;
+CREATE temporary table b2b_tmp.temp_purprice3
+as
+select distinct 
+	a.stype,
+	a.province_name,
+	a.shop_id_in,
+	a.shop_name,
+	a.goodsid,
+	a.sdt,
+	a.pur_qty_in,
+	a.pur_price
+from 
+	b2b_tmp.temp_purprice a 	--第四步创建临时表
+join 
+	b2b_tmp.temp_purprice2 b 	--第六步创建临时表   
+on 
+(
+	a.stype=b.stype 
+	and 
+	a.province_name=b.province_name 
+	and 
+	a.goodsid=b.goodsid 
+	and 
+	a.pur_qty_in=b.pur_qty_in 
+	and 
+	a.sdt=b.sdt
+);
+--第七步总结：这里使用第四步得到的数据和第六步得到的数据进行join  获取得到
+			--取当天有进货记录的采购价格，当天没有进货向前取值（最多向前30天），一天内多次入库取入库量最大的这笔单价
+
+
+
+--开启动态分区参数
+set hive.exec.parallel=true;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert overwrite table csx_dw.purprice_globaleye_detail partition (sdt) 
+select 
+	a.province_name,	--省份
+	a.goodsid,			--商品编码
+	x.goodsname,		--商品名称
+	x.dept_id,			--课组编码
+	x.dept_name,		--课组名称
+	x.catg_m_id,		--中类编码
+	x.catg_m_name,		--中类名称
+	b.shop_id_in,		--收获地点（彩食鲜）
+	b.shop_name,		--门店名称（彩食鲜）
+	c.shop_id_in shop_id_db,	----收获地点 （云超）
+	c.shop_name shop_name_db,	--门店名称（云超）
+	b.sdt sdt_c,		--日期（入库取收获时间、订单流表明细取申请日期）（彩食鲜）
+	c.sdt sdt_db,		--日期 （云超）
+	b.pur_qty_in,		--数量（彩食鲜）
+	b.pur_price,		--价格（彩食鲜）
+	c.pur_qty_in qty_in_db,	--数量（云超）
+	c.pur_price pur_price_db,	--价格（云超）
+	case when 
+		round(b.pur_price,2)>round(c.pur_price,2) 		--round函数 格式（A字段，2）标识四舍五入到小数点后两位  
+	then 
+		'入库价格高' 
+	else 
+		'入库价格优势' 
+	end 
+		ptype,		--价格类型
+	regexp_replace(date_sub(current_date,1),'-','')sdt
+from 
+(
+	select distinct 
+		province_name,	--省份
+		goodsid 		--商品名称
+	from 
+		b2b_tmp.temp_purprice2		--第六步创建临时表
+)a 
+join 
+(
+	select 
+		goodsid,
+		goodsname,
+		dept_id,
+		dept_name,
+		catg_m_id,
+		catg_m_name 
+	from 
+		dim.dim_goods 		--商品资料表
+	where 
+		edate='9999-12-31'
+)x
+on 
+	a.goodsid=x.goodsid 
+left join 
+(
+	select 
+		* 
+	from 
+		b2b_tmp.temp_purprice3 	--第七步临时表 
+	where 
+		stype='彩食鲜'			--销售归属标识为彩食鲜
+)b 
+on 
+	(
+		a.province_name=b.province_name 	
+		and 
+		a.goodsid=b.goodsid
+	)
+left join 
+(	
+	select 
+		* 
+	from 
+		b2b_tmp.temp_purprice3 		--第七步临时表 
+	where 
+		stype='云超'				--销售归属标识为云超 、这里是作为彩食鲜的对标使用
+)c
+on 
+	(
+		a.province_name=c.province_name 
+		and 
+		a.goodsid=c.goodsid
+	);
+
+
+
+
+
+insert overwrite table csx_dw.purprice_globaleye partition (sdt) 
+select 
+	a.stype,
+	a.province_name,
+	a.goodsid,
+	goodsname,
+	b.dept_id,
+	dept_name,
+	avg(pur_price)pur_price,	--平均价格
+	regexp_replace(date_sub(current_date,1),'-','')sdt	--每日分区
+from 
+	b2b_tmp.temp_purprice2 a 	--第六步创建临时表
+join 
+(
+	select 
+		goodsid,
+		goodsname,
+		dept_id,
+		dept_name,
+		catg_m_id,
+		catg_m_name 	
+	from 
+		dim.dim_goods 
+	where 
+		edate='9999-12-31'
+)b 
+on 
+	a.goodsid=b.goodsid
+group by 
+	a.stype,
+	a.province_name,
+	a.goodsid,
+	goodsname,
+	b.dept_id,
+	dept_name
+order by 
+	b.dept_id;
+
+--impala刷新一下
+INVALIDATE METADATA csx_dw.purprice_globaleye;
+INVALIDATE METADATA csx_dw.purprice_globaleye_detail;
+
+ 
+/*
+select * from csx_dw.purprice_globaleye_detail
+where sdt='${SDATE}' 
+${if(len(kz)==0,"","AND dept_id = '"+kz+"'")}
+${if(len(db)==0,"","AND ptype = '"+db+"'")}
+${if(len(sq)==0,"","AND province_name = '"+sq+"'")}
+order by dept_id,goodsid,province_name;
+
+
+
+/*
+--建表
+drop table csx_dw.purprice_globaleye;
+create table csx_dw.purprice_globaleye
+(
+stype string comment  '物流类型',
+province_name string comment  '省份',
+goodsid string comment  '商品编码',
+goodsname string comment  '商品名称',
+dept_id string comment  '课组编码',
+dept_name string comment  '课组名称',
+pur_price decimal(26,4) comment '进货价格'
+)
+comment '彩食鲜进价全球眼'
+partitioned by (sdt string comment '过账日期分区')
+row format delimited
+stored as parquet;
+
+create table csx_dw.purprice_globaleye_detail
+(
+province_name string comment  '省份',
+goodsid string comment  '商品编码',
+goodsname string comment  '商品名称',
+dept_id string comment  '课组编码',
+dept_name string comment  '课组名称',
+catg_m_id string comment  '中类编码',
+catg_m_name string comment  '中类名称',
+shop_id_in string comment  '入库门店',
+shop_name string comment  '入库门店名',
+shop_id_db string comment  '对标门店',
+shop_name_db string comment  '对标门店名',
+sdt_c string comment  '入库时间',
+sdt_db string comment  '对标入库时间',
+pur_qty_in decimal(26,4) comment '入库数量',
+pur_price decimal(26,4) comment '入库价格',
+qty_in_db decimal(26,4) comment '对标入库数量',
+pur_price_db decimal(26,4) comment '对标入库价格',
+ptype string comment  '价格类型')
+comment '彩食鲜进价全球眼明细'
+partitioned by (sdt string comment '过账日期分区')
+row format delimited
+stored as parquet;
+
+
+
+
+select * from csx_dw.purprice_globaleye 
+where sdt='${SDATE}' ${if(len(kz)==0,"","AND dept_id = '"+kz+"'")}
+order by province_name,stype

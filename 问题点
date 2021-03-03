@@ -1,0 +1,25 @@
+<!-- https://mvnrepository.com/artifact/org.apache.hive/hive-jdbc -->
+<dependency>
+    <groupId>org.apache.hive</groupId>
+    <artifactId>hive-jdbc</artifactId>
+    <version>1.1.0</version>
+</dependency>
+
+<!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-common -->
+<dependency>
+    <groupId>org.apache.hadoop</groupId>
+    <artifactId>hadoop-common</artifactId>
+    <version>2.6.5</version>
+</dependency>
+
+
+-- 客户是大客户，通过原门店销售归属‘企业购’
+case
+		when origin_shop_id = 'W0B6' then '企业购'  
+		105032	福建省仙游县总医院	144124.89	企业购
+		
+		select customer_no,shop_id,origin_shop_id,sum(sales_value)sale 
+	from csx_dw.sale_b2b_item 
+		where sdt>='20190601' and sdt<'20190831'
+		and sales_type in ('qyg','gc') and customer_no='105032'
+		group by customer_no,shop_id,origin_shop_id;

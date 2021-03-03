@@ -1,0 +1,136 @@
+select
+	mon
+	, province_name
+	, sales_city
+	, channel
+	, a.customer_no
+	, a.customer_name
+	, full_cust
+	, first_category
+	, second_category
+	, third_category
+	, sign_time
+	, sign_amount
+	, sales_name
+	, first_supervisor_name
+	, sale
+	, profit
+	, hz
+	, round(profit/sale,4)prorate
+	from 
+	(
+select
+	mon
+	, sales_province province_name
+	, channel
+	, a.customer_no
+	, a.customer_name
+	, concat(a.customer_no , ' ', a.customer_name )full_cust
+	, a.first_category
+	, second_category
+	, third_category
+	, sign_time
+	, sign_amount
+	, sales_name
+	, work_no
+	, sales_city
+	, first_supervisor_name
+	, sum(sale)sale
+	, sum(profit)profit
+	, sum(hz)hz
+from
+	(
+	select
+		customer_no
+		, customer_name
+		, channel
+		, sales_id
+		, sales_name
+		, work_no
+		, a.first_supervisor_name
+		, a.second_supervisor_name
+		, a.third_supervisor_name
+		, a.first_category
+		, a.second_category
+		, a.third_category
+		, sales_city
+		, regexp_replace(to_date(a.sign_time), '-', '')sign_time
+		, a.sign_amount
+		, org_name
+		, sales_province
+	from
+		csx_dw.customer_m a
+	where
+		customer_status = '04'
+		and sdt = regexp_replace(to_date(date_sub(CURRENT_TIMESTAMP(), 1)), '-', '')	and channel != 'M端')a
+left JOIN (
+	select
+		a.channel_name
+		,province_code
+		, province_name
+		, substr( sdt, 1, 6)mon
+		, customer_no
+		, customer_name
+		, sum(sale)sale
+		, SUM (profit) profit
+		, COUNT
+		(case
+			when sale != 0 then customer_no
+		end )hz
+	from
+		(
+		select
+			channel_name
+			, a.province_code
+			, province_name
+			, a.sdt
+			, a.customer_no
+			, customer_name
+			, sum(sales_value)/ 10000 sale
+			, SUM (profit)/ 10000 profit
+		from
+			csx_dw.sale_goods_m a
+		where
+			sdt >= regexp_replace('${sdate}','-','')
+			and sdt <= regexp_replace('${edate}','-','') 
+		group by
+			channel_name
+			, a.province_code
+			, a.province_name
+			, a.sdt
+			, a.customer_no
+			, customer_name )a
+	group by
+		a.channel_name
+		, province_code
+		, province_name
+		, substr( sdt, 1, 6)
+		, customer_no
+		, customer_name ) b on
+	a.customer_no = b.customer_no
+group by
+	 a.sales_province
+	, sales_city
+	, channel
+	, a.customer_no
+	, a.customer_name
+	, first_category
+	, second_category
+	, third_category
+	, sign_time
+	, sign_amount
+	, sales_name
+	, work_no
+	, first_supervisor_name
+	, mon
+	, concat(a.customer_no , ' ', a.customer_name )
+	, b.customer_no
+	) a
+	where 1=1
+		${if( len(dist)==0  ,"","and province_name in ('"+dist+"')") }	
+	${if( len(custid)==0  ,"","and customer_no in ('"+custid+"')") }
+	${if(check4='true',"and sale!=0 " ,"") }
+order by
+	mon desc
+	, province_name
+	, a.first_category asc ;

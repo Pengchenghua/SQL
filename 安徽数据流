@@ -1,0 +1,1763 @@
+set mapreduce.job.queuename=caishixian;
+-- 期初库存
+drop table if EXISTS temp.p_wms_01
+;
+
+create TEMPORARY TABLE if not EXISTS temp.p_wms_01 as
+select
+  a.product_code                    ,
+  goodsname                         ,
+  bar_code                          ,
+  bd_id                             ,
+  bd_name                           ,
+  unit_name                         ,
+  catg_l_id                         ,
+  catg_l_name                       ,
+  dept_id                           ,
+  dept_name                         ,
+  a.location_code                   ,
+  a.shipper_code                    ,
+  sum( qc_qty)             qc_qty   ,
+  sum(qc_amt)              qc_amt   ,
+  sum(qc_amt)/sum( qc_qty) qc_price ,
+  sum(qm_qty)              qm_qty   ,
+  sum(qm_amt)              qm_amt   ,
+  sum(qm_amt) /sum(qm_qty) qm_price ,
+  is_self_product
+from
+  (
+    select
+      a.product_code             ,
+      a.location_code            ,
+      a.shipper_code             ,
+      sum( after_qty)   qc_qty   ,
+      sum(after_amt)    qc_amt   ,
+      sum( after_price) qc_price ,
+      0                 qm_qty   ,
+      0                 qm_amt   ,
+      0                 qm_price
+    from
+      (
+        select
+          product_code                      ,
+          location_code                     ,
+          shipper_code                      ,
+          after_qty                         ,
+          after_amt                         ,
+          after_price                       ,
+          to_date(posting_time)posting_time ,
+          id                                ,
+          reservoir_area_code
+        from
+          csx_ods.wms_accounting_stock_detail_ods
+        where
+          sdt='20190919'
+      )
+      a
+      join
+        (
+          select
+            product_code        ,
+            location_code       ,
+            shipper_code        ,
+            max(id)max_id       ,
+            reservoir_area_code ,
+            to_date(posting_time)posting_time
+          from
+            csx_ods.wms_accounting_stock_detail_ods
+          where
+            regexp_replace(to_date(posting_time),'-','')='20190901'
+            and sdt                                     ='20190919'
+          group by
+            product_code          ,
+            location_code         ,
+            shipper_code          ,
+            to_date(posting_time) ,
+            reservoir_area_code
+        )
+        b
+        on
+          a.product_code      = b.product_code
+          and a.location_code = b.location_code
+          and a.shipper_code  = b.shipper_code
+          and a.posting_time  = b.posting_time
+          and a.id            = b.max_id
+    group by
+      a.product_code  ,
+      a.location_code ,
+      a.shipper_code
+    union all
+    select
+      a.product_code  ,
+      a.location_code ,
+      a.shipper_code  ,
+      0                 qc_qty        ,
+      0                 qc_amt        ,
+      0                 qc_price      ,
+      sum( after_qty)   qm_qty        ,
+      sum(after_amt)    qm_amt        ,
+      sum( after_price) qm_price
+    from
+      (
+        select
+          product_code                                             ,
+          location_code                                            ,
+          shipper_code                                             ,
+          after_qty                                                ,
+          after_amt                                                ,
+          after_price                                              ,
+          regexp_replace(to_date(posting_time),'-','')posting_time ,
+          id                                                       ,
+          reservoir_area_code
+        from
+          csx_ods.wms_accounting_stock_detail_ods
+        where
+          sdt='20190919'
+      )
+      a
+      join
+        (
+          select
+            product_code  ,
+            location_code ,
+            shipper_code  ,
+            max(id)max_id ,
+            reservoir_area_code
+          from
+            csx_ods.wms_accounting_stock_detail_ods
+          where
+            regexp_replace(to_date(posting_time),'-','')    >='20190901'
+            and regexp_replace(to_date(posting_time),'-','')<='20190919'
+            and sdt                                          ='20190919'
+          group by
+            product_code  ,
+            location_code ,
+            shipper_code  ,
+            reservoir_area_code
+        )
+        b
+        on
+          a.product_code           = b.product_code
+          and a.location_code      = b.location_code
+          and a.shipper_code       = b.shipper_code
+          AND A.reservoir_area_code=b.reservoir_area_code
+          and a.id                 = b.max_id
+    group by
+      a.product_code  ,
+      a.location_code ,
+      a.shipper_code
+  )
+  a
+  join
+    (
+      select
+        goodsid       ,
+        goodsname     ,
+        a.bar_code    ,
+        a.bd_id       ,
+        a.bd_name     ,
+        a.unit_name   ,
+        a.catg_l_id   ,
+        a.catg_l_name ,
+        a.dept_id     ,
+        a.dept_name   ,
+        if
+        (
+          goods_code is null, '否', '是'
+        )
+        as is_self_product
+      from
+        dim.dim_goods_latest a
+        left join
+          (
+            select distinct
+              goods_code
+            from
+              csx_dw.factory_bom
+            where
+              sdt = '20190919'
+          )
+          b
+          on
+            a.goodsid=b.goods_code
+    )
+    c
+    on
+      a.product_code = c.goodsid
+group by
+  a.product_code  ,
+  goodsname       ,
+  bar_code        ,
+  bd_id           ,
+  bd_name         ,
+  unit_name       ,
+  catg_l_id       ,
+  catg_l_name     ,
+  dept_id         ,
+  dept_name       ,
+  a.location_code ,
+  a.shipper_code  ,
+  is_self_product
+;
+
+-- select * from  temp.p_wms_02 ;
+-- 入库单
+drop table if EXISTS temp.p_wms_02
+;
+
+CREATE TEMPORARY TABLE if not EXISTS temp.p_wms_02 as
+select
+  receive_location_code ,
+  receive_location_name ,
+  a.product_code        ,
+  a.product_name        ,
+  bar_code              ,
+  bd_id                 ,
+  bd_name               ,
+  unit_name             ,
+  catg_l_id             ,
+  catg_l_name           ,
+  dept_id               ,
+  dept_name             ,
+  sum
+    (
+      case
+        when entry_type LIKE 'P%'
+          then receive_qty
+      end
+    )
+  p_qty ,
+  sum
+    (
+      case
+        when entry_type LIKE 'P%'
+          then amount
+      end
+    )
+  p_amount ,
+  sum
+    (
+      case
+        when entry_type LIKE 'S%'
+          then receive_qty
+      end
+    )
+  cust_qty ,
+  sum
+    (
+      case
+        when entry_type LIKE 'S%'
+          then amount
+      end
+    )
+  cust_amount ,
+  sum
+    (
+      case
+        when entry_type in('T06' , 'T01' , 'T02')
+          then receive_qty
+      end
+    )
+  t_qty ,
+  sum
+    (
+      case
+        when entry_type in('T06' , 'T01' , 'T02')
+          then amount
+      end
+    )
+  t_amount ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+  as is_self_product
+from
+  (
+    select
+      entry_type                    ,
+      return_flag                   ,
+      supplier_code                 ,
+      supplier_name                 ,
+      send_location_code            ,
+      send_location_name            ,
+      receive_location_code         ,
+      receive_location_name         ,
+      b.product_code                ,
+      b.product_name                ,
+      sum(b.plan_qty)   plan_qty    ,
+      sum(b.receive_qty)receive_qty ,
+      sum(b.amount)     amount
+    from
+      csx_ods.wms_entry_order_header_ods a
+      join
+        (
+          select
+            order_code     ,
+            b.product_code ,
+            b.product_name ,
+            b.plan_qty     ,
+            b.receive_qty  ,
+            b.amount
+          from
+            csx_ods.wms_entry_order_item_ods b
+          where
+            sdt = '20190919'
+        )
+        b
+        on
+          a.order_code                                        = b.order_code
+          and a.receive_status                                = 2
+          and a.sdt                                           = '20190919'
+          and regexp_replace (to_date(update_time), '-' , '')<='20190919'
+          and regexp_replace (to_date(update_time), '-' , '')>='20190901'
+    group by
+      entry_type            ,
+      return_flag           ,
+      supplier_code         ,
+      supplier_name         ,
+      send_location_code    ,
+      send_location_name    ,
+      receive_location_code ,
+      receive_location_name ,
+      b.product_code        ,
+      b.product_name
+  )
+  a
+  left outer join
+    (
+      select distinct
+        goods_code
+      from
+        csx_dw.factory_bom
+      where
+        sdt = '20190919'
+    )
+    c
+    on
+      a.product_code = c.goods_code
+  left join
+    dim.dim_goods_latest d
+    on
+      a.product_code=d.goodsid
+group by
+  receive_location_code ,
+  receive_location_name ,
+  a.product_code        ,
+  a.product_name        ,
+  bar_code              ,
+  bd_id                 ,
+  bd_name               ,
+  unit_name             ,
+  catg_l_id             ,
+  catg_l_name           ,
+  dept_id               ,
+  dept_name             ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+;
+
+-- 出库单
+-- select * from temp.p_wms_03 where product_code='978203';
+drop table if EXISTS temp.p_wms_03
+;
+
+CREATE TEMPORARY TABLE if not EXISTS temp.p_wms_03 as
+select
+  send_location_code ,
+  send_location_name ,
+  product_code       ,
+  product_bar_code   ,
+  product_name       ,
+  unit_name          ,
+  bd_id              ,
+  bd_name            ,
+  dept_id            ,
+  dept_name          ,
+  catg_l_id          ,
+  catg_l_name        ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+  as is_self_product ,
+  sum
+    (
+      case
+        when shipped_type like 'T%'
+          then shipped_qty
+      end
+    )
+  as t_shipped_qty ,
+  sum
+    (
+      case
+        when shipped_type like 'S%'
+          then shipped_qty
+      end
+    )
+  as s_shipped_qty ,
+  sum
+    (
+      case
+        when shipped_type like 'P%'
+          then shipped_qty
+      end
+    )
+  as p_shipped_qty ,
+  sum
+    (
+      case
+        when shipped_type like 'T%'
+          then shipped_amount
+      end
+    )
+  as t_shipped_amount ,
+  sum
+    (
+      case
+        when shipped_type like 'S%'
+          then shipped_amount
+      end
+    )
+  as s_shipped_amount ,
+  sum
+    (
+      case
+        when shipped_type like 'P%'
+          then shipped_amount
+      end
+    )
+  as p_shipped_amount
+from
+  (
+    select
+      order_code            ,
+      shipped_type          ,
+      business_type         ,
+      return_flag           ,
+      supplier_code         ,
+      supplier_name         ,
+      send_location_code    ,
+      send_location_name    ,
+      receive_location_code ,
+      receive_location_name ,
+      status
+    from
+      csx_ods.wms_shipped_order_header_ods
+    where
+      sdt             ='20190919'
+      and update_time>='2019-09-01 00:00:00:00'
+      and update_time<='2019-09-18 23:59:59:00'
+      and status in('6' , '8')
+  )
+  a
+  join
+    (
+      select
+        order_code                   ,
+        product_code                 ,
+        product_bar_code             ,
+        product_name                 ,
+        sum(shipped_qty)      shipped_qty ,
+        sum(price*shipped_qty)shipped_amount
+      from
+        csx_ods.wms_shipped_order_item_ods
+      where
+        sdt='20190919'
+      group by
+        order_code       ,
+        product_code     ,
+        product_bar_code ,
+        product_name
+    )
+    b
+    on
+      a.order_code = b.order_code
+  left outer join
+    dim.dim_goods_latest d
+    on
+      b.product_code=d.goodsid
+  left join
+    (
+      select distinct
+        goods_code
+      from
+        csx_dw.factory_bom
+      where
+        sdt = '20190919'
+    )
+    c
+    on
+      b.product_code = c.goods_code
+group by
+  send_location_code ,
+  send_location_name ,
+  product_code       ,
+  product_bar_code   ,
+  product_name       ,
+  unit_name          ,
+  bd_id              ,
+  bd_name            ,
+  dept_id            ,
+  dept_name          ,
+  catg_l_id          ,
+  catg_l_name        ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+;
+
+-- 销售额大客户
+-- select * from temp.p_wms_04;
+drop table if EXISTS temp.p_wms_04
+;
+
+create TEMPORARY table if not EXISTS temp.p_wms_04 as
+select
+  a.dc_code                                   ,
+  a.dc_name                                   ,
+  a.goods_code                                ,
+  a.goods_name                                ,
+  unit_name                                   ,
+  a.division_name                             ,
+  a.division_code                             ,
+  a.department_code                           ,
+  a.department_name                           ,
+  a.category_large_code                       ,
+  a.category_large_name                       ,
+  a.category_middle_name                      ,
+  a.category_middle_code                      ,
+  a.category_small_name                       ,
+  a.category_small_code                       ,
+  sum(sales_qty)                            as sales_qty         ,
+  sum(sales_value)                          as sales_value       ,
+  sum(cost_value)                           as cost_value        ,
+  sum(middle_cost_value)                    as middle_cost_value ,
+  sum(sales_value) - sum(cost_value)        as profit            ,
+  sum(sales_value) - sum(middle_cost_value) as front_profit      ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+  as is_self_product
+from
+  (
+    select
+      sdt                                                  ,
+      dc_code                                              ,
+      dc_name                                              ,
+      customer_no                                          ,
+      customer_name                                        ,
+      goods_code                                           ,
+      goods_name                                           ,
+      a.unit as unit_name                                  ,
+      division_name                                        ,
+      division_code                                        ,
+      department_code                                      ,
+      department_name                                      ,
+      category_large_name                                  ,
+      category_large_code                                  ,
+      category_middle_name                                 ,
+      category_middle_code                                 ,
+      category_small_name                                  ,
+      category_small_code                                  ,
+      sales_value                                          ,
+      origin_order_no                                      ,
+      sales_qty                                            ,
+      middle_office_price                                  ,
+      origin_cost_price                                    ,
+      round(sales_qty * origin_cost_price,2)   as cost_value ,
+      round(sales_qty * middle_office_price,2) as middle_cost_value
+    from
+      csx_dw.sale_item_m a
+    where
+      sdt           >= '20190901'
+      and sdt        < '20190920'
+      and sales_type = 'anhui'
+      and sales_qty <> 0
+      and dc_code   !='W0A3'
+  )
+  a
+  left outer join
+    (
+      select    distinct
+        goods_code
+      from
+        csx_dw.factory_bom
+      where
+        sdt = '20190919'
+    )
+    c
+    on
+      a.goods_code = c.goods_code
+group by
+  dc_code              ,
+  dc_name              ,
+  a.goods_code         ,
+  goods_name           ,
+  unit_name            ,
+  division_name        ,
+  division_code        ,
+  department_code      ,
+  department_name      ,
+  category_large_name  ,
+  category_large_code  ,
+  category_middle_code ,
+  category_middle_name ,
+  category_small_name  ,
+  category_small_code  ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+;
+
+-- 商超销售数据
+drop table if EXISTS temp.p_wms_06
+;
+
+CREATE TEMPORARY table if NOT EXISTS temp.p_wms_06 as
+SELECT
+  dc_code      ,
+  a.goods_code ,
+  a.goods_name ,
+  unit_name    ,
+  bd_id        ,
+  bd_name      ,
+  catg_l_id    ,
+  catg_l_name  ,
+  dept_id      ,
+  dept_name    ,
+  sum
+    (
+      case
+        when pur_org LIKE 'P3%'
+          THEN shop_qty
+      END
+    )
+  cloud_shop_qty ,
+  sum
+    (
+      case
+        when pur_org LIKE 'P3%'
+          THEN shop_sale
+      end
+    )
+  cloud_shop_sale ,
+  sum
+    (
+      case
+        when pur_org LIKE 'P3%'
+          THEN shop_profit
+      end
+    )
+  cloud_shop_profit ,
+  sum
+    (
+      case
+        when pur_org not LIKE 'P3%'
+          THEN shop_qty
+      END
+    )
+  super_shop_qty ,
+  sum
+    (
+      case
+        when pur_org not LIKE 'P3%'
+          THEN shop_sale
+      end
+    )
+  super_shop_sale ,
+  sum
+    (
+      case
+        when pur_org not LIKE 'P3%'
+          THEN shop_profit
+      end
+    )
+  super_shop_profit ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+  as is_self_product
+FROM
+  (
+    SELECT
+      dc_code                                                   ,
+      shop_code                                                 ,
+      shop_name                                                 ,
+      goods_code                                                ,
+      goods_name                                                ,
+      sum(sales_qty)                                            shop_qty        ,
+      sum(sales_value)                                          shop_sale       ,
+      sum(coalesce(cost_price, 0)*sales_qty)                    as shop_cost_value ,
+      sum(sales_value) - sum(coalesce(cost_price, 0)*sales_qty) as shop_profit
+    FROM
+      csx_dw.shop_sale_item_m
+    WHERE
+      sdt    <='20190919'
+      and sdt>='20190901'
+    GROUP BY
+      dc_code    ,
+      shop_code  ,
+      shop_name  ,
+      goods_code ,
+      goods_name
+  )
+  a
+  JOIN
+    dim.dim_goods_latest b
+    on
+      a.goods_code=b.goodsid
+  join
+    dim.dim_shop_latest d
+    on
+      a.shop_code=d.shop_id
+  LEFT OUTER JOIN
+    (
+      select DISTINCT
+        goods_code
+      from
+        csx_dw.factory_bom
+      where
+        sdt='20190919'
+    )
+    c
+    on
+      a.goods_code=c.goods_code
+group by
+  dc_code      ,
+  a.goods_code ,
+  a.goods_name ,
+  unit_name    ,
+  bd_id        ,
+  bd_name      ,
+  catg_l_id    ,
+  catg_l_name  ,
+  dept_id      ,
+  dept_name    ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+;
+
+-- select * from tem.p_wms_07;
+-- 商超订单
+drop table if EXISTS temp.p_wms_07
+;
+
+CREATE temporary table if NOT EXISTS temp.p_wms_07 as
+select
+  dc_code      ,
+  product_code ,
+  product_name ,
+  unit_name    ,
+  bd_id        ,
+  bd_name      ,
+  dept_id      ,
+  dept_name    ,
+  catg_l_id    ,
+  catg_l_name  ,
+  sum
+    (
+      case
+        when supertype='云创'
+          then order_apply_value
+      end
+    )
+  cloud_order_value ,
+  sum
+    (
+      case
+        when supertype='云超'
+          then order_apply_value
+      end
+    )
+  super_order_value ,
+  sum
+    (
+      case
+        when supertype='云创'
+          then apply_qty
+      end
+    )
+  cloud_apply_qty ,
+  sum
+    (
+      case
+        when supertype='云超'
+          then apply_qty
+      end
+    )
+  super_apply_qty ,
+  sum
+    (
+      case
+        when supertype='云创'
+          then accept_qty
+      end
+    )
+  cloud_accept_qty ,
+  sum
+    (
+      case
+        when supertype='云超'
+          then accept_qty
+      end
+    )
+  super_accept_qty ,
+  is_self_product
+from
+  (
+    select
+      dc_code   ,
+      dc_name   ,
+      shop_code ,
+      case
+        when SUBSTRING(c.pur_org,1,2 )='P3'
+          then '云创'
+        when SUBSTRING(c.pur_org,1,2 )='P6'
+          then '彩食鲜'
+          ELSE '云超'
+      end supertype      ,
+      product_code       ,
+      product_name       ,
+      unit_name          ,
+      bd_id              ,
+      b.bd_name          ,
+      b.dept_id          ,
+      b.dept_name        ,
+      b.catg_l_id        ,
+      b.catg_l_name      ,
+      order_apply_value  ,
+      order_accept_value ,
+      apply_qty          ,
+      accept_qty         ,
+      if
+      (
+        d.goods_code is null, '否', '是'
+      )
+      as is_self_product
+    from
+      (
+        select
+          a.dc_code                                ,
+          a.dc_name                                ,
+          a.shop_code                              ,
+          a.product_code                           ,
+          a.product_name                           ,
+          sum(price* apply_qty) order_apply_value  ,
+          sum(price* accept_qty)order_accept_value ,
+          sum(price* sign_qty)  order_sign_value   ,
+          sum(apply_qty)        apply_qty          ,
+          sum(accept_qty)       accept_qty         ,
+          sum(sign_qty)         sign_qty
+        from
+          (
+            select DISTINCT
+              a.id           ,
+              a.dc_code      ,
+              a.dc_name      ,
+              a.shop_code    ,
+              a.product_code ,
+              a.product_name ,
+              price          ,
+              apply_qty      ,
+              accept_qty     ,
+              sign_qty
+            from
+              csx_ods.apply_order_item_ods a
+              join
+                (
+                  select
+                    id           ,
+                    dc_code      ,
+                    dc_name      ,
+                    shop_code    ,
+                    product_code ,
+                    product_name ,
+                    max(sdt )sdt
+                  from
+                    csx_ods.apply_order_item_ods
+                  where
+                    regexp_replace(to_date(accept_time),'-','')    >='20190901'
+                    and regexp_replace(to_date(accept_time),'-','')<='20190919'
+                    and sdt                                        <='20190919'
+                    and sdt                                        >='20190901'
+                    --and product_code='441'
+                    --and shop_code='W011'
+                  group by
+                    id           ,
+                    dc_code      ,
+                    dc_name      ,
+                    shop_code    ,
+                    product_code ,
+                    product_name
+                )
+                f
+                on
+                  a.id              =f.id
+                  and a.dc_code     =f.dc_code
+                  and a.dc_name     =f.dc_name
+                  and a.shop_code   =f.shop_code
+                  and a.product_code=f.product_code
+                  and a.product_name=f.product_name
+                  and a.sdt         =f.sdt
+          )
+          a
+        group by
+          a.dc_code      ,
+          a.dc_name      ,
+          a.shop_code    ,
+          a.product_code ,
+          a.product_name
+      )
+      a
+      left outer join
+        dim.dim_goods_latest b
+        on
+          a.product_code=b.goodsid
+      left outer join
+        dim.dim_shop_latest c
+        on
+          a.shop_code=c.shop_id
+      left outer join
+        (
+          select DISTINCT
+            goods_code
+          from
+            csx_dw.factory_bom
+          where
+            sdt='20190919'
+        )
+        d
+        on
+          a.product_code=d.goods_code
+  )
+  a
+group by
+  dc_code      ,
+  product_code ,
+  product_name ,
+  unit_name    ,
+  bd_id        ,
+  bd_name      ,
+  dept_id      ,
+  dept_name    ,
+  catg_l_id    ,
+  catg_l_name  ,
+  is_self_product
+;
+
+-- 订单数据
+drop table if EXISTS temp.p_wms_05
+;
+
+CREATE TEMPORARY table if NOT EXISTS temp.p_wms_05 as
+SELECT
+  source_location_code        ,
+  product_code                ,
+  product_name                ,
+  unit_name                   ,
+  bd_id                       ,
+  bd_name                     ,
+  catg_l_id                   ,
+  catg_l_name                 ,
+  dept_id                     ,
+  dept_name                   ,
+  sale_amount/order_qty price ,
+  order_qty                   ,
+  sale_amount                 ,
+  if
+  (
+    c.goods_code is null, '否', '是'
+  )
+  as is_self_product
+FROM
+  (
+    SELECT
+      source_location_code     ,
+      product_code             ,
+      product_name             ,
+      sum(order_qty)  order_qty ,
+      sum(sale_amount)sale_amount
+    FROM
+      csx_ods.scm_product_sales_dtl_ods
+    WHERE
+      sdt                                             ='20190919'
+      AND regexp_replace(to_date(update_time),'-','')<='20190919'
+      AND regexp_replace(to_date(update_time),'-','')>='20190901'
+      and source_system                               ='CSMS'
+    GROUP BY
+      source_location_code ,
+      product_code         ,
+      product_name
+  )
+  a
+  JOIN
+    dim.dim_goods_latest b
+    on
+      a.product_code=b.goodsid
+  LEFT OUTER JOIN
+    (
+      select DISTINCT
+        goods_code
+      from
+        csx_dw.factory_bom
+      where
+        sdt='20190919'
+    )
+    c
+    on
+      a.product_code=c.goods_code
+;
+
+set hive.auto.convert.join          =true;    --设置 MapJoin 优化自动开启
+set hive.mapjoin.smalltable.filesize=25000000;--设置小表不超过多大时开启 mapjoin 优化
+DROP TABLE IF EXISTS temp.p_wms_10
+;
+
+CREATE TEMPORARY TABLE IF NOT EXISTS temp.p_wms_10 AS
+SELECT
+  location_code                                              ,
+  shop_name                                                  ,
+  a.product_code                                             ,
+  goodsname                                                  ,
+  unit_name                                                  ,
+  bd_id                                                      ,
+  bd_name                                                    ,
+  dept_id                                                    ,
+  dept_name                                                  ,
+  catg_l_id                                                  ,
+  catg_l_name                                                ,
+  is_self_product                                            ,
+  sum(qc_amt)            /sum(qc_qty)*1.00       qc_price          ,
+  sum(qc_qty)            *1.00                   qc_qty            ,
+  sum(qc_amt)            *1.00                   qc_amt            ,
+  sum(qm_amt)            /sum(qm_qty)*1.00       qm_price          ,
+  sum(qm_qty)            *1.00                   qm_qty            ,
+  sum(qm_amt)            *1.00                   qm_amt            ,
+  sum(p_qty)             *1.00                   p_qty             ,
+  sum(p_amount)          *1.00                   p_amount          ,
+  sum(cust_qty)          *1.00                   cust_qty          ,
+  sum(cust_amount)       *1.00                   cust_amount       ,
+  sum(t_qty)             *1.00                   t_qty             ,
+  sum(t_amount)          *1.00                   t_amount          ,
+  sum(sales_qty)         *1.00                   sales_qty         ,
+  sum(sales_value)       *1.00                   sales_value       ,
+  sum(cost_value)        *1.00                   cost_value        ,
+  sum(middle_cost_value) *1.00                   middle_cost_value ,
+  sum(profit)            *1.00                   profit            ,
+  sum(front_profit)      *1.00                   front_profit      ,
+  sum( sale_amount)      /sum(order_qty)*1.00 as price             ,
+  sum( order_qty)        *1.00                   order_qty         ,
+  sum( sale_amount)      *1.00                   sale_amount       ,
+  sum(cloud_shop_qty)    *1.0                    cloud_shop_qty    ,
+  sum(cloud_shop_sale)   *1.0                    cloud_shop_sale   ,
+  sum(cloud_shop_profit) *1.0                    cloud_shop_profit ,
+  sum(super_shop_qty)    *1.0                    super_shop_qty    ,
+  sum(super_shop_sale)   *1.0                    super_shop_sale   ,
+  sum(super_shop_profit) *1.0                    super_shop_profit ,
+  sum(cloud_order_value) *1.0                    cloud_order_value ,
+  sum(super_order_value) *1.0                    super_order_value ,
+  sum(cloud_apply_qty)   *1.0                    cloud_apply_qty   ,
+  sum(super_apply_qty)   *1.0                    super_apply_qty   ,
+  sum(cloud_accept_qty)  *1.0                    cloud_accept_qty  ,
+  sum(super_accept_qty)  *1.0                    super_accept_qty  ,
+  sum( t_shipped_qty)    *1.0                    t_shipped_qty     ,
+  sum( s_shipped_qty)    *1.0                    s_shipped_qty     ,
+  sum( p_shipped_qty)    *1.0                    p_shipped_qty     ,
+  sum( t_shipped_amount) *1.0                    t_shipped_amount  ,
+  sum( s_shipped_amount) *1.0                    s_shipped_amount  ,
+  sum( p_shipped_amount) *1.0                    p_shipped_amount
+FROM
+  (
+    SELECT
+      a.location_code     ,
+      product_code        ,
+      goodsname           ,
+      unit_name           ,
+      bd_id               ,
+      bd_name             ,
+      dept_id             ,
+      dept_name           ,
+      catg_l_id           ,
+      catg_l_name         ,
+      is_self_product     ,
+      qc_price            ,
+      qc_qty              ,
+      qc_amt              ,
+      qm_price            ,
+      qm_qty              ,
+      qm_amt              ,
+      0 p_qty             ,
+      0 p_amount          ,
+      0 cust_qty          ,
+      0 cust_amount       ,
+      0 t_qty             ,
+      0 t_amount          ,
+      0 sales_qty         ,
+      0 sales_value       ,
+      0 cost_value        ,
+      0 middle_cost_value ,
+      0 profit            ,
+      0 front_profit      ,
+      0 price             ,
+      0 order_qty         ,
+      0 sale_amount       ,
+      0 cloud_shop_qty    ,
+      0 cloud_shop_sale   ,
+      0 cloud_shop_profit ,
+      0 super_shop_qty    ,
+      0 super_shop_sale   ,
+      0 super_shop_profit ,
+      0 cloud_order_value ,
+      0 super_order_value ,
+      0 cloud_apply_qty   ,
+      0 super_apply_qty   ,
+      0 cloud_accept_qty  ,
+      0 super_accept_qty  ,
+      0 t_shipped_qty     ,
+      0 s_shipped_qty     ,
+      0 p_shipped_qty     ,
+      0 t_shipped_amount  ,
+      0 s_shipped_amount  ,
+      0 p_shipped_amount
+    FROM
+      temp.p_wms_01 a
+    UNION ALL
+    SELECT
+      receive_location_code location_code ,
+      a.product_code                      ,
+      a.product_name goodsname            ,
+      unit_name                           ,
+      bd_id                               ,
+      bd_name                             ,
+      dept_id                             ,
+      dept_name                           ,
+      catg_l_id                           ,
+      catg_l_name                         ,
+      is_self_product                     ,
+      0 qc_price                          ,
+      0 qc_qty                            ,
+      0 qc_amt                            ,
+      0 qm_price                          ,
+      0 qm_qty                            ,
+      0 qm_amt                            ,
+      p_qty                               ,
+      p_amount                            ,
+      cust_qty                            ,
+      cust_amount                         ,
+      t_qty                               ,
+      t_amount                            ,
+      0 sales_qty                         ,
+      0 sales_value                       ,
+      0 cost_value                        ,
+      0 middle_cost_value                 ,
+      0 profit                            ,
+      0 front_profit                      ,
+      0 price                             ,
+      0 order_qty                         ,
+      0 sale_amount                       ,
+      0 cloud_shop_qty                    ,
+      0 cloud_shop_sale                   ,
+      0 cloud_shop_profit                 ,
+      0 super_shop_qty                    ,
+      0 super_shop_sale                   ,
+      0 super_shop_profit                 ,
+      0 cloud_order_value                 ,
+      0 super_order_value                 ,
+      0 cloud_apply_qty                   ,
+      0 super_apply_qty                   ,
+      0 cloud_accept_qty                  ,
+      0 super_accept_qty                  ,
+      0 t_shipped_qty                     ,
+      0 s_shipped_qty                     ,
+      0 p_shipped_qty                     ,
+      0 t_shipped_amount                  ,
+      0 s_shipped_amount                  ,
+      0 p_shipped_amount
+    FROM
+      temp.p_wms_02 a
+    UNION ALL
+    SELECT
+      a.dc_code    location_code ,
+      a.goods_code product_code  ,
+      a.goods_name goodsname     ,
+      unit_name                  ,
+      CASE
+        WHEN division_code IN ('10' , '11')
+          THEN '11'
+        WHEN division_code IN ('12' , '13' , '14')
+          THEN '12'
+          ELSE ''
+      END bd_id ,
+      CASE
+        WHEN division_code IN ('10' , '11')
+          THEN '生鲜事业部'
+        WHEN division_code IN ('12' , '13' , '14')
+          THEN '食百事业部'
+          ELSE ''
+      END                   bd_name     ,
+      a.department_code     dept_id     ,
+      a.department_name     dept_name   ,
+      a.category_large_code catg_l_id   ,
+      a.category_large_name catg_l_name ,
+      is_self_product                   ,
+      0 qc_price                        ,
+      0 qc_qty                          ,
+      0 qc_amt                          ,
+      0 qm_price                        ,
+      0 qm_qty                          ,
+      0 qm_amt                          ,
+      0 p_qty                           ,
+      0 p_amount                        ,
+      0 cust_qty                        ,
+      0 cust_amount                     ,
+      0 t_qty                           ,
+      0 t_amount                        ,
+      sales_qty                         ,
+      sales_value                       ,
+      cost_value                        ,
+      middle_cost_value                 ,
+      profit                            ,
+      front_profit                      ,
+      0 price                           ,
+      0 order_qty                       ,
+      0 sale_amount                     ,
+      0 cloud_shop_qty                  ,
+      0 cloud_shop_sale                 ,
+      0 cloud_shop_profit               ,
+      0 super_shop_qty                  ,
+      0 super_shop_sale                 ,
+      0 super_shop_profit               ,
+      0 cloud_order_value               ,
+      0 super_order_value               ,
+      0 cloud_apply_qty                 ,
+      0 super_apply_qty                 ,
+      0 cloud_accept_qty                ,
+      0 super_accept_qty                ,
+      0 t_shipped_qty                   ,
+      0 s_shipped_qty                   ,
+      0 p_shipped_qty                   ,
+      0 t_shipped_amount                ,
+      0 s_shipped_amount                ,
+      0 p_shipped_amount
+    FROM
+      temp.p_wms_04 a
+    union all
+    SELECT
+      source_location_code as location_code ,
+      product_code                          ,
+      product_name goodsname                ,
+      unit_name                             ,
+      bd_id                                 ,
+      bd_name                               ,
+      dept_id                               ,
+      dept_name                             ,
+      catg_l_id                             ,
+      catg_l_name                           ,
+      is_self_product                       ,
+      0 qc_price                            ,
+      0 qc_qty                              ,
+      0 qc_amt                              ,
+      0 qm_price                            ,
+      0 qm_qty                              ,
+      0 qm_amt                              ,
+      0 p_qty                               ,
+      0 p_amount                            ,
+      0 cust_qty                            ,
+      0 cust_amount                         ,
+      0 t_qty                               ,
+      0 t_amount                            ,
+      0 sales_qty                           ,
+      0 sales_value                         ,
+      0 cost_value                          ,
+      0 middle_cost_value                   ,
+      0 profit                              ,
+      0 front_profit                        ,
+      price                                 ,
+      order_qty                             ,
+      sale_amount                           ,
+      0 cloud_shop_qty                      ,
+      0 cloud_shop_sale                     ,
+      0 cloud_shop_profit                   ,
+      0 super_shop_qty                      ,
+      0 super_shop_sale                     ,
+      0 super_shop_profit                   ,
+      0 cloud_order_value                   ,
+      0 super_order_value                   ,
+      0 cloud_apply_qty                     ,
+      0 super_apply_qty                     ,
+      0 cloud_accept_qty                    ,
+      0 super_accept_qty                    ,
+      0 t_shipped_qty                       ,
+      0 s_shipped_qty                       ,
+      0 p_shipped_qty                       ,
+      0 t_shipped_amount                    ,
+      0 s_shipped_amount                    ,
+      0 p_shipped_amount
+    from
+      temp.p_wms_05
+    union all
+    SELECT
+      dc_code    as location_code ,
+      goods_code    product_code  ,
+      goods_name    goodsname     ,
+      unit_name                   ,
+      bd_id                       ,
+      bd_name                     ,
+      dept_id                     ,
+      dept_name                   ,
+      catg_l_id                   ,
+      catg_l_name                 ,
+      is_self_product             ,
+      0 qc_price                  ,
+      0 qc_qty                    ,
+      0 qc_amt                    ,
+      0 qm_price                  ,
+      0 qm_qty                    ,
+      0 qm_amt                    ,
+      0 p_qty                     ,
+      0 p_amount                  ,
+      0 cust_qty                  ,
+      0 cust_amount               ,
+      0 t_qty                     ,
+      0 t_amount                  ,
+      0 sales_qty                 ,
+      0 sales_value               ,
+      0 cost_value                ,
+      0 middle_cost_value         ,
+      0 profit                    ,
+      0 front_profit              ,
+      0 price                     ,
+      0 order_qty                 ,
+      0 sale_amount               ,
+      cloud_shop_qty              ,
+      cloud_shop_sale             ,
+      cloud_shop_profit           ,
+      super_shop_qty              ,
+      super_shop_sale             ,
+      super_shop_profit           ,
+      0 cloud_order_value         ,
+      0 super_order_value         ,
+      0 cloud_apply_qty           ,
+      0 super_apply_qty           ,
+      0 cloud_accept_qty          ,
+      0 super_accept_qty          ,
+      0 t_shipped_qty             ,
+      0 s_shipped_qty             ,
+      0 p_shipped_qty             ,
+      0 t_shipped_amount          ,
+      0 s_shipped_amount          ,
+      0 p_shipped_amount
+    from
+      temp.p_wms_06
+    union all
+    SELECT
+      dc_code      as location_code ,
+      product_code    product_code  ,
+      product_name    goodsname     ,
+      unit_name                     ,
+      bd_id                         ,
+      bd_name                       ,
+      dept_id                       ,
+      dept_name                     ,
+      catg_l_id                     ,
+      catg_l_name                   ,
+      is_self_product               ,
+      0 qc_price                    ,
+      0 qc_qty                      ,
+      0 qc_amt                      ,
+      0 qm_price                    ,
+      0 qm_qty                      ,
+      0 qm_amt                      ,
+      0 p_qty                       ,
+      0 p_amount                    ,
+      0 cust_qty                    ,
+      0 cust_amount                 ,
+      0 t_qty                       ,
+      0 t_amount                    ,
+      0 sales_qty                   ,
+      0 sales_value                 ,
+      0 cost_value                  ,
+      0 middle_cost_value           ,
+      0 profit                      ,
+      0 front_profit                ,
+      0 price                       ,
+      0 order_qty                   ,
+      0 sale_amount                 ,
+      0 cloud_shop_qty              ,
+      0 cloud_shop_sale             ,
+      0 cloud_shop_profit           ,
+      0 super_shop_qty              ,
+      0 super_shop_sale             ,
+      0 super_shop_profit           ,
+      cloud_order_value             ,
+      super_order_value             ,
+      cloud_apply_qty               ,
+      super_apply_qty               ,
+      cloud_accept_qty              ,
+      super_accept_qty              ,
+      0 t_shipped_qty               ,
+      0 s_shipped_qty               ,
+      0 p_shipped_qty               ,
+      0 t_shipped_amount            ,
+      0 s_shipped_amount            ,
+      0 p_shipped_amount
+    from
+      temp.p_wms_07
+    union all
+    SELECT
+      send_location_code as location_code ,
+      product_code          product_code  ,
+      product_name          goodsname     ,
+      unit_name                           ,
+      bd_id                               ,
+      bd_name                             ,
+      dept_id                             ,
+      dept_name                           ,
+      catg_l_id                           ,
+      catg_l_name                         ,
+      is_self_product                     ,
+      0 qc_price                          ,
+      0 qc_qty                            ,
+      0 qc_amt                            ,
+      0 qm_price                          ,
+      0 qm_qty                            ,
+      0 qm_amt                            ,
+      0 p_qty                             ,
+      0 p_amount                          ,
+      0 cust_qty                          ,
+      0 cust_amount                       ,
+      0 t_qty                             ,
+      0 t_amount                          ,
+      0 sales_qty                         ,
+      0 sales_value                       ,
+      0 cost_value                        ,
+      0 middle_cost_value                 ,
+      0 profit                            ,
+      0 front_profit                      ,
+      0 price                             ,
+      0 order_qty                         ,
+      0 sale_amount                       ,
+      0 cloud_shop_qty                    ,
+      0 cloud_shop_sale                   ,
+      0 cloud_shop_profit                 ,
+      0 super_shop_qty                    ,
+      0 super_shop_sale                   ,
+      0 super_shop_profit                 ,
+      0 cloud_order_value                 ,
+      0 super_order_value                 ,
+      0 cloud_apply_qty                   ,
+      0 super_apply_qty                   ,
+      0 cloud_accept_qty                  ,
+      0 super_accept_qty                  ,
+      t_shipped_qty                       ,
+      s_shipped_qty                       ,
+      p_shipped_qty                       ,
+      t_shipped_amount                    ,
+      s_shipped_amount                    ,
+      p_shipped_amount
+    from
+      temp.p_wms_03
+  )
+  a
+  left outer join
+    (
+      select
+        shop_id ,
+        shop_name
+      from
+        dim.dim_shop_latest
+    )
+    b
+    on
+      a.location_code=b.shop_id
+GROUP BY
+  location_code  ,
+  shop_name      ,
+  a.product_code ,
+  goodsname      ,
+  unit_name      ,
+  a.bd_id        ,
+  a.bd_name      ,
+  a.dept_id      ,
+  a.dept_name    ,
+  a.catg_l_id    ,
+  a.catg_l_name  ,
+  a.is_self_product
+;
+
+-- 统计总数据
+select
+  a.location_code                                                               ,
+  a.shop_name                                                                   ,
+  a.is_self_product                                                             ,
+  qc_amt                                                                        ,
+  qm_amt                                                                        ,
+  p_amount                                                                      ,
+  t_amount                                                                      ,
+  cust_amout                                                                    ,
+  t_shipped_amount                                                              ,
+  p_shipped_amount                                                              ,
+  s_shipped_amount                                                              ,
+  super_shop_sale                                                               ,
+  cloud_shop_sale                                                               ,
+  big_sale                                                                      ,
+  round(super_shop_sale+ cloud_shop_sale + big_sale,2) as all_sale              ,
+  super_shop_profit                                                             ,
+  cloud_shop_profit                                                             ,
+  big_profit                                                                    ,
+  round(super_shop_profit + cloud_shop_profit + big_profit ,2)                                                      as all_profit    ,
+  super_shop_profit/super_shop_sale                                                                                 as super_prorate ,
+  cloud_shop_profit/cloud_shop_sale                                                                                 as cloud_prorate ,
+  big_profit       /big_sale                                                                                        as big_prorate   ,
+  round((super_shop_profit + cloud_shop_profit + big_profit )/(super_shop_sale+ cloud_shop_sale + big_sale)*1.00,4) as all_profit    ,
+  super_shop_sku                                                                                                                     ,
+  cloud_shop_sku                                                                                                                     ,
+  big_sku                                                                                                                            ,
+  super_order_value                                                                                                                  ,
+  cloud_order_value                                                                                                                  ,
+  big_order_value                                                                                                                    ,
+  round( super_order_value + cloud_order_value + big_order_value ,2) as all_order_value                                              ,
+  super_order_sku                                                                                                                    ,
+  cloud_order_sku                                                                                                                    ,
+  order_sku
+from
+  (
+    SELECT
+      location_code                                  ,
+      shop_name                                      ,
+      is_self_product                                ,
+      sum(qc_amt)           /10000 qc_amt            ,
+      sum(qm_amt)           /10000 qm_amt            ,
+      sum(p_amount)         /10000 p_amount          ,
+      sum(t_amount)         /10000 t_amount          ,
+      sum(cust_amount)      /10000 cust_amout        ,
+      sum( t_shipped_amount)/10000 t_shipped_amount  ,
+      sum( p_shipped_amount)/10000 p_shipped_amount  ,
+      sum( s_shipped_amount)/10000 s_shipped_amount  ,
+      sum(super_shop_sale)  /10000 super_shop_sale   ,
+      sum(cloud_shop_sale)  /10000 cloud_shop_sale   ,
+      sum(sales_value)      /10000 big_sale          ,
+      sum(super_shop_profit)/10000 super_shop_profit ,
+      sum(cloud_shop_profit)/10000 cloud_shop_profit ,
+      sum(profit)           /10000 big_profit        ,
+      count(DISTINCT
+      case
+        when super_shop_sale!=0
+          then goodsname
+      end )super_shop_sku ,
+      -- count(DISTINCT case when cloud_shop_sale!=0 then goodsname end )cloud_shop_sku,
+      -- count(DISTINCT case when sales_value!=0 then goodsname end )big_sku,
+      sum(super_order_value) /10000 super_order_value ,
+      sum(cloud_order_value) /10000 cloud_order_value ,
+      sum(sale_amount)       /10000 big_order_value
+      --count(DISTINCT case when sale_amount!=0 then goodsname end )order_sku
+    FROM
+      temp.p_wms_10
+    GROUP BY
+      location_code ,
+      shop_name     ,
+      is_self_product
+  )
+  a
+  left outer join
+    (
+      SELECT
+        location_code   ,
+        shop_name       ,
+        is_self_product ,
+        count(DISTINCT
+        case
+          when cloud_shop_sale!=0
+            then goodsname
+        end )cloud_shop_sku
+        --count(DISTINCT case when sales_value!=0 then goodsname end )big_sku
+      FROM
+        temp.p_wms_10
+      group by
+        location_code ,
+        shop_name     ,
+        is_self_product
+    )
+    b
+    on
+      a.location_code      =b.location_code
+      and a.shop_name      =b.shop_name
+      and a.is_self_product=b.is_self_product
+  left outer join
+    (
+      SELECT
+        location_code   ,
+        shop_name       ,
+        is_self_product ,
+        --count(DISTINCT case when cloud_shop_sale!=0 then goodsname end )cloud_shop_sku,
+        count(DISTINCT
+        case
+          when sales_value!=0
+            then goodsname
+        end )big_sku
+      FROM
+        temp.p_wms_10
+      group by
+        location_code ,
+        shop_name     ,
+        is_self_product
+    )
+    c
+    on
+      a.location_code      =c.location_code
+      and a.shop_name      =c.shop_name
+      and a.is_self_product=c.is_self_product
+  left outer join
+    (
+      SELECT
+        location_code   ,
+        shop_name       ,
+        is_self_product ,
+        -- count(DISTINCT case when cloud_shop_sale!=0 then goodsname end )cloud_shop_sku,
+        --count(DISTINCT case when sales_value!=0 then goodsname end )big_sku,
+        count(DISTINCT
+        case
+          when sale_amount!=0
+            then goodsname
+        end )order_sku
+      FROM
+        temp.p_wms_10
+      group by
+        location_code ,
+        shop_name     ,
+        is_self_product
+    )
+    d
+    on
+      a.location_code      =d.location_code
+      and a.shop_name      =d.shop_name
+      and a.is_self_product=d.is_self_product
+  left outer join
+    (
+      SELECT
+        location_code   ,
+        shop_name       ,
+        is_self_product ,
+        -- count(DISTINCT case when cloud_shop_sale!=0 then goodsname end )cloud_shop_sku,
+        --count(DISTINCT case when sales_value!=0 then goodsname end )big_sku,
+        count(DISTINCT
+        case
+          when super_order_value!=0
+            then goodsname
+        end )super_order_sku
+      FROM
+        temp.p_wms_10
+      group by
+        location_code ,
+        shop_name     ,
+        is_self_product
+    )
+    e
+    on
+      a.location_code      =e.location_code
+      and a.shop_name      =e.shop_name
+      and a.is_self_product=e.is_self_product
+  left outer join
+    (
+      SELECT
+        location_code   ,
+        shop_name       ,
+        is_self_product ,
+        --count(DISTINCT case when cloud_shop_sale!=0 then goodsname end )cloud_shop_sku,
+        --count(DISTINCT case when sales_value!=0 then goodsname end )big_sku,
+        count(DISTINCT
+        case
+          when cloud_order_value!=0
+            then goodsname
+        end )cloud_order_sku
+      FROM
+        temp.p_wms_10
+      group by
+        location_code ,
+        shop_name     ,
+        is_self_product
+    )
+    f
+    on
+      a.location_code      =f.location_code
+      and a.shop_name      =f.shop_name
+      and a.is_self_product=f.is_self_product
+;
+
+set hive.exec.reducers.max=1024;
+set mapreduce.job.reduces =100;
+-- 明细表
+SELECT
+  location_code                                                                                                                  ,
+  shop_name                                                                                                                      ,
+  product_code                                                                                                                   ,
+  goodsname                                                                                                                      ,
+  unit_name                                                                                                                      ,
+  bd_id                                                                                                                          ,
+  bd_name                                                                                                                        ,
+  dept_id                                                                                                                        ,
+  dept_name                                                                                                                      ,
+  catg_l_id                                                                                                                      ,
+  catg_l_name                                                                                                                    ,
+  is_self_product                                                                                                                ,
+  qc_price                                                                                                                       ,
+  qc_qty                                                                                                                         ,
+  qc_amt                                                                                                                         ,
+  qm_price                                                                                                                       ,
+  qm_qty                                                                                                                         ,
+  qm_amt                                                                                                                         ,
+  p_qty                                                                                                                          ,
+  p_amount                                                                                                                       ,
+  t_qty                                                                                                                          ,
+  t_amount                                                                                                                       ,
+  cust_qty                                                                                                                       ,
+  cust_amount                                                                                                                    ,
+  p_shipped_qty                                                                                                                  ,
+  p_shipped_amount                                                                                                               ,
+  t_shipped_qty                                                                                                                  ,
+  t_shipped_amount                                                                                                               ,
+  s_shipped_qty                                                                                                                  ,
+  s_shipped_amount                                                                                                               ,
+  round( sales_qty  +cloud_shop_qty+super_shop_qty,0)*1.00                                                   as all_sale_qty     ,
+  round( sales_value+cloud_shop_sale+super_shop_sale,2)*1.00                                                 as all_sale_value   ,
+  round( profit     +cloud_shop_profit+super_shop_profit,2)*1.00                                             as all_sale_profit  ,
+  round(( profit+cloud_shop_profit+super_shop_profit)/( sales_value+cloud_shop_sale+super_shop_sale),4)*1.00 as all_sale_prorate ,
+  sales_qty                                                                                                                      ,
+  sales_value                                                                                                                    ,
+  cost_value                                                                                                                     ,
+  middle_cost_value                                                                                                              ,
+  profit                                                                                                                         ,
+  profit/sales_value*1.00 as profit_rate                                                                                         ,
+  front_profit                                                                                                                   ,
+  front_profit/sales_value*1.00 front_prorate                                                                                    ,
+  cloud_shop_qty                                                                                                                 ,
+  cloud_shop_sale                                                                                                                ,
+  cloud_shop_profit                                                                                                              ,
+  cloud_shop_profit/cloud_shop_sale*1.00 cloud_shop_prorate                                                                      ,
+  super_shop_qty                                                                                                                 ,
+  super_shop_sale                                                                                                                ,
+  super_shop_profit                                                                                                              ,
+  super_shop_profit/super_shop_sale*1.00 super_shop_prorate                                                                      ,
+  cloud_order_value                                                                                                              ,
+  super_order_value                                                                                                              ,
+  sale_amount as big_order_value                                                                                                 ,
+  cloud_apply_qty                                                                                                                ,
+  super_apply_qty                                                                                                                ,
+  order_qty as big_order_qty                                                                                                     ,
+  cloud_accept_qty                                                                                                               ,
+  super_accept_qty
+FROM
+  temp.p_wms_10
+;
+
+-- select * from temp.p_wms_03 where product_code='900241';

@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------------分割线-------------------------------------------------------------------------------------------------
+-- 新类别课组临时表
+
+drop table csx_tmp.ads_temp_category_m_new;
+create table csx_tmp.ads_temp_category_m_new (
+division_code	string comment	'部类编号',
+division_name	string comment	'部类描述',
+purchase_group_code	string	comment '采购组编码',
+purchase_group_name	string	comment '采购组名称',
+category_large_code	string comment	'大类编号',
+category_large_name	string comment	'大类名称',
+category_middle_code	string  comment '中类编号',
+category_middle_name	string comment '中类名称',
+category_small_code	string	comment '小类编号',
+category_small_name	string	comment '小类名称'
+)comment '新类别课组表'
+ partitioned by (sdt	string	comment '日期分区')
+ row format delimited 
+ fields terminated by ','
+stored as textfile
+;
+
+

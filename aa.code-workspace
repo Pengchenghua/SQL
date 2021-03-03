@@ -1,0 +1,135 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "D:\\彩食鲜数据结构\\DBEAVER HIVE历史查询\\Scripts"
+    },
+    {
+      "path": "E:\\python"
+    }
+  ],
+  "settings": {
+    "editor.autoClosingQuotes": "always",
+    "editor.formatOnType": true,
+    "better-comments.highlightPlainText": true,
+    "comments.openPanel": "openOnSessionStart",
+    "prettier.jsxBracketSameLine": true,
+    "prettier.useTabs": true,
+    "editor.suggest.showWords": true,
+    "editor.suggest.showValues": true,
+    "editor.suggest.filterGraceful": true,
+    "editor.suggest.showFunctions": true,
+    "editor.suggest.showVariables": true,
+    "editor.suggest.showKeywords": true,
+    "editor.suggest.showFields": true,
+    "editor.suggest.showMethods": true,
+    
+    "javascript.suggest.alwaysAllWords":true,
+    " javascript.suggest.useCodeSnippetsOnMethodSuggest":true,
+    "editor.acceptSuggestionOnEnter": "on",
+    "editor.quickSuggestionsDelay": 10,
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.tabCompletion": "off",
+    // Controls whether sorting favours words that appear close to the cursor
+    "editor.suggest.localityBonus": true,
+
+    // Controls how suggestions are pre-selected when showing the suggest list
+    "editor.suggestSelection": "recentlyUsedByPrefix",
+
+    // Enable word based suggestions
+    "editor.wordBasedSuggestions": true,
+
+    // Enable parameter hints
+    "editor.parameterHints.enabled": true,
+    "editor.quickSuggestions":{
+        "other": true,
+        "comments": false,
+        "strings": false
+    },
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "merge-conflict.autoNavigateNextConflict.enabled": true,
+    "sqltools.autoOpenSessionFiles": false,
+    "sqltools.codelensLanguages": [
+      "sql",
+      "hive",
+      "hql"
+    ],
+    "sqltools.completionLanguages": [
+      "sql",
+      "hql",
+      "hive"
+    ],
+    "sqltools.format": {
+    "language": "sql"
+    },
+    "sqltools.formatLanguages": [
+      "sql",
+      "hql"
+    ],
+    "[hql]": {
+      "editor.defaultFormatter": "mtxr.sqltools"
+    },
+    "[sql]": {
+      "editor.defaultFormatter": "mtxr.sqltools"
+    },
+    "python.dataScience.jupyterLaunchTimeout": 240000,
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.python"
+    },
+    "files.autoSave": "afterDelay",
+    "sqltools.connections": [
+      {
+        "mysqlOptions": {
+          "authProtocol": "default"
+        },
+        "previewLimit": 50,
+        "server": "10.0.74.77",
+        "port": 7477,
+        "driver": "MySQL",
+        "name": "data_analysis_prd",
+        "database": "data_analysis_prd",
+        "username": "datanaprd_dml",
+        "password": "lHS6239ar%#s"
+      },
+      {
+        "mysqlOptions": {
+          "authProtocol": "default"
+        },
+        "previewLimit": 50,
+        "server": "10.0.74.77",
+        "port": 7477,
+        "driver": "MySQL",
+        "username": "datagroup_app",
+        "password": "Hoaerwsadr",
+        "name": "数据中心集市",
+        "database": "csx_data_market"
+      },
+      {
+        "mysqlOptions": {
+          "authProtocol": "default"
+        },
+        "previewLimit": 50,
+        "server": "10.0.74.154",
+        "port": 3306,
+        "driver": "MySQL",
+        "username": "all_select",
+        "password": "I&^lshoejfj02934",
+        "name": "业务数据同步",
+        "database": "data_sync"
+      }
+    ],
+    "editor.suggest.shareSuggestSelections": true,
+    "extension.uppercase": false
+  },
+  "extensions": {
+    "recommendations": [
+      "mtxr.sqltools"
+    ]
+  },
+  "recommendations": [
+    "mtxr.sqltools",
+    "guillaumeisabelle.gixdeko-comments"
+  ]
+}

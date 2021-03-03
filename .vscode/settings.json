@@ -1,0 +1,6 @@
+{
+    "git.autofetch": true,
+    "sql-formatter.dialect": "",
+    "editor.quickSuggestions": true,
+    "editor.suggest.snippetsPreventQuickSuggestions": false
+}

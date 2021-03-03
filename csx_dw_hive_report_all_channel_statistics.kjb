@@ -1,0 +1,1032 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<<<<<<< .mine
+<job>
+  <name>csx_dw_hive_report_all_channel_statistics</name>
+  <description/>
+  <extended_description/>
+  <job_version/>
+  <directory>&#x2f;</directory>
+  <created_user>-</created_user>
+  <created_date>2019&#x2f;07&#x2f;02 13&#x3a;53&#x3a;23.471</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2019&#x2f;07&#x2f;02 13&#x3a;53&#x3a;23.471</modified_date>
+    <parameters>
+    </parameters>
+  <connection>
+    <name>pengxiaohe_hive</name>
+    <server>10.1.53.19</server>
+    <type>HIVE2</type>
+    <access>Native</access>
+    <database>csx_dw</database>
+    <port>10001</port>
+    <username>pengxiaohe</username>
+    <password>Encrypted 2bea09bf029f6c2919a038a60ffb8878b</password>
+    <servername/>
+    <data_tablespace/>
+    <index_tablespace/>
+    <attributes>
+      <attribute><code>FORCE_IDENTIFIERS_TO_LOWERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>FORCE_IDENTIFIERS_TO_UPPERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>IS_CLUSTERED</code><attribute>N</attribute></attribute>
+      <attribute><code>PORT_NUMBER</code><attribute>10001</attribute></attribute>
+      <attribute><code>PRESERVE_RESERVED_WORD_CASE</code><attribute>Y</attribute></attribute>
+      <attribute><code>QUOTE_ALL_FIELDS</code><attribute>N</attribute></attribute>
+      <attribute><code>SUPPORTS_BOOLEAN_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>SUPPORTS_TIMESTAMP_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>USE_POOLING</code><attribute>N</attribute></attribute>
+    </attributes>
+  </connection>
+  <connection>
+    <name>pengxiaohe_impala</name>
+    <server>10.1.53.19</server>
+    <type>HIVE2</type>
+    <access>Native</access>
+    <database>b2b_tmp</database>
+    <port>21051</port>
+    <username>pengxiaohe</username>
+    <password>Encrypted 2bea09bf029f6c2919a038a60ffb8878b</password>
+    <servername/>
+    <data_tablespace/>
+    <index_tablespace/>
+    <attributes>
+      <attribute><code>FORCE_IDENTIFIERS_TO_LOWERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>FORCE_IDENTIFIERS_TO_UPPERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>IS_CLUSTERED</code><attribute>N</attribute></attribute>
+      <attribute><code>PORT_NUMBER</code><attribute>21051</attribute></attribute>
+      <attribute><code>PRESERVE_RESERVED_WORD_CASE</code><attribute>Y</attribute></attribute>
+      <attribute><code>QUOTE_ALL_FIELDS</code><attribute>N</attribute></attribute>
+      <attribute><code>SUPPORTS_BOOLEAN_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>SUPPORTS_TIMESTAMP_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>USE_POOLING</code><attribute>N</attribute></attribute>
+    </attributes>
+  </connection>
+    <slaveservers>
+    </slaveservers>
+      <job-log-table>
+        <connection/>
+        <schema/>
+        <table/>
+        <size_limit_lines/>
+        <interval/>
+        <timeout_days/>
+        <field>
+          <id>ID_JOB</id>
+          <enabled>Y</enabled>
+          <name>ID_JOB</name>
+        </field>
+        <field>
+          <id>CHANNEL_ID</id>
+          <enabled>Y</enabled>
+          <name>CHANNEL_ID</name>
+        </field>
+        <field>
+          <id>JOBNAME</id>
+          <enabled>Y</enabled>
+          <name>JOBNAME</name>
+        </field>
+        <field>
+          <id>STATUS</id>
+          <enabled>Y</enabled>
+          <name>STATUS</name>
+        </field>
+        <field>
+          <id>LINES_READ</id>
+          <enabled>Y</enabled>
+          <name>LINES_READ</name>
+        </field>
+        <field>
+          <id>LINES_WRITTEN</id>
+          <enabled>Y</enabled>
+          <name>LINES_WRITTEN</name>
+        </field>
+        <field>
+          <id>LINES_UPDATED</id>
+          <enabled>Y</enabled>
+          <name>LINES_UPDATED</name>
+        </field>
+        <field>
+          <id>LINES_INPUT</id>
+          <enabled>Y</enabled>
+          <name>LINES_INPUT</name>
+        </field>
+        <field>
+          <id>LINES_OUTPUT</id>
+          <enabled>Y</enabled>
+          <name>LINES_OUTPUT</name>
+        </field>
+        <field>
+          <id>LINES_REJECTED</id>
+          <enabled>Y</enabled>
+          <name>LINES_REJECTED</name>
+        </field>
+        <field>
+          <id>ERRORS</id>
+          <enabled>Y</enabled>
+          <name>ERRORS</name>
+        </field>
+        <field>
+          <id>STARTDATE</id>
+          <enabled>Y</enabled>
+          <name>STARTDATE</name>
+        </field>
+        <field>
+          <id>ENDDATE</id>
+          <enabled>Y</enabled>
+          <name>ENDDATE</name>
+        </field>
+        <field>
+          <id>LOGDATE</id>
+          <enabled>Y</enabled>
+          <name>LOGDATE</name>
+        </field>
+        <field>
+          <id>DEPDATE</id>
+          <enabled>Y</enabled>
+          <name>DEPDATE</name>
+        </field>
+        <field>
+          <id>REPLAYDATE</id>
+          <enabled>Y</enabled>
+          <name>REPLAYDATE</name>
+        </field>
+        <field>
+          <id>LOG_FIELD</id>
+          <enabled>Y</enabled>
+          <name>LOG_FIELD</name>
+        </field>
+        <field>
+          <id>EXECUTING_SERVER</id>
+          <enabled>N</enabled>
+          <name>EXECUTING_SERVER</name>
+        </field>
+        <field>
+          <id>EXECUTING_USER</id>
+          <enabled>N</enabled>
+          <name>EXECUTING_USER</name>
+        </field>
+        <field>
+          <id>START_JOB_ENTRY</id>
+          <enabled>N</enabled>
+          <name>START_JOB_ENTRY</name>
+        </field>
+        <field>
+          <id>CLIENT</id>
+          <enabled>N</enabled>
+          <name>CLIENT</name>
+        </field>
+      </job-log-table>
+      <jobentry-log-table>
+        <connection/>
+        <schema/>
+        <table/>
+        <timeout_days/>
+        <field>
+          <id>ID_BATCH</id>
+          <enabled>Y</enabled>
+          <name>ID_BATCH</name>
+        </field>
+        <field>
+          <id>CHANNEL_ID</id>
+          <enabled>Y</enabled>
+          <name>CHANNEL_ID</name>
+        </field>
+        <field>
+          <id>LOG_DATE</id>
+          <enabled>Y</enabled>
+          <name>LOG_DATE</name>
+        </field>
+        <field>
+          <id>JOBNAME</id>
+          <enabled>Y</enabled>
+          <name>TRANSNAME</name>
+        </field>
+        <field>
+          <id>JOBENTRYNAME</id>
+          <enabled>Y</enabled>
+          <name>STEPNAME</name>
+        </field>
+        <field>
+          <id>LINES_READ</id>
+          <enabled>Y</enabled>
+          <name>LINES_READ</name>
+        </field>
+        <field>
+          <id>LINES_WRITTEN</id>
+          <enabled>Y</enabled>
+          <name>LINES_WRITTEN</name>
+        </field>
+        <field>
+          <id>LINES_UPDATED</id>
+          <enabled>Y</enabled>
+          <name>LINES_UPDATED</name>
+        </field>
+        <field>
+          <id>LINES_INPUT</id>
+          <enabled>Y</enabled>
+          <name>LINES_INPUT</name>
+        </field>
+        <field>
+          <id>LINES_OUTPUT</id>
+          <enabled>Y</enabled>
+          <name>LINES_OUTPUT</name>
+        </field>
+        <field>
+          <id>LINES_REJECTED</id>
+          <enabled>Y</enabled>
+          <name>LINES_REJECTED</name>
+        </field>
+        <field>
+          <id>ERRORS</id>
+          <enabled>Y</enabled>
+          <name>ERRORS</name>
+        </field>
+        <field>
+          <id>RESULT</id>
+          <enabled>Y</enabled>
+          <name>RESULT</name>
+        </field>
+        <field>
+          <id>NR_RESULT_ROWS</id>
+          <enabled>Y</enabled>
+          <name>NR_RESULT_ROWS</name>
+        </field>
+        <field>
+          <id>NR_RESULT_FILES</id>
+          <enabled>Y</enabled>
+          <name>NR_RESULT_FILES</name>
+        </field>
+        <field>
+          <id>LOG_FIELD</id>
+          <enabled>N</enabled>
+          <name>LOG_FIELD</name>
+        </field>
+        <field>
+          <id>COPY_NR</id>
+          <enabled>N</enabled>
+          <name>COPY_NR</name>
+        </field>
+      </jobentry-log-table>
+      <channel-log-table>
+        <connection/>
+        <schema/>
+        <table/>
+        <timeout_days/>
+        <field>
+          <id>ID_BATCH</id>
+          <enabled>Y</enabled>
+          <name>ID_BATCH</name>
+        </field>
+        <field>
+          <id>CHANNEL_ID</id>
+          <enabled>Y</enabled>
+          <name>CHANNEL_ID</name>
+        </field>
+        <field>
+          <id>LOG_DATE</id>
+          <enabled>Y</enabled>
+          <name>LOG_DATE</name>
+        </field>
+        <field>
+          <id>LOGGING_OBJECT_TYPE</id>
+          <enabled>Y</enabled>
+          <name>LOGGING_OBJECT_TYPE</name>
+        </field>
+        <field>
+          <id>OBJECT_NAME</id>
+          <enabled>Y</enabled>
+          <name>OBJECT_NAME</name>
+        </field>
+        <field>
+          <id>OBJECT_COPY</id>
+          <enabled>Y</enabled>
+          <name>OBJECT_COPY</name>
+        </field>
+        <field>
+          <id>REPOSITORY_DIRECTORY</id>
+          <enabled>Y</enabled>
+          <name>REPOSITORY_DIRECTORY</name>
+        </field>
+        <field>
+          <id>FILENAME</id>
+          <enabled>Y</enabled>
+          <name>FILENAME</name>
+        </field>
+        <field>
+          <id>OBJECT_ID</id>
+          <enabled>Y</enabled>
+          <name>OBJECT_ID</name>
+        </field>
+        <field>
+          <id>OBJECT_REVISION</id>
+          <enabled>Y</enabled>
+          <name>OBJECT_REVISION</name>
+        </field>
+        <field>
+          <id>PARENT_CHANNEL_ID</id>
+          <enabled>Y</enabled>
+          <name>PARENT_CHANNEL_ID</name>
+        </field>
+        <field>
+          <id>ROOT_CHANNEL_ID</id>
+          <enabled>Y</enabled>
+          <name>ROOT_CHANNEL_ID</name>
+        </field>
+      </channel-log-table>
+   <pass_batchid>N</pass_batchid>
+   <shared_objects_file/>
+  <entries>
+    <entry>
+      <name>Start</name>
+      <description/>
+      <type>SPECIAL</type>
+      <start>Y</start>
+      <dummy>N</dummy>
+      <repeat>N</repeat>
+      <schedulerType>0</schedulerType>
+      <intervalSeconds>0</intervalSeconds>
+      <intervalMinutes>60</intervalMinutes>
+      <hour>12</hour>
+      <minutes>0</minutes>
+      <weekDay>1</weekDay>
+      <DayOfMonth>1</DayOfMonth>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>144</xloc>
+      <yloc>464</yloc>
+    </entry>
+    <entry>
+      <name>&#x6210;&#x529f;</name>
+      <description/>
+      <type>SUCCESS</type>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>832</xloc>
+      <yloc>208</yloc>
+    </entry>
+    <entry>
+      <name>report_all_channel_statistics</name>
+      <description/>
+      <type>SQL</type>
+      <sql>set mapreduce.job.queuename&#x3d;caishixian&#x3b;&#xa;&#xa;-- &#x5168;&#x6e20;&#x9053;&#x7edf;&#x8ba1;&#xa;drop table b2b_tmp.channel_sales_statistics&#x3b;&#xa;create temporary table b2b_tmp.channel_sales_statistics&#xa;as &#xa;select &#xa;channel_name,&#xa;supervisor,&#xa;sales_province,&#xa;sum&#x28;sales_value&#x29; as sales_value,&#xa;sum&#x28;ring_sales_value&#x29; as ring_sales_value,&#xa;sum&#x28;profit&#x29; as profit,&#xa;sum&#x28;order_customers&#x29; as order_customers&#xa;from &#xa;&#x28;&#xa;  select &#xa;    case when &#x28;qdflag&#x3d;&#x27;B&#x7aef;&#x27; or qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27;&#x29; then &#x27;&#x5927;&#x5ba2;&#x6237;&#x27; &#xa;      when qdflag &#x3d; &#x27;&#x4f9b;&#x5e94;&#x94fe;&#x28;S&#x7aef;&#x29;&#x27; then &#x27;S&#x7aef;&#x27;&#xa;      else qdflag end as channel_name,&#xa;    case when qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x27; else manage end as supervisor,&#xa;    case when qdflag&#x3d; &#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5e73;&#x53f0;&#x27; else dist end as sales_province,&#xa;    sum&#x28;xse&#x29; as sales_value,&#xa;    0 as ring_sales_value,&#xa;    sum&#x28;mle&#x29; as profit,&#xa;    count&#x28;distinct cust_id, sdt&#x29; as order_customers&#xa;  from csx_dw.sale_warzone01_detail_dtl &#xa;  where sdt &#x3e;&#x3d; regexp_replace&#x28;trunc&#x28;date_sub&#x28;current_date,1&#x29;,&#x27;MM&#x27;&#x29;,&#x27;-&#x27;,&#x27;&#x27;&#x29; and&#xa;    sdt &#x3c;&#x3d; regexp_replace&#x28;date_sub&#x28;current_date,1&#x29;,&#x27;-&#x27;,&#x27;&#x27;&#x29;&#xa;  group by case when qdflag&#x3d;&#x27;B&#x7aef;&#x27; or qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5927;&#x5ba2;&#x6237;&#x27;&#xa;    when qdflag &#x3d; &#x27;&#x4f9b;&#x5e94;&#x94fe;&#x28;S&#x7aef;&#x29;&#x27; then &#x27;S&#x7aef;&#x27;&#xa;    else qdflag end, case when qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x27; else manage end,&#xa;    case when qdflag&#x3d; &#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5e73;&#x53f0;&#x27; else dist end&#xa;  union all &#xa;  select &#xa;    case when qdflag&#x3d;&#x27;B&#x7aef;&#x27; or qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5927;&#x5ba2;&#x6237;&#x27;&#xa;      when qdflag &#x3d; &#x27;&#x4f9b;&#x5e94;&#x94fe;&#x28;S&#x7aef;&#x29;&#x27; then &#x27;S&#x7aef;&#x27;&#xa;      else qdflag end as channel_name,&#xa;    case when qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x27; else manage end as supervisor,&#xa;    case when qdflag&#x3d; &#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5e73;&#x53f0;&#x27; else dist end as sales_province,&#xa;    0 as sales_value,&#xa;    sum&#x28;xse&#x29; as ring_sales_value,&#xa;    0 profit,&#xa;    0 as order_customers &#xa;  from csx_dw.sale_warzone01_detail_dtl &#xa;  where sdt &#x3e;&#x3d; regexp_replace&#x28;add_months&#x28;trunc&#x28;date_sub&#x28;current_date,1&#x29;,&#x27;MM&#x27;&#x29;,-1&#x29;,&#x27;-&#x27;,&#x27;&#x27;&#x29; and&#xa;    sdt &#x3c;&#x3d; regexp_replace&#x28;add_months&#x28;date_sub&#x28;current_date,1&#x29;,-1&#x29;,&#x27;-&#x27;,&#x27;&#x27;&#x29;&#xa;  group by case when qdflag&#x3d;&#x27;B&#x7aef;&#x27; or qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5927;&#x5ba2;&#x6237;&#x27;&#xa;    when qdflag &#x3d; &#x27;&#x4f9b;&#x5e94;&#x94fe;&#x28;S&#x7aef;&#x29;&#x27; then &#x27;S&#x7aef;&#x27;&#xa;    else qdflag end, &#xa;    case when qdflag&#x3d;&#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x27; else manage end,&#xa;    case when qdflag&#x3d; &#x27;&#x5e73;&#x53f0;&#x27; then &#x27;&#x5e73;&#x53f0;&#x27; else dist end&#xa;&#x29;a group by channel_name, supervisor, sales_province&#x3b;&#xd;&#xa;set hive.exec.dynamic.partition.mode&#x3d;nonstrict&#x3b;&#xd;&#xa;set hive.exec.dynamic.partition&#x3d;true&#x3b;&#xd;&#xa;&#xd;&#xa;&#xd;&#xa;insert overwrite table csx_dw.report_all_channel_statistics partition&#x28;sdt&#x29;&#xd;&#xa;select &#xd;&#xa;  channel_name,&#xd;&#xa;  supervisor,&#xd;&#xa;  sales_province,&#xd;&#xa;  sales_value,&#xd;&#xa;  ring_increase_rate,&#xd;&#xa;  profit,&#xd;&#xa;  profit_rate,&#xd;&#xa;  order_customers,&#xd;&#xa;  regexp_replace&#x28;date_sub&#x28;current_date,1&#x29;,&#x27;-&#x27;,&#x27;&#x27;&#x29; as sdt&#xd;&#xa;from&#xd;&#xa;&#x28;&#xd;&#xa;  select &#xd;&#xa;    channel_name,&#xd;&#xa;    &#x27;&#x27; as supervisor,&#xd;&#xa;    sales_province,&#xd;&#xa;    sales_value,&#xd;&#xa;    cast&#x28;&#x28;sales_value - ring_sales_value&#x29;&#x2f;ring_sales_value as decimal&#x28;26, 6&#x29;&#x29; as ring_increase_rate,&#xd;&#xa;    profit,&#xd;&#xa;    cast&#x28;profit&#x2f;sales_value as decimal&#x28;26, 6&#x29;&#x29; as profit_rate,&#xd;&#xa;    order_customers&#xd;&#xa;  from b2b_tmp.channel_sales_statistics where channel_name in&#x28;&#x27;M&#x7aef;&#x27;,&#x27;B&#x7aef;&#x27;&#x29;&#xd;&#xa;  union all&#xd;&#xa;  select &#xd;&#xa;    &#x27;all&#x27; as channel_name,&#xd;&#xa;    &#x27;&#x27; as supervisor,&#xd;&#xa;    &#x27;all&#x27; as sales_province,&#xd;&#xa;    sum&#x28;sales_value&#x29; as sales_value,&#xd;&#xa;    cast&#x28;&#x28;sum&#x28;sales_value&#x29; - sum&#x28;ring_sales_value&#x29;&#x29;&#x2f;sum&#x28;ring_sales_value&#x29; as decimal&#x28;26, 6&#x29;&#x29; &#xd;&#xa;      as ring_increase_rate,&#xd;&#xa;    sum&#x28;profit&#x29; as profit,&#xd;&#xa;    cast&#x28;sum&#x28;profit&#x29;&#x2f;sum&#x28;sales_value&#x29; as decimal&#x28;26, 6&#x29;&#x29; as profit_rate,&#xd;&#xa;    sum&#x28;order_customers&#x29; as order_customers&#xd;&#xa;  from b2b_tmp.channel_sales_statistics &#xd;&#xa;  union all&#xd;&#xa;  select &#xd;&#xa;    channel_name,&#xd;&#xa;    &#x27;&#x27; as supervisor,&#xd;&#xa;    &#x27;all&#x27; as sales_province,&#xd;&#xa;    sum&#x28;sales_value&#x29; as sales_value,&#xd;&#xa;    cast&#x28;&#x28;sum&#x28;sales_value&#x29; - sum&#x28;ring_sales_value&#x29;&#x29;&#x2f;sum&#x28;ring_sales_value&#x29; as decimal&#x28;26, 6&#x29;&#x29; &#xd;&#xa;      as ring_increase_rate,&#xd;&#xa;    sum&#x28;profit&#x29; as profit,&#xd;&#xa;    cast&#x28;sum&#x28;profit&#x29;&#x2f;sum&#x28;sales_value&#x29; as decimal&#x28;26, 6&#x29;&#x29; as profit_rate,&#xd;&#xa;    sum&#x28;order_customers&#x29; as order_customers&#xd;&#xa;  from b2b_tmp.channel_sales_statistics&#xd;&#xa;  group by channel_name &#xd;&#xa;&#x29;a &#xd;&#xa;order by case when channel_name&#x3d;&#x27;all&#x27; then 1 &#xd;&#xa;  when channel_name&#x3d;&#x27;M&#x7aef;&#x27;then 2 &#xd;&#xa;  when channel_name&#x3d;&#x27;&#x5927;&#x5ba2;&#x6237;&#x27; then 3 &#xd;&#xa;  when channel_name&#x3d;&#x27;&#x5927;&#x5b97;&#x27;then 4 &#xd;&#xa;  when channel_name like &#x27;&#x25;S&#x25;&#x27; then 5 else 6 end, sales_province&#x3b;</sql>
+      <useVariableSubstitution>T</useVariableSubstitution>
+      <sqlfromfile>F</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>F</sendOneStatement>
+      <connection>pengxiaohe_hive</connection>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>416</xloc>
+      <yloc>192</yloc>
+    </entry>
+    <entry>
+      <name>refresh_metadata</name>
+      <description/>
+      <type>SQL</type>
+      <sql>refresh csx_dw.report_all_channel_statistics&#x3b;</sql>
+      <useVariableSubstitution>F</useVariableSubstitution>
+      <sqlfromfile>F</sqlfromfile>
+      <sqlfilename/>
+      <sendOneStatement>F</sendOneStatement>
+      <connection>pengxiaohe_impala</connection>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>624</xloc>
+      <yloc>512</yloc>
+    </entry>
+  </entries>
+  <hops>
+    <hop>
+      <from>Start</from>
+      <to>report_all_channel_statistics</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>report_all_channel_statistics</from>
+      <to>refresh_metadata</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>refresh_metadata</from>
+      <to>&#x6210;&#x529f;</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+  </hops>
+  <notepads>
+  </notepads>
+</job>
+=======
+<job>
+  <name>csx_dw_hive_report_all_channel_statistics</name>
+  <description />
+  <extended_description />
+  <job_version />
+  <directory>/</directory>
+  <created_user>-</created_user>
+  <created_date>2019/07/02 13:53:23.471</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2019/07/02 13:53:23.471</modified_date>
+  <parameters>
+    </parameters>
+  <connection>
+    <name>pengxiaohe_hive</name>
+    <server>10.1.53.19</server>
+    <type>HIVE2</type>
+    <access>Native</access>
+    <database>csx_dw</database>
+    <port>10001</port>
+    <username>pengxiaohe</username>
+    <password>Encrypted 2bea09bf029f6c2919a038a60ffb8878b</password>
+    <servername />
+    <data_tablespace />
+    <index_tablespace />
+    <attributes>
+      <attribute>
+        <code>FORCE_IDENTIFIERS_TO_LOWERCASE</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>FORCE_IDENTIFIERS_TO_UPPERCASE</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>IS_CLUSTERED</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>PORT_NUMBER</code>
+        <attribute>10001</attribute>
+      </attribute>
+      <attribute>
+        <code>PRESERVE_RESERVED_WORD_CASE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>QUOTE_ALL_FIELDS</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>SUPPORTS_BOOLEAN_DATA_TYPE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>SUPPORTS_TIMESTAMP_DATA_TYPE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>USE_POOLING</code>
+        <attribute>N</attribute>
+      </attribute>
+    </attributes>
+  </connection>
+  <connection>
+    <name>pengxiaohe_impala</name>
+    <server>10.1.53.19</server>
+    <type>HIVE2</type>
+    <access>Native</access>
+    <database>b2b_tmp</database>
+    <port>21051</port>
+    <username>pengxiaohe</username>
+    <password>Encrypted 2bea09bf029f6c2919a038a60ffb8878b</password>
+    <servername />
+    <data_tablespace />
+    <index_tablespace />
+    <attributes>
+      <attribute>
+        <code>FORCE_IDENTIFIERS_TO_LOWERCASE</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>FORCE_IDENTIFIERS_TO_UPPERCASE</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>IS_CLUSTERED</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>PORT_NUMBER</code>
+        <attribute>21051</attribute>
+      </attribute>
+      <attribute>
+        <code>PRESERVE_RESERVED_WORD_CASE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>QUOTE_ALL_FIELDS</code>
+        <attribute>N</attribute>
+      </attribute>
+      <attribute>
+        <code>SUPPORTS_BOOLEAN_DATA_TYPE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>SUPPORTS_TIMESTAMP_DATA_TYPE</code>
+        <attribute>Y</attribute>
+      </attribute>
+      <attribute>
+        <code>USE_POOLING</code>
+        <attribute>N</attribute>
+      </attribute>
+    </attributes>
+  </connection>
+  <slaveservers>
+    </slaveservers>
+  <job-log-table>
+    <connection />
+    <schema />
+    <table />
+    <size_limit_lines />
+    <interval />
+    <timeout_days />
+    <field>
+      <id>ID_JOB</id>
+      <enabled>Y</enabled>
+      <name>ID_JOB</name>
+    </field>
+    <field>
+      <id>CHANNEL_ID</id>
+      <enabled>Y</enabled>
+      <name>CHANNEL_ID</name>
+    </field>
+    <field>
+      <id>JOBNAME</id>
+      <enabled>Y</enabled>
+      <name>JOBNAME</name>
+    </field>
+    <field>
+      <id>STATUS</id>
+      <enabled>Y</enabled>
+      <name>STATUS</name>
+    </field>
+    <field>
+      <id>LINES_READ</id>
+      <enabled>Y</enabled>
+      <name>LINES_READ</name>
+    </field>
+    <field>
+      <id>LINES_WRITTEN</id>
+      <enabled>Y</enabled>
+      <name>LINES_WRITTEN</name>
+    </field>
+    <field>
+      <id>LINES_UPDATED</id>
+      <enabled>Y</enabled>
+      <name>LINES_UPDATED</name>
+    </field>
+    <field>
+      <id>LINES_INPUT</id>
+      <enabled>Y</enabled>
+      <name>LINES_INPUT</name>
+    </field>
+    <field>
+      <id>LINES_OUTPUT</id>
+      <enabled>Y</enabled>
+      <name>LINES_OUTPUT</name>
+    </field>
+    <field>
+      <id>LINES_REJECTED</id>
+      <enabled>Y</enabled>
+      <name>LINES_REJECTED</name>
+    </field>
+    <field>
+      <id>ERRORS</id>
+      <enabled>Y</enabled>
+      <name>ERRORS</name>
+    </field>
+    <field>
+      <id>STARTDATE</id>
+      <enabled>Y</enabled>
+      <name>STARTDATE</name>
+    </field>
+    <field>
+      <id>ENDDATE</id>
+      <enabled>Y</enabled>
+      <name>ENDDATE</name>
+    </field>
+    <field>
+      <id>LOGDATE</id>
+      <enabled>Y</enabled>
+      <name>LOGDATE</name>
+    </field>
+    <field>
+      <id>DEPDATE</id>
+      <enabled>Y</enabled>
+      <name>DEPDATE</name>
+    </field>
+    <field>
+      <id>REPLAYDATE</id>
+      <enabled>Y</enabled>
+      <name>REPLAYDATE</name>
+    </field>
+    <field>
+      <id>LOG_FIELD</id>
+      <enabled>Y</enabled>
+      <name>LOG_FIELD</name>
+    </field>
+    <field>
+      <id>EXECUTING_SERVER</id>
+      <enabled>N</enabled>
+      <name>EXECUTING_SERVER</name>
+    </field>
+    <field>
+      <id>EXECUTING_USER</id>
+      <enabled>N</enabled>
+      <name>EXECUTING_USER</name>
+    </field>
+    <field>
+      <id>START_JOB_ENTRY</id>
+      <enabled>N</enabled>
+      <name>START_JOB_ENTRY</name>
+    </field>
+    <field>
+      <id>CLIENT</id>
+      <enabled>N</enabled>
+      <name>CLIENT</name>
+    </field>
+  </job-log-table>
+  <jobentry-log-table>
+    <connection />
+    <schema />
+    <table />
+    <timeout_days />
+    <field>
+      <id>ID_BATCH</id>
+      <enabled>Y</enabled>
+      <name>ID_BATCH</name>
+    </field>
+    <field>
+      <id>CHANNEL_ID</id>
+      <enabled>Y</enabled>
+      <name>CHANNEL_ID</name>
+    </field>
+    <field>
+      <id>LOG_DATE</id>
+      <enabled>Y</enabled>
+      <name>LOG_DATE</name>
+    </field>
+    <field>
+      <id>JOBNAME</id>
+      <enabled>Y</enabled>
+      <name>TRANSNAME</name>
+    </field>
+    <field>
+      <id>JOBENTRYNAME</id>
+      <enabled>Y</enabled>
+      <name>STEPNAME</name>
+    </field>
+    <field>
+      <id>LINES_READ</id>
+      <enabled>Y</enabled>
+      <name>LINES_READ</name>
+    </field>
+    <field>
+      <id>LINES_WRITTEN</id>
+      <enabled>Y</enabled>
+      <name>LINES_WRITTEN</name>
+    </field>
+    <field>
+      <id>LINES_UPDATED</id>
+      <enabled>Y</enabled>
+      <name>LINES_UPDATED</name>
+    </field>
+    <field>
+      <id>LINES_INPUT</id>
+      <enabled>Y</enabled>
+      <name>LINES_INPUT</name>
+    </field>
+    <field>
+      <id>LINES_OUTPUT</id>
+      <enabled>Y</enabled>
+      <name>LINES_OUTPUT</name>
+    </field>
+    <field>
+      <id>LINES_REJECTED</id>
+      <enabled>Y</enabled>
+      <name>LINES_REJECTED</name>
+    </field>
+    <field>
+      <id>ERRORS</id>
+      <enabled>Y</enabled>
+      <name>ERRORS</name>
+    </field>
+    <field>
+      <id>RESULT</id>
+      <enabled>Y</enabled>
+      <name>RESULT</name>
+    </field>
+    <field>
+      <id>NR_RESULT_ROWS</id>
+      <enabled>Y</enabled>
+      <name>NR_RESULT_ROWS</name>
+    </field>
+    <field>
+      <id>NR_RESULT_FILES</id>
+      <enabled>Y</enabled>
+      <name>NR_RESULT_FILES</name>
+    </field>
+    <field>
+      <id>LOG_FIELD</id>
+      <enabled>N</enabled>
+      <name>LOG_FIELD</name>
+    </field>
+    <field>
+      <id>COPY_NR</id>
+      <enabled>N</enabled>
+      <name>COPY_NR</name>
+    </field>
+  </jobentry-log-table>
+  <channel-log-table>
+    <connection />
+    <schema />
+    <table />
+    <timeout_days />
+    <field>
+      <id>ID_BATCH</id>
+      <enabled>Y</enabled>
+      <name>ID_BATCH</name>
+    </field>
+    <field>
+      <id>CHANNEL_ID</id>
+      <enabled>Y</enabled>
+      <name>CHANNEL_ID</name>
+    </field>
+    <field>
+      <id>LOG_DATE</id>
+      <enabled>Y</enabled>
+      <name>LOG_DATE</name>
+    </field>
+    <field>
+      <id>LOGGING_OBJECT_TYPE</id>
+      <enabled>Y</enabled>
+      <name>LOGGING_OBJECT_TYPE</name>
+    </field>
+    <field>
+      <id>OBJECT_NAME</id>
+      <enabled>Y</enabled>
+      <name>OBJECT_NAME</name>
+    </field>
+    <field>
+      <id>OBJECT_COPY</id>
+      <enabled>Y</enabled>
+      <name>OBJECT_COPY</name>
+    </field>
+    <field>
+      <id>REPOSITORY_DIRECTORY</id>
+      <enabled>Y</enabled>
+      <name>REPOSITORY_DIRECTORY</name>
+    </field>
+    <field>
+      <id>FILENAME</id>
+      <enabled>Y</enabled>
+      <name>FILENAME</name>
+    </field>
+    <field>
+      <id>OBJECT_ID</id>
+      <enabled>Y</enabled>
+      <name>OBJECT_ID</name>
+    </field>
+    <field>
+      <id>OBJECT_REVISION</id>
+      <enabled>Y</enabled>
+      <name>OBJECT_REVISION</name>
+    </field>
+    <field>
+      <id>PARENT_CHANNEL_ID</id>
+      <enabled>Y</enabled>
+      <name>PARENT_CHANNEL_ID</name>
+    </field>
+    <field>
+      <id>ROOT_CHANNEL_ID</id>
+      <enabled>Y</enabled>
+      <name>ROOT_CHANNEL_ID</name>
+    </field>
+  </channel-log-table>
+  <pass_batchid>N</pass_batchid>
+  <shared_objects_file />
+  <entries>
+    <entry>
+      <name>Start</name>
+      <description />
+      <type>SPECIAL</type>
+      <start>Y</start>
+      <dummy>N</dummy>
+      <repeat>N</repeat>
+      <schedulerType>0</schedulerType>
+      <intervalSeconds>0</intervalSeconds>
+      <intervalMinutes>60</intervalMinutes>
+      <hour>12</hour>
+      <minutes>0</minutes>
+      <weekDay>1</weekDay>
+      <DayOfMonth>1</DayOfMonth>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>144</xloc>
+      <yloc>464</yloc>
+    </entry>
+    <entry>
+      <name>成功</name>
+      <description />
+      <type>SUCCESS</type>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>832</xloc>
+      <yloc>208</yloc>
+    </entry>
+    <entry>
+      <name>report_all_channel_statistics</name>
+      <description />
+      <type>SQL</type>
+      <sql>set mapreduce.job.queuename=caishixian;
+
+-- 全渠道统计
+drop table b2b_tmp.channel_sales_statistics;
+create temporary table b2b_tmp.channel_sales_statistics
+as 
+select 
+channel_name,
+supervisor,
+sales_province,
+sum(sales_value) as sales_value,
+sum(ring_sales_value) as ring_sales_value,
+sum(profit) as profit,
+sum(order_customers) as order_customers
+from 
+(
+  select 
+    case when (qdflag='B端' or qdflag='平台') then '大客户' 
+      when qdflag = '供应链(S端)' then '供应链'
+      when qdflag='M端' then '商超'
+      else qdflag end as channel_name,
+    case when qdflag='平台' then '' else manage end as supervisor,
+    case when qdflag= '平台' then '平台' else dist end as sales_province,
+    sum(xse) as sales_value,
+    0 as ring_sales_value,
+    sum(mle) as profit,
+    count(distinct cust_id, sdt) as order_customers
+  from csx_dw.sale_warzone01_detail_dtl 
+  where sdt >= regexp_replace(trunc(date_sub(current_date,1),'MM'),'-','') and
+    sdt &lt;= regexp_replace(date_sub(current_date,1),'-','')
+  group by  case when (qdflag='B端' or qdflag='平台') then '大客户' 
+      when qdflag = '供应链(S端)' then '供应链'
+      when qdflag='M端' then '商超'
+      else qdflag end, 
+    case when qdflag='平台' then '' else manage end,
+    case when qdflag= '平台' then '平台' else dist end
+  union all 
+  select 
+    case when (qdflag='B端' or qdflag='平台') then '大客户' 
+      when qdflag = '供应链(S端)' then '供应链'
+      when qdflag='M端' then '商超'
+      else qdflag end as channel_name,
+    case when qdflag='平台' then '' else manage end as supervisor,
+    case when qdflag= '平台' then '平台' else dist end as sales_province,
+    0 as sales_value,
+    sum(xse) as ring_sales_value,
+    0 profit,
+    0 as order_customers 
+  from csx_dw.sale_warzone01_detail_dtl 
+  where sdt >= regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),-1),'-','') and
+    sdt &lt;= regexp_replace(add_months(date_sub(current_date,1),-1),'-','')
+  group by case when (qdflag='B端' or qdflag='平台') then '大客户' 
+      when qdflag = '供应链(S端)' then '供应链'
+      when qdflag='M端' then '商超'
+      else qdflag end, 
+    case when qdflag='平台' then '' else manage end,
+    case when qdflag= '平台' then '平台' else dist end
+)a group by channel_name, supervisor, sales_province;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+insert overwrite table csx_dw.report_all_channel_statistics partition(sdt)
+select 
+  channel_name,
+  supervisor,
+  sales_province,
+  sales_value,
+  ring_increase_rate,
+  profit,
+  profit_rate,
+  order_customers,
+  regexp_replace(date_sub(current_date,1),'-','') as sdt
+from
+(
+  select 
+    channel_name,
+    '' as supervisor,
+    sales_province,
+    sales_value,
+    cast((sales_value - ring_sales_value)/ring_sales_value as decimal(26, 6)) as ring_increase_rate,
+    profit,
+    cast(profit/sales_value as decimal(26, 6)) as profit_rate,
+    order_customers
+  from b2b_tmp.channel_sales_statistics
+  union all
+  select 
+    'all' as channel_name,
+    '' as supervisor,
+    'all' as sales_province,
+    sum(sales_value) as sales_value,
+    cast((sum(sales_value) - sum(ring_sales_value))/sum(ring_sales_value) as decimal(26, 6)) 
+      as ring_increase_rate,
+    sum(profit) as profit,
+    cast(sum(profit)/sum(sales_value) as decimal(26, 6)) as profit_rate,
+    sum(order_customers) as order_customers
+  from b2b_tmp.channel_sales_statistics
+  union all
+  select 
+    channel_name,
+    '' as supervisor,
+    'all' as sales_province,
+    sum(sales_value) as sales_value,
+    cast((sum(sales_value) - sum(ring_sales_value))/sum(ring_sales_value) as decimal(26, 6)) 
+      as ring_increase_rate,
+    sum(profit) as profit,
+    cast(sum(profit)/sum(sales_value) as decimal(26, 6)) as profit_rate,
+    sum(order_customers) as order_customers
+  from b2b_tmp.channel_sales_statistics
+  group by channel_name 
+)a
+order by case when channel_name='all' then 1 
+  when channel_name='商超'then 2 
+  when channel_name='大客户' then 3 
+  when channel_name='大宗'then 4 
+  when channel_name='供应链' then 5 else 6 end, sales_province;</sql>
+      <useVariableSubstitution>T</useVariableSubstitution>
+      <sqlfromfile>F</sqlfromfile>
+      <sqlfilename />
+      <sendOneStatement>F</sendOneStatement>
+      <connection>pengxiaohe_hive</connection>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>416</xloc>
+      <yloc>192</yloc>
+    </entry>
+    <entry>
+      <name>refresh_metadata</name>
+      <description />
+      <type>SQL</type>
+      <sql>refresh csx_dw.report_all_channel_statistics;</sql>
+      <useVariableSubstitution>F</useVariableSubstitution>
+      <sqlfromfile>F</sqlfromfile>
+      <sqlfilename />
+      <sendOneStatement>F</sendOneStatement>
+      <connection>pengxiaohe_impala</connection>
+      <parallel>N</parallel>
+      <draw>Y</draw>
+      <nr>0</nr>
+      <xloc>624</xloc>
+      <yloc>512</yloc>
+    </entry>
+  </entries>
+  <hops>
+    <hop>
+      <from>Start</from>
+      <to>report_all_channel_statistics</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>report_all_channel_statistics</from>
+      <to>refresh_metadata</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>refresh_metadata</from>
+      <to>成功</to>
+      <from_nr>0</from_nr>
+      <to_nr>0</to_nr>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+  </hops>
+  <notepads>
+  </notepads>
+</job>
+>>>>>>> .r18802

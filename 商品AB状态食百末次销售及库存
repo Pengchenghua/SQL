@@ -1,0 +1,344 @@
+-- 最后一次销售日期及销售金额
+DROP TABLE IF EXISTS temp.p_sale_01;
+CREATE TEMPORARY TABLE IF NOT EXISTS temp.p_sale_01 AS
+SELECT
+  a.channel_name,
+  province_code,
+  province_name,
+  a.shop_id,
+  shop_name,
+  a.goods_code,
+  goods_name,
+  dept_id,
+  dept_name,
+  category_code,
+  category_name,
+  category_large_code,
+  category_large_name,
+  category_middle_code,
+  category_middle_name,
+  category_small_code,
+  category_small_name,
+  sdt,
+  sales_qty,
+  sales_value
+FROM csx_dw.sale_goods_m1 a
+JOIN (
+    SELECT
+      channel_name,
+      shop_id,
+      goods_code,
+      max(sdt) max_sdt
+    FROM csx_dw.sale_goods_m
+    WHERE
+      1 = 1
+    GROUP BY
+      channel_name,
+      shop_id,
+      goods_code
+  ) AS b ON a.shop_id = b.shop_id
+  AND a.channel_name = b.channel_name
+  AND a.goods_code = b.goods_code
+  AND sdt = b.max_sdt;
+-- 末次入库日期与数据  旧系统
+  DROP TABLE IF EXISTS temp.p_sale_02;
+CREATE TEMPORARY TABLE IF NOT EXISTS temp.p_sale_02 AS
+SELECT
+  a.shop_id,
+  shop_name,
+  b.prov_code,
+  b.prov_name,
+  a.goodsid,
+  in_qty,
+  in_val,
+  max_sdt
+FROM (
+    SELECT
+      a.shop_id,
+      a.goodsid,
+      sum(a.pur_qty_in) in_qty,
+      sum(a.tax_pur_val_in) in_val,
+      plan_delivery_date max_sdt
+    FROM b2b.ord_orderflow_t a
+    join (
+        SELECT
+          a.shop_id,
+          a.goodsid,
+          max(a.plan_delivery_date) max_sdt
+        FROM b2b.ord_orderflow_t a
+        WHERE
+          a.ordertype IN (
+            '配送',
+            '直送',
+            '直通',
+            '货到即配',
+            'UD'
+          )
+          AND a.delivery_finish_flag = 'X'
+          and a.shop_id like 'W%'
+        GROUP BY
+          a.shop_id,
+          a.goodsid
+      ) b on a.shop_id = b.shop_id
+      and a.goodsid = b.goodsid
+      and a.plan_delivery_date = b.max_sdt
+    GROUP BY
+      a.shop_id,
+      plan_delivery_date,
+      a.goodsid
+    union all
+    SELECT
+      a.location_code shop_id,
+      a.product_code goodsid,
+      sum(a.txn_qty) in_qty,
+      sum(a.txn_amt) in_val,
+      max_date as max_sdt
+    FROM csx_ods.wms_accounting_stock_detail_view_ods a
+    JOIN (
+        SELECT
+          location_code,
+          a.product_code,
+          regexp_replace(to_date(max(a.posting_time)), '-', '') AS max_date
+        FROM csx_ods.wms_accounting_stock_detail_view_ods a
+        WHERE
+          a.move_type IN ('101A', '102A')
+        GROUP BY
+          a.location_code,
+          a.product_code
+      ) b ON a.location_code = b.location_code
+      AND a.product_code = b.product_code
+      AND regexp_replace(
+        to_date(a.posting_time),
+        '-',
+        ''
+      ) = b.max_date
+    GROUP BY
+      a.location_code,
+      a.product_code,
+      max_date
+  ) a
+JOIN dim.dim_shop_latest b ON a.shop_id = b.shop_id
+  AND b.sales_dist_new BETWEEN '600000'
+  AND '690000';
+-- 新旧系统末次入库合并 查询最近日期
+  DROP TABLE IF EXISTS temp.p_sale_03;
+CREATE TEMPORARY TABLE IF NOT EXISTS temp.p_sale_03 AS
+select
+  a.shop_id,
+  a.goodsid,
+  in_qty,
+  in_val,
+  a.max_sdt
+from temp.p_sale_02 a
+join (
+    select
+      a.shop_id,
+      a.goodsid,
+      max(max_sdt) max_sdt
+    from temp.p_sale_02 a
+    group by
+      a.shop_id,
+      a.goodsid
+  ) b on a.max_sdt = b.max_sdt
+  and a.shop_id = b.shop_id
+  and a.goodsid = b.goodsid;
+-- 库存查询
+set
+  edate = '2020-03-15';
+DROP TABLE IF EXISTS temp.p_sale_04;
+CREATE TEMPORARY TABLE IF NOT EXISTS temp.p_sale_04 AS
+select
+  shop_id,
+  goodsid,
+  sum(inv_qty) inv_qty,
+  sum(inv_amt) inv_amt,
+  sum(
+    case
+      when sdt = regexp_replace($ { hiveconf :edate }, '-', '') then inv_qty
+    end
+  ) qm_qty,
+  sum(
+    case
+      when sdt = regexp_replace($ { hiveconf :edate }, '-', '') then inv_amt
+    end
+  ) qm_amt
+from (
+    SELECT
+      shop_id,
+      goodsid,
+      sdt,
+      coalesce(
+        sum(
+          case
+            when sales_dist = '612000'
+            and sdt <= '20191018' then inv_qty
+            when sales_dist != '612000' then inv_qty
+          end
+        ),
+        0
+      ) inv_qty,
+      coalesce(
+        sum(
+          case
+            when sales_dist = '612000'
+            and sdt <= '20191018' then inv_amt
+            when sales_dist != '612000' then inv_amt
+          end
+        ),
+        0
+      ) inv_amt
+    FROM csx_dw.inv_sap_setl_dly_fct
+    WHERE
+      sdt >= regexp_replace(trunc($ { hiveconf :edate }, 'MM'), '-', '') -- and goodsid='1012150' and shop_id='W0A3'
+      AND sales_dist IN(
+        '610000',
+        '612000',
+        '611000',
+        '615000',
+        '616000',
+        '617000',
+        '618000',
+        '619000',
+        '620000',
+        '600000'
+      )
+      AND inv_place NOT IN ('B997', 'B9999')
+    GROUP BY
+      shop_id,
+      goodsid,
+      sdt
+    union all
+    SELECT
+      a.location_code as shop_id,
+      a.product_code goodsid,
+      a.sdt,
+      -- a.reservoir_area_code,
+      --a.reservoir_area_name,
+      sum(after_qty) inv_qty,
+      sum(after_amt) inv_amt
+    FROM (
+        SELECT
+          product_code,
+          location_code,
+          shipper_code,
+          after_qty,
+          after_amt,
+          after_price,
+          regexp_replace(to_date(posting_time), '-', '') posting_time,
+          id,
+          reservoir_area_code,
+          reservoir_area_name,
+          sdt
+        FROM csx_ods.wms_accounting_stock_detail_view_ods
+        WHERE
+          sdt >= regexp_replace(trunc($ { hiveconf :edate }, 'MM'), '-', '')
+      ) a
+    JOIN (
+        SELECT
+          product_code,
+          location_code,
+          shipper_code,
+          max(id) max_id,
+          reservoir_area_code,
+          reservoir_area_name,
+          sdt
+        FROM csx_ods.wms_accounting_stock_detail_view_ods
+        WHERE
+          regexp_replace(to_date(update_time), '-', '') >= regexp_replace(trunc($ { hiveconf :edate }, 'MM'), '-', '')
+          and regexp_replace(to_date(update_time), '-', '') <= regexp_replace($ { hiveconf :edate }, '-', '')
+          and reservoir_area_code not in ('PD01', 'PD02', 'TS01')
+          AND sdt >= regexp_replace(trunc($ { hiveconf :edate }, 'MM'), '-', '')
+          and sdt <= regexp_replace($ { hiveconf :edate }, '-', '')
+        GROUP BY
+          product_code,
+          location_code,
+          shipper_code,
+          reservoir_area_code,
+          reservoir_area_name,
+          sdt
+      ) b ON a.product_code = b.product_code
+      AND a.location_code = b.location_code
+      AND a.shipper_code = b.shipper_code
+      AND A.reservoir_area_code = b.reservoir_area_code
+      AND a.id = b.max_id
+      AND a.sdt = b.sdt -- and a.product_code='1012150' and a.location_code='W0A3'
+    GROUP BY
+      a.product_code,
+      a.location_code,
+      a.sdt
+  ) a
+group by
+  shop_id,
+  goodsid;
+--汇总数据
+  drop table temp.p_sale_09;
+CREATE table temp.p_sale_09 as
+SELECT
+  a.shop_id,
+  a.shop_name,
+  a.goodsid,
+  bar_code,
+  goodsname,
+  div_id,
+  div_name,
+  a.dept_id,
+  a.dept_name,
+  catg_l_id,
+  catg_l_name,
+  catg_m_id,
+  catg_m_name,
+  catg_s_id,
+  catg_s_name,
+  goods_staus,
+  sflag,
+  sdt as sdt,
+  sales_qty,
+  sales_value,
+  in_qty,
+  in_val,
+  max_sdt,
+  qm_qty,
+  qm_amt
+FROM (
+    SELECT
+      shop_id,
+      shop_name,
+      goodsid,
+      goodsname,
+      bar_code,
+      div_id,
+      div_name,
+      dept_id,
+      dept_name,
+      catg_l_id,
+      catg_l_name,
+      catg_m_id,
+      catg_m_name,
+      catg_s_id,
+      catg_s_name,
+      concat(shop_goods_sts_id, '_', shop_goods_sts_name) goods_staus,
+      concat(efct_sign_id, '_', efct_sign_name) as sflag
+    FROM dim.dim_shop_goods_latest
+    WHERE
+      catg_l_id BETWEEN '1200'
+      AND '1499'
+      and shop_id like 'W%'
+      and shop_goods_sts_id in ('0', '2')
+      and sales_dist_name like '%彩食鲜%'
+  ) a
+LEFT JOIN temp.p_sale_01 b on a.shop_id = b.shop_id
+  and a.goodsid = b.goods_code
+left join temp.p_sale_03 c on a.shop_id = c.shop_id
+  and a.goodsid = c.goodsid
+left join (
+    select
+      a.shop_id,
+      a.goodsid,
+      qm_qty,
+      qm_amt
+    FROM temp.p_sale_04 a
+  ) d on a.shop_id = d.shop_id
+  and a.goodsid = d.goodsid;
+select
+  *
+from temp.p_sale_09;

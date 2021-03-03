@@ -1,0 +1,89 @@
+-- 旧系统订单流，shop_id 逻辑规则除返配按照shop_id_out ，其他按shop_id_in,
+-- sdt分区按照apply_date即订单日期
+CREATE TEMPORARY TABLE temp.order_old AS
+SELECT
+	apply_date                         ,
+	shop_id                            ,
+	pur_org                            ,
+	order_type                         ,
+	vendor_id                          ,
+	org_vendor                         ,
+	shop_id_in                         ,
+	shop_id_out                        ,
+	goodsid                            ,
+	sum(purchase_qty)                          AS apply_order_qty,
+	sum(approve_qty)                           AS order_qty      ,
+	sum(coalesce(pur_app_price*approve_qty,0)) AS order_amount   ,
+	sum(recpt_qty)                             AS recpt_qty      ,
+	sum(tax_pur_val_in)                        AS recpt_amount   ,
+	max_pstng_date_in                          AS recpt_date     ,
+	sum(ship_qty)                              AS shipp_qty      ,
+	sum(tax_pur_val_out)                       AS shipped_amount ,
+	max_pstng_date_out                         AS shipped_date   ,
+	apply_sts                                                    ,
+	pur_vouche_sts                                               ,
+	delivery_finish_flag                                         ,
+	pur_doc_catg                                                 ,
+	pur_doc_type
+FROM
+	b2b.ord_orderflow_t
+WHERE
+	sdt                 >='20191101'
+	and vendor_id not like '75%'
+	AND pur_org       LIKE 'P6%'
+	AND pur_org NOT IN ('P612',
+						'P613')
+GROUP BY
+	apply_date          ,
+	shop_id             ,
+	pur_org             ,
+	vendor_id           ,
+	org_vendor          ,
+	shop_id_in          ,
+	shop_id_out         ,
+	order_type          ,
+	apply_sts           ,
+	pur_vouche_sts      ,
+	delivery_finish_flag,
+	pur_doc_catg        ,
+	pur_doc_type        ,
+	goodsid
+;
+
+SELECT
+	order_date                            ,
+	a.dc_code                             ,
+	a.purchase_org_code                   ,
+	a.super_class_name                    ,
+	a.vender_code                         ,
+	a.receive_location_code               ,
+	a.send_location_code                  ,
+	a.goods_code                          ,
+	sum(a.order_qty)     as order_qty     ,
+	sum(a.order_amount)  as order_amount  ,
+	sum(a.receive_qty)   as receive_qty   ,
+	sum(a.receive_amount)as receive_amount,
+	a.receive_date                        ,
+	sum(a.shipped_qty)    as shipped_qty     ,
+	sum(a.shipped_amount) as shipped_amount  ,
+	a.shipped_finish_time as shipped_date    ,
+	a.order_status                           ,
+	a.source_type_name
+FROM
+	csx_dw.order_flow a
+WHERE
+	order_sdt='20191120'
+group by
+	order_date             ,
+	a.dc_code              ,
+	a.purchase_org_code    ,
+	a.super_class_name     ,
+	a.vender_code          ,
+	a.receive_location_code,
+	a.send_location_code   ,
+	a.goods_code           ,
+	receive_date           ,
+	order_status           ,
+	shipped_finish_time    ,
+	source_type_name
+;

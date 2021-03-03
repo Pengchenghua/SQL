@@ -1,0 +1,162 @@
+--hive
+select
+  dc_code,
+  goods_code,
+  sum(sales_qty) sales_qty,
+  sum(sales_value) sales_value,
+  sum(sales_cost) sales_cost,
+  sum(profit) profit,
+  sum(inventory_qty) inventory_qty,
+  sum(inventory_amt) inventory_amt
+from (
+    SELECT
+      shop_id dc_code,
+      goods_code,
+      sales_qty,
+      sales_value,
+      sales_cost,
+      profit,
+      0 inventory_qty,
+      0 inventory_amt
+    FROM csx_dw.sale_goods_m1
+    where
+      sdt >= '20191201'
+      and sdt <= '20191231'
+    union all
+    select
+      dc_code,
+      goods_code,
+      0 sales_qty,
+      0 sales_value,
+      0 sales_cost,
+      0 profit,
+      sum(qty) inventory_qty,
+      sum(amt) inventory_amt
+    from csx_dw.wms_accounting_stock_m
+    where
+      sdt >= '20191201'
+      and sdt <= '20191231'
+      and reservoir_area_code not in ('B999', 'B997', 'PD01', 'PD02', 'TH01')
+    group by
+      dc_code,
+      goods_code
+  ) a
+group by
+  dc_code,
+  goods_code
+  ;
+select sdt as saledate,
+province_code,
+province_name,
+dc_code,
+dc_name,
+goods_code,
+goods_bar_code,
+goods_name,
+spec,
+unit_name,
+brand_name,
+bd_id,
+bd_name,
+dept_id,
+dept_name,
+div_id,
+div_name,
+category_large_code,
+category_large_name,
+category_middle_code,
+category_middle_name,
+category_small_code,
+category_small_name,
+valid_tag,
+valid_tag_name,
+goods_status_id,
+goods_status_name,
+sales_cost,
+sales_qty,
+sales_value,
+profit,
+inventory_qty,
+inventory_amt,
+vendor_code,
+vendor_name,
+logistics_mode,
+logistics_mode_name
+from csx_dw.temp_inv_sale a 
+left join 
+(select 
+shop_code,
+shop_name,
+product_code,
+cpi.product_name,
+product_bar_code,
+cpi.spec,
+cpi.brand_name,
+root_category_code as div_id,
+cpi.root_category_name as div_name,
+cpi.big_category_code as category_large_code,
+cpi.big_category_name as category_large_name,
+middle_category_code as category_middle_code,
+cpi.middle_category_name as category_middle_name,
+small_category_code as category_small_code,
+cpi.small_category_name  as category_small_name,
+supplier_code as vendor_code,
+supplier_name as vendor_name,
+cpi.des_specific_product_status as goods_status_id,
+cpi.product_status_name as goods_status_name,
+cpi.valid_tag as valid_tag,
+cpi.valid_tag_name ,
+cpi.logistics_mode ,
+cpi.logistics_mode_name
+from csx_ods.csx_product_info cpi where sdt='20200109') b 
+on regexp_replace(a.dc_code,'^E','9')=regexp_replace(b.shop_code,'^E','9') and a.goods_code=b.product_code
+WHERE a.goods_code='1017222' and dc_code='E080'
+;
+
+
+
+
+drop table csx_dw.dc_sale_inventory;
+CREATE TABLE csx_dw.dc_sale_inventory
+(
+saledate string comment'销售日期',
+province_code  string comment '省区编码',
+province_name string comment '省区名称',
+dc_code string comment 'DC编码',
+dc_name string comment 'DC名称',
+goods_code string comment '商品编码',
+goods_bar_code   string comment '条码',
+goods_name   string comment '商品名称',
+spec   string comment '规格',
+unit_name   string comment '单位',
+brand_name   string comment '品牌',
+bd_id string comment'采购部编码',
+bd_name string comment'采购部名称',
+dept_id   string comment '课组编码',
+dept_name      string comment '课组名称',
+div_id string comment '部类编码',
+div_name string comment '部类名称',
+category_large_code string comment '大类编码',
+category_large_name string comment '大类名称',
+category_midd_code string comment'中类编码',
+category_middle_name string comment '中类名称',
+category_small_code string comment'小类编码',
+category_small_name string comment '小类名称',
+goods_status_id  string comment '商品状态编码',
+goods_status_name string comment '商品状态名称',
+vendor_code string comment '供应商号',
+vendor_name      string comment '供应商名称',
+logistics_mode string comment '物流模式',
+logistics_mode_name   string comment ' 物流模式名称',
+valid_tag string comment '有效标识',
+valid_tag_name string comment '有效标识名称',
+sales_cost string comment '销售成本',
+sales_qty string comment '销售数量',
+sales_value string comment '销售金额',
+profit string comment '毛利',
+inventory_qty string comment '结余库存量',
+inventory_amt  string comment '结余库存额'
+) comment'DC销售与结余库存'
+partitioned by (sdt string comment'日期分区')
+stored as  parquet
+;

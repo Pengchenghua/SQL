@@ -1,0 +1,260 @@
+DROP TABLE IF EXISTS csx_dw.temp_sales_name
+;
+
+CREATE TABLE csx_dw.temp_sales_name
+    (
+        dist STRING COMMENT'大区'
+      , sales_name string COMMENT'名称'
+      , work_id string COMMENT'工号'
+      , entry_Date string COMMENT'入职日期'
+    )
+    ROW FORMAT DELIMITED fields terminated BY '\t' LINES TERMINATED BY '\n'
+;
+
+LOAD DATA inpath '/user/pengchenghua/sales.txt' INTO TABLE csx_dw.temp_sales_name;
+-- 创建员工入职时间
+DROP TABLE IF EXISTS temp.sales_01
+;
+
+CREATE TEMPORARY TABLE
+IF NOT EXISTS temp.sales_01 AS
+    SELECT
+        a.customer_no
+      , customer_name
+      , a.sales_name
+      , work_no
+      , sales_province
+      , sales_province_code
+      , first_supervisor_work_no
+      , first_supervisor_name
+      , b.sales_name AS sales_name_hr
+      , b.work_id
+      , dist
+      , regexp_replace(to_date(entry_date), '-', '')entry_date
+      , CASE
+            WHEN a.customer_no IN ('PF0649'
+                                 , '102784'
+                                 , '102215'
+                                 , '104267'
+                                 , '104172'
+                                 , '104751'
+                                 , '104746'
+                                 , '104745'
+                                 , '103145'
+                                 , '103151'
+                                 , '103154'
+                                 , '103156'
+                                 , '103204'
+                                 , '103207'
+                                 , '103245'
+                                 , '103160'
+                                 , '103243'
+                                 , '103247'
+                                 , '103283'
+                                 , '104099'
+                                 , '104122'
+                                 , '104617'
+                                 , '103135'
+                                 , '103155'
+                                 , '103174'
+                                 , '104340'
+                                 , '104705'
+                                 , '103140'
+                                 , '103146'
+                                 , '103165'
+                                 , '103170'
+                                 , '103194'
+                                 , '103246'
+                                 , '103250'
+                                 , '104697'
+                                 , '104742')
+                THEN '兼职合伙人'
+                ELSE note
+        END note
+    FROM
+        (
+            SELECT
+                customer_no
+              , customer_name
+              , sales_name
+              , work_no
+              , sales_province
+              , sales_province_code
+              , first_supervisor_work_no
+              , first_supervisor_name
+            FROM
+                csx_dw.customer_m
+            WHERE
+                sdt             ='20191018'
+                AND customer_no<>''
+        )
+        AS a
+        LEFT JOIN
+            (
+                SELECT
+                    sales_name
+                  , work_id
+                  , entry_date
+                  , dist
+                FROM
+                    csx_dw.temp_sales_name
+            )
+            AS b
+            ON
+                a.work_no=b.work_id
+        LEFT JOIN
+            (
+                SELECT   DISTINCT
+                            customer_no
+                  , '项目合伙人' note
+                FROM
+                    csx_dw.csx_partner_list
+            )
+            c
+            ON
+                a.customer_no = c.customer_no
+    ;
+    
+    select
+        a.dist
+      , a.sales_name
+      , a.entry_date
+      , a.work_id
+      , b.position
+      , province_name
+      , province_code
+      , work_no
+    from
+        csx_dw.temp_sales_name a
+        left join
+            (
+                select *
+                from
+                    csx_dw.sale_org_m
+                where
+                    sdt='20191018'
+            )
+            b
+            on
+                a.sales_name=b.sales_name
+    ;
+    
+    -- 关联销售
+    DROP TABLE IF EXISTS temp.sales_02
+    ;
+    
+    CREATE TEMPORARY TABLE
+    IF NOT EXISTS temp.sales_02 AS
+        SELECT
+            sdt
+          , a.customer_no
+          , channel_name
+          , province_code
+          , province_name
+          , b.dist
+          , b.sales_name
+          , b.work_no
+          , b.sales_name_hr
+          , b.work_id
+          , entry_date
+          , first_supervisor_work_no
+          , first_supervisor_name
+          , sale
+          , profit
+        FROM
+            (
+                SELECT
+                    sdt
+                  , customer_no
+                  , channel_name
+                  , province_code
+                  , province_name
+                  , sum(sales_value)sale
+                  , sum(profit)     profit
+                FROM
+                    csx_dw.sale_goods_m a
+                WHERE
+                    sdt>='20190301'
+                GROUP BY
+                    sdt
+                  , customer_no
+                  , channel_name
+                  , province_code
+                  , province_name
+            )
+            a
+            LEFT JOIN
+                temp.sales_01 AS b
+                ON
+                    a.customer_no=b.customer_no
+        ;
+        
+        SELECT
+            substr(sdt,1,6)mon
+          , a.dist
+          , a.sales_name
+          , a.work_no
+          , a.sales_name_hr
+          , a.work_id
+          , case
+                when a.entry_date<='20190301'
+                    then datediff(current_date(),'2019-03-01')
+                    else datediff(current_date(),from_unixtime(unix_timestamp(a.entry_date,'yyyymmdd'),'yyyy-mm-dd'))
+            end diff_date
+          , a.entry_date
+          , substr(a.entry_date,1,6)entyr_mon
+          , first_supervisor_work_no
+          , first_supervisor_name
+          , a.customer_no
+          , a.channel_name
+          , a.province_code
+          , a.province_name
+          , sum
+                (
+                    case
+                        when sdt >=entry_date
+                            then a.sale
+                    end
+                )
+            sales_sale
+          , sum
+                (
+                    case
+                        when sdt >=entry_date
+                            then a.profit
+                    end
+                )
+                         sales_profit
+          , sum(sale)    sale
+          , sum(a.profit)profit
+        FROM
+            temp.sales_02 a
+        group by
+            substr(sdt,1,6)
+          , a.dist
+          , a.sales_name
+          , a.work_no
+          , a.sales_name_hr
+          , a.work_id
+          , case
+                when a.entry_date<='20190301'
+                    then datediff(current_date(),'2019-03-01')
+                    else datediff(current_date(),from_unixtime(unix_timestamp(a.entry_date,'yyyymmdd'),'yyyy-mm-dd'))
+            end
+          , a.entry_date
+          , substr(a.entry_date,1,6)
+          , first_supervisor_work_no
+          , first_supervisor_name
+          , a.customer_no
+          , a.channel_name
+          , a.province_code
+          , a.province_name
+        ;
+        
+        SELECT DISTINCT
+            entry_date
+        FROM
+            temp.sales_01
+        ;
+        
+        ;

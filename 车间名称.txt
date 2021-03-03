@@ -1,0 +1,18 @@
+drop table  csx_dw.workshop_m;
+create TABLE  csx_dw.workshop_m
+as 
+select distinct '' as workshop_code,'' as workshop_name,
+workshop_code as small_workshop_code,
+workshop_name as small_workshop_name 
+from csx_dw.factory_bom
+where
+  sdt = regexp_replace(to_date(date_sub(CURRENT_TIMESTAMP(), 1)), '-', '')
+  and workshop_code != 'H09';
+
+  CREATE TABLE `csx_dw.workshop_m`(
+  `workshop_code` string comment '大车间编码', 
+  `workshop_name` string comment '车间名称', 
+  `small_workshop_code` string comment '分车间编码', 
+  `small_workshop_name` string comment '分车间名称')
+  comment '车间名称'
+STORED AS parquet 

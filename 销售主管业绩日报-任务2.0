@@ -1,0 +1,411 @@
+--★★★华西大区日报需求：销售主管业绩日报
+--★★★按照大区、省区、城市、渠道、3级主管、1级主管、业绩分类（下方规则）等维度的新老客户月至今业绩
+
+--说明：分类规则遇到同时属于两个类别时，归到先判断的规则（序号小的）
+--一、B端+BBC分类规则：
+--1、合伙人：（B端+BBC），CRM中客户属性为合伙人的，本月以最新的为准，上月用上月最后一天为准
+--2、BBC：渠道为企业购的	
+--3、福利：订单标识为福利单的，与客户属性无关  
+--4、贸易：客户属性为贸易客户
+--5、商贸批发和其他：客户属性为商贸批发客户、战略客户等（非福利客户与日配的）
+--6、日配：总业绩减去以上剩下的，客户属性可能为福利客户或日配客户
+--
+--二、M端分类规则：
+--1、红旗/中百：'103097','103903','104842'
+--2、MINI：业态为'8_云超MINI'的
+--3、云超：业态包含'云超'字样的
+--4、云创：业态包含'云创'字样的
+--5、其他：业态不为以上几类的
+--
+--以上均可通过日报中“明细数据”sheet中，“最终分类”列前的几列灰色字段查看与“最终分类”对应关系；
+--"三级主管姓名"	"一级主管姓名"均为CRM中关联客户编号取得，分别为城市经理和销售主管。
+
+ 
+-- 昨日、昨日月1日， 上月同日，上月1日，取近两月数据和战报一致
+
+set i_sdate_11 =regexp_replace(date_sub(current_date,1),'-','');
+set i_sdate_12 =regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),0),'-','');
+
+set i_sdate_21 =concat(substr(regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),-1),'-',''),1,6),
+					if(date_sub(current_date,1)=last_day(date_sub(current_date,1))
+					,substr(regexp_replace(last_day(add_months(trunc(date_sub(current_date,1),'MM'),-1)),'-',''),7,2)
+					,substr(regexp_replace(date_sub(current_date,1),'-',''),7,2)));	
+set i_sdate_22 =regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),-1),'-','');
+set i_sdate_23 =regexp_replace(last_day(add_months(date_sub(current_date,1),-1)),'-','');
+					
+set table_sale =csx_dw.dws_sale_r_d_customer_sale;
+set table_customer =csx_dw.dws_crm_w_a_customer_m_v1;
+
+
+--临时表1：客户最小最大成交日期
+drop table csx_tmp.tmp_sale_cust_min_max_01;
+create temporary table csx_tmp.tmp_sale_cust_min_max_01
+as 
+select
+customer_no,min(sales_date) as min_sales_date,max(sales_date) as max_sales_date,count(distinct sales_date) as count_day
+--from csx_dw.dws_sale_r_d_customer_sale 
+from ${hiveconf:table_sale}  
+where sdt<=${hiveconf:i_sdate_11} 
+and sales_type in('qyg','sapqyg','sapgc','sc','bbc') 
+and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046') or order_no is null)
+group by customer_no;
+
+-- 临时表2：客户销售明细
+drop table csx_tmp.tmp_supervisor_day_01;
+create temporary table csx_tmp.tmp_supervisor_day_01
+as 
+select 
+	c.region_code
+	,c.region_name
+	,a.province_code
+	,a.province_name
+	,a.city_group_code
+	,a.city_group_name
+	,a.channel
+	,a.channel_name,
+	b.third_supervisor_name
+	,b.first_supervisor_name
+	,b.third_supervisor_work_no
+	,b.first_supervisor_work_no
+	,a.customer_no
+	,b.customer_name,
+	x.province_manager_id
+	,x.province_manager_name
+	,y.city_group_manager_id
+	,y.city_group_manager_name,
+	a.order_kind
+	,d.sales_belong_flag
+	,if( b.attribute='合伙人客户','城市服务商',null) is_partner
+	,b.attribute_0
+	,g.ascription_type_name,
+	--b.attribute,
+	--case when a.channel in ('1','7') and a.order_kind='WELFARE' then '福利' else b.attribute end attribute,
+	case when a.channel ='7' then 'BBC'	
+		 when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
+	     when a.channel in ('1','9') and b.attribute='贸易客户'  then '贸易客户' 
+		 when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'  
+		 when a.channel in ('1','9') and b.attribute not in('合伙人客户','贸易客户') and a.order_kind<>'WELFARE' then '日配单'
+		 when a.channel ='2' and d.sales_belong_flag ='8_云超MINI' then '云超-MINI' 
+		 when a.channel ='2' and d.sales_belong_flag in ('2_云创会员店','6_云创到家') then '云创-永辉生活' 
+		 when a.channel ='2' and d.sales_belong_flag like '%云超%' then '云超-门店' 	 
+		 else '其他' end sale_group, 
+	--if(substr(b.sign_time,1,6)=substr(a.sdt,1,6),'是', '否') is_new_sign,
+	if(substr(e.min_sales_date,1,6)=substr(a.sdt,1,6),'是', '否') is_new_sale,
+	a.sales_value,a.profit,a.front_profit,
+	--case when a.smonth='本月' then a.sales_value end M_sales_value,
+	--case when a.smonth='本月' then a.profit end M_profit,
+	--case when a.smonth='环比月' then a.sales_value end H_sales_value,
+	--case when a.smonth='环比月' then a.profit end H_profit,
+	a.smonth,a.sdt sale_date,${hiveconf:i_sdate_11} sdt
+from
+	(select	province_code,province_name,city_group_code,city_group_name,channel,channel_name,customer_no,sdt,
+	case when (sdt>=${hiveconf:i_sdate_12} and sdt<=${hiveconf:i_sdate_11}) then '本月' else '环比月' end smonth,
+	case when order_kind='WELFARE' then 'WELFARE' else 'NORMAL' end order_kind,
+		sum(sales_value)sales_value,
+		sum(sales_cost)sales_cost,
+		sum(profit)profit,
+		sum(front_profit)front_profit
+	--from csx_dw.dws_sale_r_d_customer_sale 
+	from ${hiveconf:table_sale}
+	where (   sdt>=${hiveconf:i_sdate_12} and sdt<=${hiveconf:i_sdate_11}  --本月
+			or sdt>=${hiveconf:i_sdate_22} and sdt<=${hiveconf:i_sdate_21})  --环比月
+	and sales_type in ('sapqyg','sapgc','qyg','sc','bbc') 
+	and province_name not like '平台%'
+	and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046') or order_no is null)
+	group by province_code,province_name,city_group_code,city_group_name,channel,channel_name,customer_no,sdt,
+	case when (sdt>=${hiveconf:i_sdate_12} and sdt<=${hiveconf:i_sdate_11}) then '本月' else '环比月' end,
+	case when order_kind='WELFARE' then 'WELFARE' else 'NORMAL' end	)a
+left join 
+	(select customer_no,customer_name,third_supervisor_work_no,first_supervisor_work_no,third_supervisor_name
+	,first_supervisor_name,attribute attribute_0,
+		regexp_replace(split(sign_time, ' ')[0], '-', '') sign_time,
+		if(channel_code in('1','7','9'),case when attribute is null then '日配客户'
+										 else attribute end,
+									'') attribute
+	--from csx_dw.dws_crm_w_a_customer_m_v1
+	from ${hiveconf:table_customer}
+	where sdt = ${hiveconf:i_sdate_11}
+	and customer_no<>''
+	--and channel_code in('1','7')
+	)b on b.customer_no=a.customer_no
+left join (select province_code,province_name,region_code,region_name from csx_dw.dim_area where area_rank='13')c on c.province_code=a.province_code
+left join (select * from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current' ) d on a.customer_no=concat('S',d.shop_id)
+left join csx_tmp.tmp_sale_cust_min_max_01 e on e.customer_no=a.customer_no
+		
+left join (SELECT *
+			from csx_dw.dim_area
+			where area_rank=13) x on x.province_code=a.province_code
+left join (SELECT *
+			from csx_dw.dim_area
+			where area_rank=12) y on y.city_group_code=a.city_group_code
+left join (select * from csx_dw.csx_shop where sdt='current')g on concat('S',g.rt_shop_code)=a.customer_no
+;
+
+
+--结果表1：明细数据
+drop table csx_tmp.tmp_supervisor_day_detail_01;
+create table csx_tmp.tmp_supervisor_day_detail_01
+as 
+select
+	region_code,region_name,province_code,province_name,city_group_code,city_group_name,channel,channel_name,
+	coalesce(third_supervisor_name,'') third_supervisor_name,
+	coalesce(first_supervisor_name,'') first_supervisor_name,
+	coalesce(third_supervisor_work_no,'') third_supervisor_work_no 
+	,coalesce(first_supervisor_work_no,'') first_supervisor_work_no
+	,customer_no,customer_name,
+	province_manager_id,province_manager_name,city_group_manager_id,city_group_manager_name,
+	order_kind,sales_belong_flag,is_partner,attribute_0,ascription_type_name,
+	sale_group,is_new_sale,
+	sum(case when smonth='本月' and sale_date=${hiveconf:i_sdate_11} then sales_value end) Md_sales_value, --昨日销售额
+	sum(case when smonth='本月' and sale_date=${hiveconf:i_sdate_11} then profit end) Md_profit, --昨日毛利额
+	sum(sales_value) sales_value,
+	sum(profit) profit,
+	sum(front_profit) front_profit,
+	smonth,sdt
+from csx_tmp.tmp_supervisor_day_01
+group by region_code,region_name,province_code,province_name,city_group_code,city_group_name,channel,channel_name,
+	coalesce(third_supervisor_name,''),
+	coalesce(first_supervisor_name,''),
+	coalesce(third_supervisor_work_no,'')
+	,coalesce(first_supervisor_work_no,''),customer_no,customer_name,
+	province_manager_id,province_manager_name,city_group_manager_id,city_group_manager_name,
+	order_kind,sales_belong_flag,is_partner,attribute_0,ascription_type_name,
+	sale_group,is_new_sale,smonth,sdt;
+	
+--插入报表数据
+SET hive.exec.parallel=TRUE;
+SET hive.exec.dynamic.partition=TRUE;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+
+INSERT overwrite TABLE csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total partition(sdt)	
+select 
+	region_name
+	,region_code
+	,province_code
+	,province_name
+	,city_group_code
+	,city_group_name
+	,channel_name
+	,third_supervisor_work_no,
+	third_supervisor_name,
+	first_supervisor_work_no,
+	first_supervisor_name,
+	sale_group,
+	old_target_sales_value
+	,old_cust_count
+	,old_Md_sales_value
+,old_Md_profit
+		,old_M_sales_value
+		,old_M_profit
+		,old_H_sales_value
+	,old_H_profit	
+	,old_M_front_profit	
+		,new_target_sales_value
+		,new_cust_count
+		,new_Md_sales_value
+	,new_Md_profit
+		,new_M_sales_value
+		,new_M_profit
+		,new_H_sales_value
+	,new_H_profit	
+	,new_M_front_profit	
+		,all_target_sales_value
+        ,all_cust_count		
+		,ALL_Md_sales_value
+	,all_Md_profit
+		,ALL_M_sales_value
+		,ALL_M_profit
+		,ALL_H_sales_value
+	,all_H_profit	
+	,all_M_front_profit	
+	,from_unixtime(unix_timestamp(),'yyyy-MM-dd HH:mm:ss')  update_time
+	,regexp_replace(date_sub(current_date,1),'-','')  sdt
+from
+	(select 
+	   region_name
+	   ,region_code
+	   ,coalesce(province_code,'00') province_code
+	   ,coalesce(province_name,'合计') province_name
+	   ,coalesce(city_group_code,'00') city_group_code
+	   ,coalesce(city_group_name,'合计') city_group_name,
+		coalesce(channel_name,'合计') channel_name,
+		coalesce(third_supervisor_work_no,'00') third_supervisor_work_no,
+		coalesce(third_supervisor_name,'合计') third_supervisor_name,
+		coalesce(first_supervisor_work_no,'00')  first_supervisor_work_no,
+		coalesce(first_supervisor_name,'合计') first_supervisor_name,
+		coalesce(sale_group,'合计') sale_group,
+		old_plan_sales_value old_target_sales_value --老客old_target_sales_value
+		,old_cust_count
+		,old_Md_sales_value
+	,old_Md_profit
+		,old_M_sales_value
+		,old_M_profit
+		,old_H_sales_value
+	,old_H_profit	
+	,old_M_front_profit	
+		,new_plan_sales_value new_target_sales_value
+		,new_cust_count
+		,new_Md_sales_value
+	,new_Md_profit
+		,new_M_sales_value
+		,new_M_profit
+		,new_H_sales_value
+	,new_H_profit	
+	,new_M_front_profit	
+		,all_plan_sales_value all_target_sales_value
+        ,all_cust_count		
+		,ALL_Md_sales_value
+	,all_Md_profit
+		,ALL_M_sales_value
+		,ALL_M_profit
+		,ALL_H_sales_value
+	,all_H_profit	
+	,all_M_front_profit	
+		,case when city_group_name='-' and channel_name is null then '是' else '否' end is_delete
+	from
+		(select region_name,region_code,province_name,province_code,city_group_code,city_group_name
+		,channel_name_2 channel_name,third_supervisor_work_no
+		,third_supervisor_name,first_supervisor_work_no,first_supervisor_name,sale_group,
+		
+		count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end) old_cust_count,  --老客-累计客户数
+		sum(case when smonth='本月' and is_new_sale='否' then Md_sales_value end)/10000 old_Md_sales_value, --老客-昨日销售额
+	sum(case when smonth='本月' and is_new_sale='否' then Md_profit end)/10000 old_Md_profit, --老客-昨日毛利额
+				
+		sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000 old_M_sales_value,  --老客-累计销售额
+		sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000 old_M_profit,  --老客-累计毛利额
+		sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000 old_H_sales_value,  --老客-环比累计销售额
+	sum(case when smonth='环比月' and is_new_sale='否' then profit end)/10000 old_H_profit,  --老客-环比累计毛利额
+	sum(case when smonth='本月' and is_new_sale='否' then front_profit end)/10000 old_M_front_profit,  --老客-累计前端毛利额
+
+		count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end) new_cust_count,  --新客-累计客户数
+		sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000 new_Md_sales_value, --新客-昨日销售额
+	sum(case when smonth='本月' and is_new_sale='是' then Md_profit end)/10000 new_Md_profit, --新客-昨日毛利额
+		sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000 new_M_sales_value,  --新客-累计销售额
+		sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000 new_M_profit,  --新客-累计毛利额
+		sum(case when smonth='环比月' and is_new_sale='是' then sales_value end)/10000 new_H_sales_value,  --新客-环比累计销售额
+	sum(case when smonth='环比月' and is_new_sale='是' then profit end)/10000 new_H_profit,  --新客-环比累计毛利额
+	sum(case when smonth='本月' and is_new_sale='是' then front_profit end)/10000 new_M_front_profit,  --新客-累计前端毛利额
+
+		count(distinct case when smonth='本月'  then customer_no end) all_cust_count,  --汇总-累计客户数
+		sum(case when smonth='本月' then Md_sales_value end)/10000 ALL_Md_sales_value, --汇总-昨日销售额
+	sum(case when smonth='本月' then Md_profit end)/10000 ALL_Md_profit, --汇总-昨日毛利额		
+		sum(case when smonth='本月' then sales_value end)/10000 ALL_M_sales_value,  --汇总-累计销售额
+		sum(case when smonth='本月' then profit end)/10000 ALL_M_profit,  --汇总-累计毛利额
+		sum(case when smonth='环比月' then sales_value end)/10000 ALL_H_sales_value,  --汇总-环比累计销售额
+	sum(case when smonth='环比月' then profit end)/10000 all_H_profit,  --汇总环比累计毛利额
+	sum(case when smonth='本月'  then front_profit end)/10000 all_M_front_profit  --汇总累计前端毛利额
+
+from (select *,case when channel_name='商超' then 'M端'
+							when channel in ('1','7','9') then 'B端'
+							else '其他' end channel_name_2
+			from csx_tmp.tmp_supervisor_day_detail_01)a
+		
+		group by region_name,region_code,province_name,province_code,city_group_code,city_group_name
+		,channel_name_2,third_supervisor_work_no
+		,third_supervisor_name,first_supervisor_work_no,first_supervisor_name,sale_group
+		grouping sets((region_name,region_code),(region_name,region_code,province_name,province_code),(region_name,region_code,province_name,province_code,city_group_code,city_group_name),(region_name,region_code,province_name,province_code,city_group_code,city_group_name,channel_name_2),
+		(region_name,region_code,province_name,province_code,city_group_code,city_group_name,channel_name_2,third_supervisor_work_no,third_supervisor_name,first_supervisor_work_no,first_supervisor_name),
+		(region_name,region_code,province_name,province_code,city_group_code,city_group_name,channel_name_2,third_supervisor_work_no,third_supervisor_name,first_supervisor_work_no,first_supervisor_name,sale_group))
+		)a
+		
+left join 
+		( 
+		  select 
+		    region_name_1,
+		     province_code province_code_1,
+	         channel_name channel_name_1,
+		     city_manager_name,
+		     manager_name,
+		     customer_attribute_name
+		     ,sum(plan_sales_value) all_plan_sales_value
+			 ,sum(if(customer_age_name='新客',plan_sales_value,0)) new_plan_sales_value
+			 ,sum(if(customer_age_name<>'新客',plan_sales_value,0)) old_plan_sales_value
+		from  (select province_code,
+	         case when channel_name='商超' then 'M端'
+							else 'B端' end channel_name,
+		     city_manager_name,
+		     manager_name,
+		     customer_attribute_name
+		     ,'华西大区' region_name_1,
+		     customer_age_name,plan_sales_value
+		     from csx_tmp.dws_csms_manager_month_sale_plan_tmp
+		     where month=substr(regexp_replace(date_sub(current_date,1),'-',''),1,6) )a
+		
+		group by region_name_1,province_code,
+		         channel_name,
+		         city_manager_name,
+		         manager_name,
+		         customer_attribute_name
+		grouping sets((region_name_1),(region_name_1,province_code),(region_name_1,province_code,channel_name),
+		(region_name_1,province_code,channel_name,city_manager_name,manager_name),
+		(region_name_1,province_code,channel_name,city_manager_name,manager_name,customer_attribute_name))
+		)b 
+				
+				on a.region_name=b.region_name_1 and 
+				coalesce(a.province_code,'00')=coalesce(b.province_code_1,'00')
+				and coalesce(a.channel_name,'合计')= coalesce(b.channel_name_1,'合计') 
+				and coalesce(a.third_supervisor_name,'合计')=coalesce(b.city_manager_name,'合计')
+				and coalesce(a.first_supervisor_name,'合计')=coalesce(b.manager_name,'合计')
+				and coalesce(a.sale_group,'合计')=coalesce(b.customer_attribute_name,'合计')
+	)a	
+where is_delete='否'
+;
+
+
+
+
+
+/*
+----------------------------hive 建表语句-------------------------------------
+INVALIDATE METADATA csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total;
+INVALIDATE METADATA csx_tmp.tmp_supervisor_day_total; 
+
+drop table if exists csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total;
+create table csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total(
+  `region_name` string comment '大区',
+  `region_code` string comment '大区编号',
+  `province_code` string comment '省区编号',
+  `province_name` string comment '销售省区',
+  `city_group_code` string comment '城市组编号',
+  `city_group_name` string comment '城市组',
+  `channel_name` string comment '渠道',
+  `third_supervisor_work_no` string comment '三级主管工号',
+  `third_supervisor_name` string comment '三级主管姓名',
+  `first_supervisor_work_no` string comment '一级主管工号',
+  `first_supervisor_name` string comment '一级主管姓名',
+  `sale_group` string comment '分类',  
+  `old_target_sales_value` decimal(19,6) comment '老客目标销售额',   
+  `old_cust_count` decimal(10,4) comment '老客累计客户数',
+  `old_Md_sales_value` decimal(19,6) comment '老客昨日销售额',
+  `old_Md_profit` decimal(19,6) comment '老客昨日毛利额',
+  `old_M_sales_value` decimal(19,6) comment '老客累计销售额',  
+  `old_M_profit` decimal(19,6) comment '老客累计毛利额',  
+  `old_H_sales_value` decimal(19,6) comment '老客环比累计销售额',
+  `old_H_profit` decimal(19,6) comment '老客环比累计毛利额',
+  `old_M_front_profit` decimal(19,6) comment '老客累计前端毛利额',
+  `new_target_sales_value` decimal(19,6) comment '新客目标销售额', 
+  `new_cust_count` decimal(10,4) comment '新客累计客户数',  
+  `new_Md_sales_value` decimal(19,6) comment '新客昨日销售额',
+  `new_Md_profit` decimal(19,6) comment '新客昨日毛利额',
+  `new_M_sales_value` decimal(19,6) comment '新客累计销售额',
+  `new_M_profit` decimal(19,6)  comment '新客累计毛利额',
+  `new_H_sales_value` decimal(19,6)  comment '新客环比累计销售额',
+  `new_H_profit` decimal(19,6) comment '新客环比累计毛利额',
+  `new_M_front_profit` decimal(19,6) comment '新客累计前端毛利额',
+  `all_target_sales_value` decimal(19,6) comment '汇总目标销售额', 
+  `all_cust_count` decimal(10,4) comment '汇总累计客户数', 
+  `ALL_Md_sales_value` decimal(19,6)  comment '汇总昨日销售额',
+  `all_Md_profit` decimal(19,6)  comment '汇总昨日毛利额',
+  `ALL_M_sales_value` decimal(19,6) comment '汇总累计销售额',  
+  `ALL_M_profit` decimal(19,6)  comment '汇总累计毛利额',
+  `ALL_H_sales_value` decimal(19,6) comment '汇总环比累计销售额',
+  `all_H_profit` decimal(19,6) comment '环比累计毛利额',
+  `all_M_front_profit` decimal(19,6) comment '累计前端毛利额',
+  `update_time`  timestamp comment '插入日期'
+) comment '销售主管业绩日报-任务达成'
+partitioned by (sdt string comment '日期分区')
+stored as textfile;
+
+
+*/ 
+

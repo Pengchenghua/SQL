@@ -1,0 +1,189 @@
+--发票负毛利
+select
+  BILL_DATE,
+  BILL_NUM,
+  channelsale,
+  sales_dist,
+  stype,
+  BILL_TYPE,
+  prov_code,
+  prov_name,
+  a.shop_id,
+  shop_name,
+  PAYER,
+  SOLD_TO,
+  cust_name,
+  salename,
+  dist,
+  a.goodsid,
+  goodsname,
+  dept_id,
+  dept_name,
+  catg_l_id,
+  catg_l_name,
+  catg_s_id,
+  catg_s_name,
+  unit_name,
+  inv_qty,
+  bill_qty,
+  req_qty,
+  qty,
+  cost,
+  sale,
+  profit,
+  a.sdt
+from (
+    select
+      SALES_DIST,
+      BILL_NUM,
+      BILL_TYPE,
+      BILL_DATE,
+      shop_id,
+      PAYER,
+      SOLD_TO,
+      CUST_GROUP,
+      STAT_DATE,
+      SALESORG pur_org,
+      SALES_GRP,
+      regexp_replace(MATERIAL, '(^0*)', '') goodsid,
+      DISTR_CHAN channelsale,
+      _BIC_ZOPC0043,
+      a.sale_qty qty,
+      a.inv_qty inv_qty,
+      a.bill_qty,
+      a.req_qty,
+      a.tax_cost cost,
+      a.tax_sale_val sale,
+      a.tax_profit profit,
+      sdt
+    from csx_dw.csx_order_item a
+    where
+      a.bill_date >= '20190401'
+      and sdt >= '20190301'
+  ) a
+join (
+    select
+      shop_id,
+      shop_name,
+      prov_code,
+      prov_name
+    from dim.dim_shop
+    where
+      edate = '9999-12-31'
+      and sales_dist_new = '610000'
+  ) b on a.shop_id = b.shop_id
+join (
+    select
+      goodsid,
+      goodsname,
+      dept_id,
+      dept_name,
+      catg_l_id,
+      catg_l_name,
+      catg_s_id,
+      catg_s_name,
+      unit_name
+    from dim.dim_goods
+    where
+      edate = '9999-12-31'
+  ) c on a.goodsid = c.goodsid
+left join (
+    select
+      cust_id,
+      cust_name,case
+        when type_1_id_new = '321'
+        and source_id_new = '22' then '商超'
+        else 'B端客户'
+      end stype,
+      a.salename,
+      a.dist
+    from csx_ods.b2b_customer_new a
+  ) d on a.SOLD_TO = d.cust_id
+where
+  profit < -500
+  and stype like 'B%'
+  and bill_type != 'ZR1' --日负毛利  负毛利金额小于-500
+select
+  sdt,
+  stype,
+  prov_code,
+  prov_name,
+  dist,
+  salename,
+  a.shop_id,
+  shop_name,
+  a.cust_id,
+  cust_name,
+  dept_id,
+  dept_name,
+  c.catg_l_id,
+  catg_l_name,
+  a.goodsid,
+  goodsname,
+  c.unit_name,
+  sum(a.tax_costvalue) / sum(qty) avgcost,
+  sum(a.tax_salevalue) / sum(qty) avgprice,
+  sum(qty) qty,
+  sum(tax_salevalue) sale,
+  sum(tax_profit) profit
+from csx_ods.sale_b2b_dtl_fct a
+join (
+    select
+      cust_id,
+      cust_name,case
+        when type_1_id_new = '321'
+        and source_id_new = '22' then '商超'
+        else 'B端客户'
+      end stype,
+      a.salename,
+      a.dist
+    from csx_ods.b2b_customer_new a
+  ) b on a.cust_id = b.cust_id
+join (
+    select
+      goodsid,
+      goodsname,
+      unit_name,
+      dept_id,
+      dept_name,
+      catg_l_id,
+      catg_l_name
+    from dim.dim_goods
+    where
+      edate = '9999-12-31'
+  ) c on a.goodsid = c.goodsid
+join (
+    select
+      a.shop_id,
+      shop_name,
+      prov_code,
+      prov_name
+    from dim.dim_shop a
+    where
+      edate = '9999-12-31'
+      and sales_dist_new = '610000'
+  ) d on a.shop_id = d.shop_id
+  and sdt >= '20190401'
+where
+  stype = 'B端客户'
+  and retflag != 'X'
+group by
+  sdt,
+  prov_code,
+  stype,
+  prov_name,
+  dist,
+  salename,
+  a.shop_id,
+  shop_name,
+  a.cust_id,
+  cust_name,
+  dept_id,
+  dept_name,
+  c.catg_l_id,
+  catg_l_name,
+  a.goodsid,
+  goodsname,
+  c.unit_name
+having
+  sum(tax_profit) < -500

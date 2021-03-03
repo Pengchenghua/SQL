@@ -1,0 +1,100 @@
+set mapreduce.job.queuename=caishixian;
+set hive.exec.max.dynamic.partitions.pernode=1000;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.dynamic.partition=true;
+set hive.support.quoted.identifiers=none;
+insert overwrite table csx_dw.dws_basic_w_a_csx_product_info partition(sdt) 
+select 
+  id,
+  product_code,
+  shop_code,
+  product_name,
+  product_bar_code,
+  short_name,
+  root_category_code,
+  root_category_name,
+  big_category_code, 
+  big_category_name, 
+  middle_category_code, 
+  middle_category_name, 
+  small_category_code,
+  small_category_name,
+  purchase_group_code,
+  purchase_group_name, 
+  brand_code,
+  brand_name,
+  bar_type,
+  product_type,
+  product_flag,
+  tax_rate,
+  tax_rate_code,
+  qualitative_period,
+  unit,
+  spec, 
+  net_weight,
+  gross_weight,
+  season,
+  place_origin,
+  manufacturer,
+  purchasing_level,
+  ename,
+  price_belt_type,
+  country_origin,
+  valuation_category_code,
+  valuation_category_name, 
+  purchase_org_code,
+  purchase_org_name,
+  region_code,
+  regionalized_trade_names,
+  delivery_type,
+  big_piece_number,
+  small_piece_number,
+  break_number,
+  must_sale_flag,
+  origin_descript,
+  product_attribute,
+  package_num,
+  shop_name,
+  shop_purchase_group_code,
+  shop_purchase_group_name,
+  company_code,
+  company_name,
+  business_type,
+  des_specific_product_status,
+  product_status_name,
+  supplier_code, 
+  supplier_name, 
+  logistics_mode,
+  logistics_mode_name,
+  valid_tag,
+  valid_tag_name,
+  input_tax_rate, 
+  input_tax_rate_code,
+  origin_description,
+  sales_return_tag,
+  shop_valuation_category_code,
+  shop_valuation_category_name,
+  if(b.goods_code is not null, '工厂商品', '非工厂商品') as is_gc_product,
+  product_shop_id,
+  product_id,
+  shop_id,
+  product_region_id,
+  company_id,
+  supplier_id,
+  purchase_id,
+  create_time,
+  update_time,
+  location_type,
+  location_name,
+  sdt
+from
+(
+  select * from csx_ods.source_basic_w_a_csx_product_info
+  where sdt = regexp_replace(date_sub(current_date, 1), '-', '')
+) a left outer join 
+(
+  select distinct goods_code from csx_dw.dws_mms_w_a_factory_bom_m 
+  where sdt = 'current'           
+) b on a.product_code = b.goods_code;
+
+

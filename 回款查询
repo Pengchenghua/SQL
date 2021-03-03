@@ -1,0 +1,97 @@
+--回款查询
+
+DROP TABLE IF EXISTS b2b_tmp.temp_current01 ;
+CREATE
+TEMPORARY TABLE b2b_tmp.temp_current01 AS
+SELECT x.kunnr,
+       sum(amount)in_value,
+          sum(coalesce(amount,0)+coalesce(ac_all,0))in_amt
+FROM
+  (-- sdt 为次月日期，budat 区间日期 分区sdt 选择最新日期;
+SELECT kunnr,
+       sum(a.dmbtr)amount,
+       0 ac_all
+   FROM ods_ecc.ecc_ytbcustomer a
+   WHERE hkont LIKE '1122%'
+     AND sdt=regexp_replace(to_date(date_sub(current_timestamp(),1)),'-','')
+     AND budat<regexp_replace(to_date(current_timestamp()),'-','')
+     AND a.budat>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
+     AND substr(a.belnr,1,1)<>'6'
+     AND mandt='800'
+     AND (substr(kunnr,1,1) NOT IN ('G',
+                                    'L',
+                                    'V',
+                                    'S')
+          OR kunnr='S9961')
+   GROUP BY kunnr
+   UNION ALL -- sdt 更改上月底日期
+SELECT kunnr,
+       0 amount,
+       sum(ac_all) ac_all
+   FROM csx_dw.account_age_dtl_fct
+   WHERE sdt=regexp_replace(to_date(date_sub(trunc(date_sub(current_timestamp(),1),'MM'),1)),'-','')
+     AND hkont LIKE '1122%'
+     AND (substr(kunnr,1,1) NOT IN ('G',
+                                    'L',
+                                    'V',
+                                    'S')
+          OR kunnr='S9961')
+   GROUP BY kunnr)x
+WHERE (amount<0
+  OR ac_all<0)
+GROUP BY x.kunnr;
+
+-- 客户销售
+drop table if exists b2b_tmp.temp_current02;
+CREATE temporary table if NOT EXISTS b2b_tmp.temp_current02 as
+SELECT channel_name,
+       customer_no,
+       customer_name,
+       province_code,
+       province_name,
+       first_category,
+       sales_work_no,
+       sales_name,
+       sales_supervisor_name,
+       sum(sales_value)sale
+FROM csx_dw.sale_goods_m
+WHERE sdt>=regexp_replace(to_date(date_sub(current_timestamp(),1)),'-','')
+  AND sdt<regexp_replace(to_date(current_timestamp()),'-','')
+  and channel in('1','7')
+GROUP BY channel_name,
+         customer_no,
+         customer_name,
+         province_code,
+         province_name,
+         first_category,
+         sales_work_no,
+         sales_name,
+         sales_supervisor_name
+;
+
+-- 客户资料
+select channel,customer_no,customer_name,sales_province_code,sales_province,sign_time,payment_days,sale,amount
+from 
+(
+SELECT customer_no,
+       customer_name,
+       sales_province,
+       sales_province_code,
+       channel,
+       to_date(sign_time)sign_time,
+       payment_terms,
+       payment_days
+FROM csx_dw.customer_m
+WHERE sdt=regexp_replace(to_date(date_sub(current_timestamp(),1)),'-','')
+and customer_no!='' and channel in('大客户%' , '企业购','BBC')
+)a 
+join 
+(select customer_no,sum(sale)sale,sum(amount)amount from 
+(
+select customer_no,sale,0 amount from b2b_tmp.temp_current02
+union all
+select kunnr as  customer_no,0 sale,amount from b2b_tmp.temp_current01
+ )b group by customer_no
+) b on a.customer_no=b.customer_no
+
+
