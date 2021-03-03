@@ -221,7 +221,7 @@ group by
 	division_code ,
 	substr(sdt,1,6) 
 	;
-
+-- 汇总数据
 
 select 
     sales_province_code,
@@ -243,3 +243,4 @@ left join csx_tmp.tmp_goods_04 d on a.shop_code=d.dc_code and a.mon=d.mon and a.
 left join (select shop_id,shop_name,sales_province_code,sales_province_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') e on a.shop_code=e.shop_id
 left join (select distinct division_code,division_name from csx_dw.dws_basic_w_a_category_m where sdt='current') f on a.root_category_code=f.division_code
 ;
+
