@@ -1,0 +1,1 @@
+select * from finedb.FINE_CONF_ENTITY

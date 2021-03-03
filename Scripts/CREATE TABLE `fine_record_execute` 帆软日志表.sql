@@ -1,0 +1,22 @@
+CREATE TABLE `fine_record_execute` (
+  `id` varchar(50) NOT NULL COMMENT '主键',
+  `tname` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '模板名称（reportlet 下的完整路径）',
+  `displayName` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '挂载到平台的目录名称（全路径），如果直接访问链接则为空',
+  `type` int(11) DEFAULT NULL COMMENT '报表访问方式，具体列举在下面的表格中（范围0~105，目前已使用33个编码）',
+  `param` longtext CHARACTER SET utf8 COLLATE utf8_bin COMMENT '参数',
+  `ip` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '执行报表的 IP 地址',
+  `username` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '执行报表的用户',
+  `userrole` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '执行报表的用户角色',
+  `consume` int(11) DEFAULT NULL COMMENT '执行耗时，包括 SQL 执行时间和报表计算时间',
+  `time` date DEFAULT NULL COMMENT '日志开始时间',
+  `sql` longtext CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'SQL语句',
+  `sqlTime` int(11) DEFAULT NULL COMMENT '执行SQL时长',
+  `browser` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '客户端访问报表所用的浏览器版本',
+  `memory` int(11) DEFAULT NULL COMMENT '报表占用内存，单位 B若因宕机等情况计算中断，记录的是报表开始计算到计算中断所占用的内存（根据格子数估算，一格子占用0.2KB）,  当模板 complete 字段值为0时，这个里记录的是0，若计算完成，记录的数据除200之后返回的是报表从开始计算到计算完成所生成的格子数',
+  `reportId` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '模板编码',
+  `userId` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '用户ID',
+  `complete` int(11) DEFAULT NULL COMMENT '是否计算完成',
+  `source` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '访问方式（integration 是通过 URL 访问，single 是平台访问的 ）',
+  `sessionID` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '会话 ID，用于与性能埋点表中（fine_intelli_consume_point）的前端渲染耗时相关埋点进行关联',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='finedb日志';

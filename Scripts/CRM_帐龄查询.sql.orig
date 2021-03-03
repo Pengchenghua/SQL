@@ -1,0 +1,12 @@
+                                     select
+ mon,dist,channel,qdflag,customer_no,full_cust,first_category,second_category,
+  third_category, sign_time, sign_amount, sales_name	,	work_no	,	sales_city,
+ first_supervisor_name,sale,profit,hz,round(profit/sale,4)	prorate	from (select
+ mon, coalesce(b.dist,sales_province	)dist	,	channel, qdflag	,	a.customer_no	,
+      customer_name	,concat(a.customer_no	,' ',customer_name )full_cust	,
+ a.first_category, second_category,	customer_name,	first_category,	second_category, third_category,	sign_time
+                      ,	sign_amount,	sales_name,	work_no,
+first_supervisor_name,mon,concat(a.customer_no	,' ',customer_name ),cust_id )a
+ $ {if(	len(dist)==0	,"","and dist	in ('"+dist+"')")	} $ {if(	len(custid)==0
+,"","and cust_id in	('"+custid+"')") } order	by mon desc,dist,a.first_category
+                                     asc ;

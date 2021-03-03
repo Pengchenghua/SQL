@@ -1,0 +1,1 @@
+select * from csx_data_market.dws_ssms_province_month_sale_plan dspmsp ;

@@ -1,0 +1,1 @@
+select DISTINCT move_name ,move_type ,wms_order_type from accounting_stock_detail_view where move_type ='101A' 

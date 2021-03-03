@@ -1,0 +1,1 @@
+SELECT * FROM csx_basic_data.md_dic md   

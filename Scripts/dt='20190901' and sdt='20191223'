@@ -1,0 +1,494 @@
+[1mdiff --git a/Script-10.sql b/Script-10.sql[m
+[1mindex d350c32..2981410 100644[m
+[1m--- a/Script-10.sql[m
+[1m+++ b/Script-10.sql[m
+[36m@@ -1,6 +1,117 @@[m
+[31m-select * from mysql.`user` ;[m
+[31m-select * from sys.latest_file_io ;[m
+[31m-select current_timestamp ;[m
+[31m-[m
+[31m-select * from l [m
+[31m-;[m
+\ No newline at end of file[m
+[32m+[m[32mrefresh csx_dw.customer_sale_m;[m
+[32m+[m[32mSELECT a.channel_name,[m
+[32m+[m[32m       province_name,[m
+[32m+[m[32m       CASE[m
+[32m+[m[32m           WHEN b.mat_type = 'æˆå“'[m
+[32m+[m[32m                AND a.goodsid NOT IN ('5990',[m
+[32m+[m[32m                                      '877589') THEN 'æˆå“'[m
+[32m+[m[32m           ELSE 'è½¬é…'[m
+[32m+[m[32m       END mat_type,[m
+[32m+[m[32m       COUNT(DISTINCT a.goodsid)sku,[m
+[32m+[m[32m       SUM(profit) profit,[m
+[32m+[m[32m       SUM(sales) sales[m
+[32m+[m[32mFROM[m
+[32m+[m[32m  ( SELECT channel,[m
+[32m+[m[32m           channel_name,[m
+[32m+[m[32m           sgm2.province_name,[m
+[32m+[m[32m           sgm2.goods_code goodsid,[m
+[32m+[m[32m           sgm2.sap_origin_dc_code origin_shop_id,[m
+[32m+[m[32m           sum(sales_value) sales,[m
+[32m+[m[32m           sum(sgm2.profit) profit[m
+[32m+[m[32m   FROM csx_dw.customer_sale_m AS sgm2[m
+[32m+[m[32m   WHERE sdt >= '20190101'[m
+[32m+[m[32m     AND sdt <= '20191222'[m
+[32m+[m[32m     AND channel IN ('2',[m
+[32m+[m[32m                     '3')[m
+[32m+[m[32m   GROUP BY channel,[m
+[32m+[m[32m            channel_name,[m
+[32m+[m[32m            goods_code,[m
+[32m+[m[32m            sap_origin_dc_code,[m
+[32m+[m[32m            province_name) a[m
+[32m+[m[32mLEFT JOIN[m
+[32m+[m[32m  ( SELECT DISTINCT shop_id,[m
+[32m+[m[32m                    goodsid,[m
+[32m+[m[32m                    mat_type[m
+[32m+[m[32m   FROM[m
+[32m+[m[32m     ( SELECT DISTINCT shop_id,[m
+[32m+[m[32m                       goodsid,[m
+[32m+[m[32m                       mat_type[m
+[32m+[m[32m      FROM csx_ods.marc_ecc  a where  a.shop_id not in (select DISTINCT factory_location_code from csx_dw.factory_bom where sdt='current')[m[41m [m
+[32m+[m[32m      UNION ALL[m[41m [m
+[32m+[m[32m      SELECT DISTINCT a.factory_location_code shop_id,[m
+[32m+[m[32m                                a.goods_code AS goodsid,[m
+[32m+[m[32m                                'æˆå“' mat_type[m
+[32m+[m[32m      FROM csx_dw.factory_bom AS a[m
+[32m+[m[32m      WHERE a.sdt = 'current' ) b ) b ON a.origin_shop_id = b.shop_id[m
+[32m+[m[32mAND a.goodsid = b.goodsid[m
+[32m+[m[32mGROUP BY a.channel_name,[m
+[32m+[m[32m         province_name,[m
+[32m+[m[32m         CASE[m
+[32m+[m[32m             WHEN b.mat_type = 'æˆå“'[m
+[32m+[m[32m                  AND a.goodsid NOT IN ('5990',[m
+[32m+[m[32m                                        '877589') THEN 'æˆå“'[m
+[32m+[m[32m             ELSE 'è½¬é…'[m
+[32m+[m[32m         END[m
+[32m+[m[32mUNION ALL[m
+[32m+[m[32m-- å¤§å®¢æˆ·[m
+[32m+[m[32mSELECT channel_name,[m
+[32m+[m[32m       province_name,[m
+[32m+[m[32m       CASE[m
+[32m+[m[32m           WHEN b.goodsid IS NOT NULL THEN 'æˆå“'[m
+[32m+[m[32m           ELSE 'é‡‡è´­'[m
+[32m+[m[32m       END mat_type,[m
+[32m+[m[32m       COUNT(DISTINCT a.goodsid)sku,[m
+[32m+[m[32m       SUM(profit) profit,[m
+[32m+[m[32m       SUM(sales) sales[m
+[32m+[m[32mFROM[m
+[32m+[m[32m  ( SELECT CASE[m
+[32m+[m[32m               WHEN channel IN ('1',[m
+[32m+[m[32m                                '7') THEN '1'[m
+[32m+[m[32m               ELSE channel[m
+[32m+[m[32m           END channel,[m
+[32m+[m[32m           CASE[m
+[32m+[m[32m               WHEN channel IN ('1',[m
+[32m+[m[32m                                '7') THEN 'å¤§å®¢æˆ·'[m
+[32m+[m[32m               ELSE channel_name[m
+[32m+[m[32m           END channel_name,[m
+[32m+[m[32m           sgm2.province_name,[m
+[32m+[m[32m           sgm2.goods_code goodsid,[m
+[32m+[m[32m           sap_origin_dc_code origin_shop_id,[m
+[32m+[m[32m           sum(sales_value) sales,[m
+[32m+[m[32m           sum(sgm2.profit) profit[m
+[32m+[m[32m   FROM csx_dw.customer_sale_m AS sgm2[m
+[32m+[m[32m   WHERE sdt >= '20190101'[m
+[32m+[m[32m     AND sdt <= '20191222'[m
+[32m+[m[32m     AND channel_name NOT LIKE 'å•†è¶…%'[m
+[32m+[m[32m   GROUP BY CASE[m
+[32m+[m[32m                WHEN channel IN ('1',[m
+[32m+[m[32m                                 '7') THEN '1'[m
+[32m+[m[32m                ELSE channel[m
+[32m+[m[32m            END,[m
+[32m+[m[32m            CASE[m
+[32m+[m[32m                WHEN channel IN ('1',[m
+[32m+[m[32m                                 '7') THEN 'å¤§å®¢æˆ·'[m
+[32m+[m[32m                ELSE channel_name[m
+[32m+[m[32m            END,[m
+[32m+[m[32m            goods_code,[m
+[32m+[m[32m            sap_origin_dc_code,[m
+[32m+[m[32m            province_name) a[m
+[32m+[m[32mLEFT JOIN[m
+[32m+[m[32m  ( SELECT DISTINCT goodsid,[m
+[32m+[m[32m                    mat_type[m
+[32m+[m[32m   FROM[m
+[32m+[m[32m     ( SELECT DISTINCT shop_id,[m
+[32m+[m[32m                       goodsid,[m
+[32m+[m[32m                       mat_type[m
+[32m+[m[32m      FROM csx_ods.marc_ecc a  where  a.shop_id not in (select DISTINCT factory_location_code from csx_dw.factory_bom where sdt='current')[m[41m [m
+[32m+[m[32m      UNION ALL SELECT DISTINCT a.factory_location_code shop_id,[m
+[32m+[m[32m                                a.goods_code AS goodsid,[m
+[32m+[m[32m                                'æˆå“' mat_type[m
+[32m+[m[32m      FROM csx_dw.factory_bom AS a[m
+[32m+[m[32m      WHERE a.sdt = 'current' ) b where a.mat_type ='æˆå“'   ) b ON a.goodsid = b.goodsid[m
+[32m+[m[32mGROUP BY channel_name,[m
+[32m+[m[32m         province_name,[m
+[32m+[m[32m         CASE[m
+[32m+[m[32m             WHEN b.goodsid IS NOT NULL THEN 'æˆå“'[m
+[32m+[m[32m             ELSE 'é‡‡è´­'[m
+[32m+[m[32m         END ;[m
+\ No newline at end of file[m
+[1mdiff --git a/Script-11.sql b/Script-11.sql[m
+[1mindex c236bae..6852bd4 100644[m
+[1m--- a/Script-11.sql[m
+[1m+++ b/Script-11.sql[m
+[36m@@ -82,7 +82,7 @@[m [mjoin ([m
+ 		product_name,[m
+ 		sale_unit)b on[m
+ 	a.order_code = b.order_code ;[m
+[31m--- ¿â´æ²éÑ¯[m
+[32m+[m[32m-- ï¿½ï¿½ï¿½ï¿½Ñ¯[m
+ select company_code,[m
+ 	location_code,[m
+ 	location_name ,[m
+[36m@@ -94,4 +94,10 @@[m [mwhere[m
+ 	posting_time < '2019-12-01 00:00:00'[m
+ group by company_code,[m
+ 	location_code,location_name ,[m
+[31m-	purchase_group_code;[m
+\ No newline at end of file[m
+[32m+[m	[32mpurchase_group_code;[m
+[32m+[m[41m	[m
+[32m+[m
+[32m+[m[32mselect COUNT(*) from csx_basic_data.md_all_shop_info ;[m
+[32m+[m[32mselect COUNT(*) from csx_basic_data.md_shop_info ;[m
+[32m+[m[32mselect * from csx_b2b_factory.factory_master ;[m
+[32m+[m[32mselect *  from csx_basic_data.md_all_shop_info  where rt_shop_code ='E236' ;[m
+\ No newline at end of file[m
+[1mdiff --git a/Script-72.sql b/Script-72.sql[m
+[1mindex ee45aaa..2f169f1 100644[m
+[1m--- a/Script-72.sql[m
+[1m+++ b/Script-72.sql[m
+[36m@@ -18,43 +18,61 @@[m [mFROM[m
+ 	csx_b2b_scm.scm_order_product_price[m
+ WHERE[m
+ 	order_code = 'TO99B2191023000095';[m
+[31m-select[m
+[32m+[m
+[32m+[m[32mSELECT[m
+ 	*[m
+[31m-from[m
+[31m-	csx_basic_data.erp_mid_employee eme where employee_name  like '%';[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_basic_data.erp_mid_employee eme[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32memployee_name LIKE 'å…¬%%';[m
+ [m
+[31m-select[m
+[32m+[m[32mSELECT[m
+ 	*[m
+ FROM[m
+ 	csx_basic_data.csx_product_info[m
+[31m-where[m
+[32m+[m[32mWHERE[m
+ 	shop_code = 'W048'[m
+[31m-	and product_code = '841896';[m
+[32m+[m	[32mAND product_code = '841896';[m
+ [m
+[31m-select[m
+[32m+[m[32mSELECT[m
+ 	*[m
+[31m-from[m
+[32m+[m[32mFROM[m
+ 	csx_b2b_wms.wms_shipped_order_item[m
+[31m-where[m
+[31m-	order_code in ('OU191121000077',[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32morder_code IN ('OU191121000077',[m
+ 	'OU191121000076',[m
+ 	'OU191120000105',[m
+ 	'OU191120000106') ;[m
+ [m
+[31m-select[m
+[32m+[m[32mSELECT[m
+ 	*[m
+[31m-from[m
+[32m+[m[32mFROM[m
+ 	csx_b2b_accounting.accounting_stock_detail[m
+[31m-where[m
+[32m+[m[32mWHERE[m
+ 	DATE_FORMAT (biz_time ,[m
+[31m-	'yyyy%MM%dd')!= DATE_FORMAT (posting_time ,[m
+ 	'yyyy%MM%dd')[m
+[31m-	and posting_time >= '2019-11-20 00:00:00';[m
+[31m-select *  from csx_b2b_factory.factory_setting_general_bom ;[m
+[32m+[m	[32m!= DATE_FORMAT (posting_time ,[m
+[32m+[m	[32m'yyyy%MM%dd')[m
+[32m+[m	[32mAND posting_time >= '2019-11-20 00:00:00';[m
+[32m+[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_b2b_factory.factory_setting_general_bom ;[m
+ [m
+[31m-select a.*,b.* from csx_b2b_wms.wms_bills_config a [m
+[31m-left join [m
+[31m-csx_b2b_wms.wms_entry_order_header  b on a.business_type_code =b.business_type [m
+[31m-	;[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32ma.*,[m
+[32m+[m	[32mb.*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_b2b_wms.wms_bills_config a[m
+[32m+[m[32mLEFT JOIN csx_b2b_wms.wms_entry_order_header b ON[m
+[32m+[m	[32ma.business_type_code = b.business_type ;[m
+[32m+[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32mDISTINCT[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_b2b_factory.factory_setting_bom;[m
+ 	[m
+[31m-SELECT DISTINCT FROM csx_b2b_factory.factory_setting_bom [m
+\ No newline at end of file[m
+[32m+[m[32mselect * from csx_b2b_wms.wms_bills_config ;[m
+[32m+[m
+[32m+[m[32mSELECT * FROM csx_b2b_sell.apply_order where apply_no ='OY191128001004'[m
+\ No newline at end of file[m
+[1mdiff --git "a/csx_dw_sale_b2b_item&csx_ods\350\276\203\351\252\214.sql" "b/csx_dw_sale_b2b_item&csx_ods\350\276\203\351\252\214.sql"[m
+[1mindex 22fa1b8..c3bc2ce 100644[m
+[1m--- "a/csx_dw_sale_b2b_item&csx_ods\350\276\203\351\252\214.sql"[m
+[1m+++ "b/csx_dw_sale_b2b_item&csx_ods\350\276\203\351\252\214.sql"[m
+[36m@@ -1,31 +1,123 @@[m
+[32m+[m
+ -- CONNECTION: name=Hadoop-IMpala[m
+[32m+[m[32m SELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.sale_warzone02_detail_dtl a[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt = '20190722'[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.report_all_channel_statistics[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt = '20190722';[m
+[32m+[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.customer_simple_info_v2[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt = '20190722'[m
+[32m+[m	[32mAND sales_user_name LIKE '%ï¿½ï¿½ï¿½ï¿½%';[m
+ [m
+[31m-select * from csx_dw.sale_warzone02_detail_dtl a where sdt='20190722'[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.sale_warzone02_detail_dtl[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt >= '20190701'[m
+[32m+[m	[32mAND cust_id = 'PF1209' ;[m
+ [m
+[31m-select * from csx_dw.report_all_channel_statistics where sdt='20190722';[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.csx_order_item[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt >= '20190701'[m
+[32m+[m	[32mAND sold_to = 'PF1209'[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mdim.dim_goods[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32mgoodsid = '1050360';[m
+ [m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_ods.sale_b2b_dtl_fct[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32msdt >= '20190701'[m
+[32m+[m	[32mAND cust_id = '105296';[m
+ [m
+[31m-SELECT * FROM csx_dw.customer_simple_info_v2 where sdt='20190722'and sales_user_name like '%ÀîÏè%';[m
+[31m-select * from csx_dw.sale_warzone02_detail_dtl where sdt>='20190701' and cust_id='PF1209' ;[m
+[31m-select * from csx_dw.csx_order_item where sdt>='20190701' and sold_to='PF1209'[m
+[31m-SELECT * from dim.dim_goods where goodsid='1050360';[m
+[31m-select * from csx_ods.sale_b2b_dtl_fct where sdt>='20190701' and cust_id='105296';[m
+[31m-select * from dim.dim_shop_goods_latest where goodsid='1050360' and shop_id='9951' and sdt='20190722';[m
+[31m-select * from csx_ods.sale_b2b_dtl_fct ;[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mdim.dim_shop_goods_latest[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32mgoodsid = '1050360'[m
+[32m+[m	[32mAND shop_id = '9951'[m
+[32m+[m	[32mAND sdt = '20190722';[m
+ [m
+[31m-select  customer_no,[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32m*[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_ods.sale_b2b_dtl_fct ;[m
+[32m+[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32mcustomer_no,[m
+ 	-- customer_name,[m
+[31m-	a.sales_type,sum(sales_value)sale  from csx_dw.sale_b2b_item a [m
+[31m-where customer_no='PF1209'and a.sdt='20190722' [m
+[31m-	group by customer_no,a.sales_type[m
+[31m-	[m
+[31m-JOIN[m
+[31m-(select * from csx_dw.customer_simple_info_v2 where sdt='20190722')b on a.customer_no=b.customer_number[m
+[31m-and a.sdt='20190722'[m
+[31m-group by  customer_no,customer_name,a.sales_type;[m
+[31m-[m
+[31m-select  cust_id,sflag,sum(tax_salevalue)sale  from csx_ods.sale_b2b_dtl_fct a where cust_id='PF1209'and a.sdt='20190722' and sflag!='md' group by cust_id,sflag[m
+[31m-JOIN[m
+[31m-(select * from csx_dw.customer_simple_info_v2 where sdt='20190722')b on regexp_replace(a.cust_id,'(^0*)','')=regexp_replace(customer_number,'(^0*)','')[m
+[31m-and a.sdt='20190722'[m
+[31m-group by  cust_id,customer_name;[m
+[32m+[m[32m a.sales_type,[m
+[32m+[m	[32mSUM(sales_value)sale[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_dw.sale_b2b_item a[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32mcustomer_no = 'PF1209'[m
+[32m+[m	[32mAND a.sdt = '20190722'[m
+[32m+[m[32mGROUP BY[m
+[32m+[m	[32mcustomer_no,[m
+[32m+[m	[32ma.sales_type[m
+[32m+[m[32mJOIN ([m
+[32m+[m	[32mSELECT[m
+[32m+[m		[32m*[m
+[32m+[m	[32mFROM[m
+[32m+[m		[32mcsx_dw.customer_simple_info_v2[m
+[32m+[m	[32mWHERE[m
+[32m+[m		[32msdt = '20190722')b ON[m
+[32m+[m	[32ma.customer_no = b.customer_number[m
+[32m+[m	[32mAND a.sdt = '20190722'[m
+[32m+[m[32mGROUP BY[m
+[32m+[m	[32mcustomer_no,[m
+[32m+[m	[32mcustomer_name,[m
+[32m+[m	[32ma.sales_type;[m
+[32m+[m
+[32m+[m[32mSELECT[m
+[32m+[m	[32mcust_id,[m
+[32m+[m	[32msflag,[m
+[32m+[m	[32mSUM(tax_salevalue)sale[m
+[32m+[m[32mFROM[m
+[32m+[m	[32mcsx_ods.sale_b2b_dtl_fct a[m
+[32m+[m[32mWHERE[m
+[32m+[m	[32mcust_id = 'PF1209'[m
+[32m+[m	[32mAND a.sdt = '20190722'[m
+[32m+[m	[32mAND sflag != 'md'[m
+[32m+[m[32mGROUP BY[m
+[32m+[m	[32mcust_id,[m
+[32m+[m	[32msflag[m
+[32m+[m[32mJOIN ([m
+[32m+[m	[32mSELECT[m
+[32m+[m		[32m*[m
+[32m+[m	[32mFROM[m
+[32m+[m		[32mcsx_dw.customer_simple_info_v2[m
+[32m+[m	[32mWHERE[m
+[32m+[m		[32msdt = '20190722')b ON[m
+[32m+[m	[32mregexp_replace(a.cust_id,[m
+[32m+[m	[32m'(^0*)',[m
+[32m+[m	[32m'')= regexp_replace(customer_number,[m
+[32m+[m	[32m'(^0*)',[m
+[32m+[m	[32m'')[m
+[32m+[m	[32mAND a.sdt = '20190722'[m
+[32m+[m[32mGROUP BY[m
+[32m+[m	[32mcust_id,[m
+[32m+[m	[32mcustomer_name;[m
+[1mdiff --git "a/\344\276\233\345\272\224\351\223\276\345\215\225\346\215\256\350\267\237\350\270\252.sql" "b/\344\276\233\345\272\224\351\223\276\345\215\225\346\215\256\350\267\237\350\270\252.sql"[m
+[1mindex 33c1130..23a3fc4 100644[m
+[1m--- "a/\344\276\233\345\272\224\351\223\276\345\215\225\346\215\256\350\267\237\350\270\252.sql"[m
+[1m+++ "b/\344\276\233\345\272\224\351\223\276\345\215\225\346\215\256\350\267\237\350\270\252.sql"[m
+[36m@@ -1,12 +1,12 @@[m
+ [m
+ -- select version();[m
+[31m--- µ¥¾İÀàĞÍ(1-¹©Ó¦ÉÌ¶©µ¥¡¢2-¹©Ó¦ÉÌÍË»õ¶©µ¥¡¢3-ÅäËÍ¶©µ¥¡¢4-·µÅä¶©µ¥[m
+[31m--- source_type COMMENT 'À´Ô´ÀàĞÍ(1-²É¹ºµ¼Èë¡¢2-Ö±ËÍ¿Í»§¡¢3-Ò»¼ü´ú·¢¡¢4-ÏîÄ¿ºÏ»ïÈË¡¢5-ÎŞµ¥Èë¿â¡¢6-¼ÄÊÛµ÷²¦¡¢7-×ÔÓªµ÷²¦¡¢8-ÔÆ³¬²É¹º¡¢9-¹¤³§²É¹º)'[m
+[31m--- status ×´Ì¬(1-ÒÑ´´½¨¡¢2-ÒÑ·¢»õ¡¢3-²¿·ÖÈë¿â¡¢4-ÒÑÍê³É¡¢5-ÒÑÈ¡Ïû)[m
+[31m--- system_status ÏµÍ³×´Ì¬(1-¶©µ¥ÒÑÌá½»¡¢2-ÒÑÍ¬²½WMS¡¢3-WMSÒÑ»Ø´«¡¢4-ĞŞ¸ÄÒÑÌá½»¡¢5-ĞŞ¸ÄÒÑÍ¬²½WMS¡¢6-ĞŞ¸Ä³É¹¦¡¢7-ĞŞ¸ÄÊ§°Ü)[m
+[31m--- source_type À´Ô´ÀàĞÍ(1-²É¹ºµ¼Èë¡¢2-Ö±ËÍ¿Í»§¡¢3-Ò»¼ü´ú·¢¡¢4-ÏîÄ¿ºÏ»ïÈË¡¢5-ÎŞµ¥Èë¿â¡¢6-¼ÄÊÛµ÷²¦¡¢7-×ÔÓªµ÷²¦¡¢8-ÔÆ³¬²É¹º¡¢9-¹¤³§²É¹º)[m
+[32m+[m[32m-- å•æ®ç±»å‹(1-ä¾›åº”å•†è®¢å•ã€2-ä¾›åº”å•†é€€è´§è®¢å•ã€3-é…é€è®¢å•ã€4-è¿”é…è®¢å•[m
+[32m+[m[32m-- source_type COMMENT 'æ¥æºç±»å‹(1-é‡‡è´­å¯¼å…¥ã€2-ç›´é€å®¢æˆ·ã€3-ä¸€é”®ä»£å‘ã€4-é¡¹ç›®åˆä¼™äººã€5-æ— å•å…¥åº“ã€6-å¯„å”®è°ƒæ‹¨ã€7-è‡ªè¥è°ƒæ‹¨ã€8-äº‘è¶…é‡‡è´­ã€9-å·¥å‚é‡‡è´­)'[m
+[32m+[m[32m-- status çŠ¶æ€(1-å·²åˆ›å»ºã€2-å·²å‘è´§ã€3-éƒ¨åˆ†å…¥åº“ã€4-å·²å®Œæˆã€5-å·²å–æ¶ˆ)[m
+[32m+[m[32m-- system_status ç³»ç»ŸçŠ¶æ€(1-è®¢å•å·²æäº¤ã€2-å·²åŒæ­¥WMSã€3-WMSå·²å›ä¼ ã€4-ä¿®æ”¹å·²æäº¤ã€5-ä¿®æ”¹å·²åŒæ­¥WMSã€6-ä¿®æ”¹æˆåŠŸã€7-ä¿®æ”¹å¤±è´¥)[m
+[32m+[m[32m-- source_type æ¥æºç±»å‹(1-é‡‡è´­å¯¼å…¥ã€2-ç›´é€å®¢æˆ·ã€3-ä¸€é”®ä»£å‘ã€4-é¡¹ç›®åˆä¼™äººã€5-æ— å•å…¥åº“ã€6-å¯„å”®è°ƒæ‹¨ã€7-è‡ªè¥è°ƒæ‹¨ã€8-äº‘è¶…é‡‡è´­ã€9-å·¥å‚é‡‡è´­)[m
+ [m
+[31m--- system_status  COMMENT 'ÏµÍ³×´Ì¬(1-¶©µ¥ÒÑÌá½»¡¢2-ÒÑÍ¬²½WMS¡¢3-WMSÒÑ»Ø´«¡¢4-ĞŞ¸ÄÒÑÌá½»¡¢5-ĞŞ¸ÄÒÑÍ¬²½WMS¡¢6-ĞŞ¸Ä³É¹¦¡¢7-ĞŞ¸ÄÊ§°Ü)',[m
+[32m+[m[32m-- system_status  COMMENT 'ç³»ç»ŸçŠ¶æ€(1-è®¢å•å·²æäº¤ã€2-å·²åŒæ­¥WMSã€3-WMSå·²å›ä¼ ã€4-ä¿®æ”¹å·²æäº¤ã€5-ä¿®æ”¹å·²åŒæ­¥WMSã€6-ä¿®æ”¹æˆåŠŸã€7-ä¿®æ”¹å¤±è´¥)',[m
+  select[m
+ 	a.order_code,[m
+ 	super_class ,[m
+[36m@@ -61,10 +61,10 @@[m [mfrom[m
+ 			update_time,[m
+ 			a.order_code,[m
+ 			case[m
+[31m-				when a.super_class = 1 then '1-¹©Ó¦ÉÌ¶©µ¥'[m
+[31m-				when a.super_class = 2 then '2-¹©Ó¦ÉÌÍË»õ¶©µ¥'[m
+[31m-				when a.super_class = 3 then '3-ÅäËÍ¶©µ¥'[m
+[31m-				when a.super_class = 4 then '4-·µÅä¶©µ¥'[m
+[32m+[m				[32mwhen a.super_class = 1 then '1-ä¾›åº”å•†è®¢å•'[m
+[32m+[m				[32mwhen a.super_class = 2 then '2-ä¾›åº”å•†é€€è´§è®¢å•'[m
+[32m+[m				[32mwhen a.super_class = 3 then '3-é…é€è®¢å•'[m
+[32m+[m				[32mwhen a.super_class = 4 then '4-è¿”é…è®¢å•'[m
+ 				else a.super_class[m
+ 			end super_class ,[m
+ 			source_type,[m
+[1mdiff --git "a/\345\220\210\344\274\231\344\272\272\351\224\200\345\224\256.sql" "b/\345\220\210\344\274\231\344\272\272\351\224\200\345\224\256.sql"[m
+[1mindex 49b0bba..4d29c3f 100644[m
+[1m--- "a/\345\220\210\344\274\231\344\272\272\351\224\200\345\224\256.sql"[m
+[1m+++ "b/\345\220\210\344\274\231\344\272\272\351\224\200\345\224\256.sql"[m
+[36m@@ -44,7 +44,7 @@[m
+ --		'103246',[m
+ --		'103250',[m
+ --		'104697',[m
+[31m---		'104742') THEN '¼æÖ°ºÏ»ïÈË'[m
+[32m+[m[32m--		'104742') THEN 'å…¼èŒåˆä¼™äºº'[m
+ --		ELSE note[m
+ --	END note[m
+ --FROM[m
+[36m@@ -65,7 +65,7 @@[m
+ --LEFT JOIN ([m
+ --	SELECT[m
+ --		DISTINCT customer_no,[m
+[31m---		'ÏîÄ¿ºÏ»ïÈË' note[m
+[32m+[m[32m--		'é¡¹ç›®åˆä¼™äºº' note[m
+ --	FROM[m
+ --		csx_dw.csx_partner_list) b ON[m
+ --	a.customer_no = b.customer_no;[m
+[36m@@ -94,9 +94,9 @@[m [mLEFT JOIN ([m
+ 	SELECT[m
+ 		sdt,[m
+ 	case[m
+[31m-		when province_name like 'Æ½Ì¨%' then 'Æ½Ì¨'[m
+[31m-		when channel in('1','7') then '´ó¿Í»§'[m
+[31m-		when channel in('2','3','8') then 'ÉÌ³¬'[m
+[32m+[m		[32mwhen province_name like 'å¹³å°%' then 'å¹³å°'[m
+[32m+[m		[32mwhen channel in('1','7') then 'å¤§å®¢æˆ·'[m
+[32m+[m		[32mwhen channel in('2','3','8') then 'å•†è¶…'[m
+ 		else channel_name[m
+ 	end  channel_name,[m
+ 		province_code,[m
+[36m@@ -117,9 +117,9 @@[m [mLEFT JOIN ([m
+ 		customer_no,[m
+ 		customer_name,[m
+ 		case[m
+[31m-		when province_name like 'Æ½Ì¨%' then 'Æ½Ì¨'[m
+[31m-		when channel in('1','7') then '´ó¿Í»§'[m
+[31m-		when channel in('2','3','8') then 'ÉÌ³¬'[m
+[32m+[m		[32mwhen province_name like 'å¹³å°%' then 'å¹³å°'[m
+[32m+[m		[32mwhen channel in('1','7') then 'å¤§å®¢æˆ·'[m
+[32m+[m		[32mwhen channel in('2','3','8') then 'å•†è¶…'[m
+ 		else channel_name[m
+ 	end ,[m
+ 		sdt)a ON[m
+[36m@@ -139,7 +139,7 @@[m [mGROUP BY[m
+ [m
+ -- select * from temp.p_customer_sale[m
+ [m
+[31m--- Í³¼ÆÊı¾İ[m
+[32m+[m[32m-- ç»Ÿè®¡æ•°æ®[m
+  SELECT[m
+ 	channel_name,[m
+ 	province_code,[m
+[36m@@ -1

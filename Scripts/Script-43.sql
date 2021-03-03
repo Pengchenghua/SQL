@@ -1,0 +1,1 @@
+select * from csx_data_market.ads_bbc_s_d_customer_summary absdcs 

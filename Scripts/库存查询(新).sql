@@ -1,0 +1,27 @@
+SELECT company_code,
+       company_name,
+       dc_code,
+       dc_name,
+       goods_code,
+       goods_name,
+       unit,
+       department_id,
+       department_name,
+       division_code,
+       division_name,
+       category_large_code,
+       category_large_name,
+       category_middle_code,
+       category_middle_name,
+       category_small_code,
+       category_small_name,
+       reservoir_area_code,
+       reservoir_area_name,
+       qty as qty_11,
+       amt as amt_11,
+       amt_no_tax,
+       0 qty,
+       0 amt
+FROM csx_dw.wms_accounting_stock_m
+WHERE sdt='20191130'
+and company_code in ('2211','2207','2210')

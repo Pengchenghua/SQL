@@ -1,0 +1,1 @@
+select * from csx_basic_data.md_supplier_info msi 

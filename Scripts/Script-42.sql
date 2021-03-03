@@ -1,0 +1,1 @@
+select * from fine_record_execute where time>='2020-12-01'
