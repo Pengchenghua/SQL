@@ -1,6 +1,7 @@
 set hive.execution.engine=spark;
-set sdate='20210201';
+set sdate='20210101';
 set edate='20210228';
+set l_sdt= regexp_replace(add_months(from_unixtime(unix_timestamp(${hiveconf:edate},'yyyyMMdd'),'yyyy-MM-dd'),-12),'-','');
 
 -- set tez.queue.name=caishixian;
 drop table csx_tmp.temp_supplier_list;
@@ -10,6 +11,7 @@ select company_code,supplier_code from csx_dw.dws_wms_r_d_entry_detail a
 join 
 (select location_code,company_code,company_name from csx_dw.csx_shop where sdt='current') b on a.settlement_dc=b.location_code
 where sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate}
+and a.order_type_code like 'P%'
 group by supplier_code,company_code
 ;
 -- select count(*) from  csx_tmp.temp_supplier_list_01;
@@ -103,7 +105,7 @@ join
 (select location_code from csx_dw.csx_shop where sdt='current' and table_type=2 ) b on a.shop_id_in=b.location_code
 left join 
 (select vendor_id,vat_regist_num from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current' ) c on regexp_replace(a.vendor_id,'^0*','')=c.vendor_id
-where sdt>='20200101' and sdt<=${hiveconf:edate}
+where sdt>=${hiveconf:l_sdt} and sdt<=${hiveconf:edate}
 and a.pur_org not like 'P6%'
 group by  regexp_replace(a.vendor_id,'^0*',''),vat_regist_num;
 

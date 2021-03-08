@@ -205,8 +205,7 @@ GROUP BY
 	province_name ,
 	CASE
 		WHEN b.mat_type = '成品'
-		AND a.goodsid NOT IN ( '5990' ,
-		'877589' ) THEN '成品'
+		AND a.goodsid NOT IN ( '5990' ,	'877589' ) THEN '成品'
 		ELSE '转配'
 END
 UNION ALL

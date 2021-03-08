@@ -72,7 +72,7 @@ from
   	'否' as beginning_mark,	--是否期初
   	bad_debt_amount,	--坏账金额
   	if((money_back_status<>'ALL' or (datediff(${hiveconf:current_day1}, overdue_date)+1)>=1),datediff(${hiveconf:current_day1}, overdue_date)+1,0) as over_days	-- 逾期天数
-  from csx_ods.source_sss_r_a_source_bill  --客户对账来源单---全量未处理
+  from csx_ods.source_sss_r_a_source_bill  --客户对账来源单  -- 全量未处理
   where sdt=${hiveconf:current_day}
   and beginning_mark='1'  	-- 期初标识 0-是 1-否
   --and money_back_status<>'ALL'	
