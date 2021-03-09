@@ -2,8 +2,8 @@
 --周转天数=期末库存量/30天领用量
 set edt='${enddate}';
 set e_date=regexp_replace(${hiveconf:edt},'-','');
---set s_date=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
-set s_date=regexp_replace(add_months(${hiveconf:edt},-30),'-','');
+set s_date=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
+--set s_date=regexp_replace(add_months(${hiveconf:edt},-30),'-','');
 --select ${hiveconf:s_date};
 --期末库存
 drop table if exists csx_tmp.temp_fact_receipt;
@@ -147,8 +147,8 @@ select  zone_id,
     material_take_qty,
 coalesce(receipt_qty+material_take_qty,0) as use_qty,
 coalesce(receipt_amt+material_take_amt,0) as use_qty,
-coalesce(case when coalesce(receipt_qty+material_take_qty,0)=0 and end_inventoty_qty<>0 then 9999 
-else end_inventoty_qty/(receipt_qty+material_take_qty)*30 end,0) as turn_day 
+coalesce(case when coalesce(receipt_qty+material_take_qty,0)<=0 and end_inventoty_qty<>0 then 9999 
+else (end_inventoty_qty/(receipt_qty+material_take_qty))*28 end,0) as turn_day 
 from csx_tmp.temp_fact_receipt 
 ;
 
