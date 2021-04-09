@@ -4,7 +4,7 @@ set hive.exec.dynamic.partition             =true;     --开启动态分区
 set hive.exec.dynamic.partition.mode        =nonstrict;  --设置为非严格模式
 set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
-set sdt=regexp_replace(date_sub(${hiveconf:edt},60),'-','');
+set sdt=regexp_replace(date_sub(${hiveconf:edt},90),'-','');
 -- 供应商配送 P01 类型
 -- select regexp_replace(date_sub(${hiveconf:edt},60),'-','');
 insert overwrite table csx_tmp.ads_wms_r_d_supplier_in_out_report_fr partition (sdt)
