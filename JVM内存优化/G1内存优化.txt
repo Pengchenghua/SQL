@@ -1,0 +1,22 @@
+-XX:+UseG1GC ：启用 G1 (Garbage First) 垃圾收集器
+
+-XX:MaxGCPauseMillis：设置允许的最大GC停顿时间(GC pause time)，这只是一个期望值，实际可能会超出，可以和年轻代大小调整一起并用来实现。默认是200ms。
+
+-XX:InitiatingHeapOccupancyPercent=45
+
+设置触发标记周期的 Java 堆占用率阈值。默认占用率是整个 Java 堆的 45%。
+其他调优参数
+
+-XX:G1HeapRegionSize：每个分区的大小，默认值是会根据整个堆区的大小计算出来，范围是1M~32M，取值是2的幂，计算的倾向是尽量有2048个分区数。比如如果是2G的heap，那region=1M。16Gheap,region=8M。
+-XX:ParallelGCThreads=n
+
+-XX:InitiatingHeapOccupancyPercent：一般会简写IHOP,默认是45%,这个占比跟并发周期的启动相关，当空间占比达到这个值时，会启动并发周期。如果经常出现FullGC，可以调低该值，尽早的回收可以减少FullGC的触发，但如果过低，则并发阶段会更加频繁，降低应用的吞吐。
+-XX:G1NewSizePercent：年轻代最小的堆空间占比，默认是5%。
+-XX:G1MaxNewSizePercent：年轻代最大的堆空间占比，默认是60%。
+-XX:ConcGCThreads：并发执行的线程数，默认值接近整个应用线程数的1/4。
+-XX:G1HeapWastePercent:允许的浪费堆空间的占比，默认是5%。如果并发标记可回收的空间小于5%,则不会触发MixedGC。
+-XX:G1MixedGCCountTarget:一次全局并发标记之后，后续最多执行的MixedGC次数。 默认值是8.
+
+-XX:+PrintReferenceGC :打印日志
+
+-XX:+PrintAdaptiveSizePolicy   # 自适应策略

@@ -54,14 +54,17 @@ stored as  parquet
 ;
 
 
+
 set hive.exec.parallel                      =true;
 set hive.exec.dynamic.partition             =true;     --开启动态分区
-set hive.exec.dynamic.partition.mode        =nonstrict;--设置为非严格模式
+set hive.exec.dynamic.partition.mode        =nonstrict;  --设置为非严格模式
 set edt='${enddate}';
+set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set sdt=regexp_replace(date_sub(${hiveconf:edt},60),'-','');
 -- 供应商配送 P01 类型
-
+-- select regexp_replace(date_sub(${hiveconf:edt},60),'-','');
 insert overwrite table csx_tmp.ads_wms_r_d_supplier_in_out_report_fr partition (sdt)
+
 select company_code,
     company_name,
     dist_code,
@@ -102,13 +105,13 @@ select company_code,
     valuation_category_code,
     valuation_category_name,
     unit,
-    sum(entry_qty) as entry_qty,
-    sum(entry_amt) as entry_amt,
+    sum(purchase_qty) as purchase_qty,
+    sum(purchase_amt) as purchase_amt,
     sum(return_qty) as return_qty,
     sum(return_amt) as return_amt,
-    sum(entry_amt /(1 + tax_rate / 100)) no_tax_entry_amt,
+    sum(purchase_amt /(1 + tax_rate / 100)) no_tax_purchase_amt,
     sum(return_amt /(1 + tax_rate / 100)) no_tax_return_amt,
-    is_setl as clear_flag,
+    clear_flag,
     sdt
 from (
         select sdt,
@@ -117,17 +120,17 @@ from (
             supplier_code,
             goods_code,
             unit,
-            sum(receive_qty) as entry_qty,
-            sum(a.receive_qty * a.price ) as entry_amt,
+            sum(a.receive_qty) as purchase_qty,
+            sum(price*a.receive_qty) as purchase_amt,
             0 return_qty,
             0 return_amt
-        from csx_dw.wms_entry_order a
+        from csx_dw.dws_wms_r_d_entry_detail a
         where sdt >= ${hiveconf:sdt}
-            and sdt <= regexp_replace(${hiveconf:edt},'-','')
+            and sdt <=${hiveconf:e_dt}
             --		and a.department_id='A02'
             --		and receive_location_code ='W0A7'
-            and (entry_type_code like 'P01%' or a.business_type_code in  ('ZN01','ZN02','ZN03','ZX05'))
-            and receive_status = 2
+            and a.order_type_code like 'P%'
+            and a.receive_status = 2
         group by sdt,
             receive_location_code,
             supplier_code,
@@ -135,25 +138,25 @@ from (
             unit,
             order_code
         union all
-        select send_sdt as sdt,
-            shipped_location_code dc_code,
-            order_no order_code,
+        select regexp_replace(to_date(send_time),'-','') as sdt,
+            shipped_location_code as dc_code,
+            order_no as order_code,
             supplier_code,
             goods_code,
             unit,
-            0 entry_qty,
-            0 entry_amt,
+            0 purchase_qty,
+            0 purchase_amt,
             sum(coalesce(shipped_qty, 0)) as return_qty,
-            sum(shipped_qty * price ) as return_amt
-        from csx_dw.wms_shipped_order
-        where send_sdt >= {hiveconf:sdt}
-            and send_sdt <= regexp_replace(${hiveconf:edt},'-','')
+            sum(price*shipped_qty) as return_amt
+        from csx_dw.dws_wms_r_d_ship_detail
+        where regexp_replace(to_date(send_time),'-','') >= ${hiveconf:sdt}
+            and regexp_replace(to_date(send_time),'-','') <=  ${hiveconf:e_dt}
             and status in (6, 7, 8)
             and (
-                shipped_type_code like 'P01%'
-                or shipped_type_code like 'RP%'
+                order_type_code like 'P%'
+                or order_type_code like 'RP%'
             )
-        group by send_sdt,
+        group by  regexp_replace(to_date(send_time),'-','') ,
             shipped_location_code,
             supplier_code,
             goods_code,
@@ -172,13 +175,13 @@ from (
         from csx_dw.csx_shop
         where sdt = 'current'
     ) b on a.dc_code = b.location_code
-    join (
+    left join (
         select vendor_id,
             vendor_name,
             vat_regist_num,
             vendor_pur_lvl,
             vendor_pur_lvl_name,
-            is_setl
+            is_setl as clear_flag   --是否统采
         from csx_dw.dws_basic_w_a_csx_supplier_m
         where sdt = 'current'
     ) c on a.supplier_code = c.vendor_id
@@ -253,4 +256,4 @@ group by company_code,
     a.sdt,
     purchase_org,
     purchase_name,
-    is_setl;
+    clear_flag;

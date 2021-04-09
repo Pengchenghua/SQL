@@ -147,7 +147,8 @@ SELECT  substr(sdt,1,6) as mon,
        receive_qty,
        receive_amt,
        shipped_qty,
-       shipped_amt
+       shipped_amt,
+       receive_colse_date
 FROM csx_dw.ads_supply_order_flow a 
 join 
 (select goods_id,
@@ -171,10 +172,10 @@ join
 left join 
 (select sales_province_code,sales_province_name,shop_id,sales_region_code,sales_region_name 
 from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') c on a.receive_location_code=c.shop_id
-WHERE ( shipped_status in ('6','7','8') or a.receive_status='2') and ((a.receive_close_date>='20210101'
-        AND receive_close_date<='20210131')
-       OR (shipped_date >='20210101'
-           AND shipped_date<='20210131'))
+WHERE ( shipped_status in ('6','7','8') or a.receive_status='2') and ((a.receive_close_date>='20210301'
+        AND receive_close_date<='20210331')
+       OR (shipped_date >='20210201'
+           AND shipped_date<='20210331'))
            
 ;           
 group by 
