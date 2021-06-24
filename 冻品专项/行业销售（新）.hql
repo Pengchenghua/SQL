@@ -45,6 +45,10 @@ select
     a.province_code,
     a.province_name,
     a.customer_no,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name ,
     business_type_code,
     classify_large_code,
     classify_large_name,
@@ -59,6 +63,8 @@ select
     sum(case when business_type_code='1' and classify_middle_code  in('B0304','B0305') then a.sales_value end ) as frozen_daily_sales,
     sum(case when business_type_code='1' and classify_middle_code  in('B0304','B0305') then a.profit end ) as frozen_daily_profit
 from csx_dw.dws_sale_r_d_detail a 
+left join
+(select customer_no,first_category_code,first_category_name,second_category_code,second_category_name from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_no=b.customer_no
 where sdt>=${hiveconf:s_dt}
     and sdt<=${hiveconf:e_dt}
     --and a.business_type_code !='4'
@@ -79,7 +85,11 @@ group by
     a.classify_small_name,
     a.province_code,
     a.province_name,
-    a.customer_no
+    a.customer_no,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name 
 ;
 
 -- 环期数据 
@@ -96,6 +106,10 @@ select
     business_type_code,
     classify_large_code,
     classify_large_name,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name ,
     a.classify_middle_code,
     a.classify_middle_name,
     a.classify_small_code,
@@ -107,6 +121,9 @@ select
     sum(case when a.business_type_code='1' and  classify_middle_code  in('B0304','B0305') then a.sales_value end ) as last_frozen_daily_sales,
     sum(case when a.business_type_code='1' and  classify_middle_code  in('B0304','B0305') then a.profit end ) as last_frozen_daily_profit
 from csx_dw.dws_sale_r_d_detail a 
+left join
+(select customer_no,first_category_code,first_category_name,second_category_code,second_category_name from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_no=b.customer_no
+
 where sdt>=${hiveconf:last_sdt}
     and sdt<=${hiveconf:last_edt}
     -- and classify_middle_code='B0304'
@@ -125,7 +142,11 @@ group by
     a.classify_middle_code,
     a.classify_middle_name,
     a.classify_small_code,
-    a.classify_small_name
+    a.classify_small_name,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name 
 ;
 
 
@@ -139,6 +160,10 @@ select
     province_code,
     province_name,
     customer_no,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     business_type_code,
     classify_large_code,
     classify_large_name,
@@ -165,6 +190,10 @@ from
     province_code,
     province_name,
     customer_no,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     a.business_type_code,
     classify_large_code,
     classify_large_name,
@@ -192,6 +221,10 @@ select channel_name,
     province_code,
     province_name,
     customer_no,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     a.business_type_code,
     classify_large_code,
     classify_large_name,
@@ -220,6 +253,10 @@ group by
     province_code,
     province_name,
     customer_no,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     business_type_code,
     classify_large_code,
     classify_large_name,
@@ -230,7 +267,7 @@ group by
 
     ; 
     
-
+select * from csx_tmp.temp_sale_all_01 where region_code='3' and province_code='32' and classify_middle_code in ('B0304');
 
 -- 本期与环比汇总层级汇总 不含合伙人数据
 drop table if exists csx_tmp.temp_sale_all_01;
@@ -241,6 +278,10 @@ select
     region_name,
     province_code,
     province_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -270,6 +311,10 @@ group by
     region_name,
     province_code,
     province_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     classify_large_code,
     classify_large_name,
     a.classify_middle_code,
@@ -282,37 +327,103 @@ grouping sets
     region_name,
     province_code,
     province_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name ,
     classify_large_code,
     classify_large_name,
     a.classify_middle_code,
     a.classify_middle_name,
     a.classify_small_code,
-    a.classify_small_name),     --
+    a.classify_small_name),     --明细
     (channel_name,
     region_code,
     region_name,
     province_code,
-    province_name),
+    province_name,
+     first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name,
+    classify_large_code,
+    classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name),         --省区行业中类汇总
     (channel_name,
     region_code,
     region_name,
-    classify_large_code,
-    classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name,
-    a.classify_small_code,
-    a.classify_small_name),
+    province_code,
+    province_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name),  --	511 省区行业汇总
     (channel_name,
     region_code,
-    region_name),
+    region_name,
+    province_code,
+    province_name),   -- 31 省区汇总
     (channel_name,
+    region_code,
+    region_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name,
     classify_large_code,
     classify_large_name,
     a.classify_middle_code,
     a.classify_middle_name,
     a.classify_small_code,
-    a.classify_small_name),
-    ()
+    a.classify_small_name),  --32743 大区行业小类
+    (channel_name,
+    region_code,
+    region_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name,
+    classify_large_code,
+    classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name),  --32263 大区行业中类汇总
+    (channel_name,
+    region_code,
+    region_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name),  --7687 大区行业汇总
+    (channel_name,
+    region_code,
+    region_name),  --7 大区汇总
+    (channel_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name,
+    classify_large_code,
+    classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    a.classify_small_code,
+    a.classify_small_name), -- 32737 全国行业小类 汇总
+    (channel_name,
+    first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name,
+    classify_large_code,
+    classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name), -- 8161 全国行业中类 汇总
+    (channel_name,
+     first_category_code,
+    first_category_name,
+    second_category_code,
+    second_category_name),  --32257 全国行业汇总
+    ()   --0 
 )
 ;
 
@@ -379,6 +490,10 @@ select
     region_name,
     province_code,
     province_name,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name, 
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -390,6 +505,8 @@ select
     sum(a.profit) as frozen_profit_day,
     grouping__id
 from csx_dw.dws_sale_r_d_detail a 
+left join
+(select customer_no,first_category_code,first_category_name,second_category_code,second_category_name from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_no=b.customer_no
 where sdt>${hiveconf:s_dt_30} 
     and sdt<=${hiveconf:e_dt}
    -- and a.business_type_code !='4'  --剔除城市服务商
@@ -404,7 +521,11 @@ group by province_code,
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name
+    classify_small_name,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name
 grouping sets
     (
     (region_code,
@@ -416,7 +537,11 @@ grouping sets
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name),
+    classify_small_name,
+    b.first_category_code,
+    b.first_category_name,
+    b.second_category_code,
+    b.second_category_name),
      (
      region_code,
      region_name,

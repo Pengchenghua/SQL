@@ -92,8 +92,7 @@ select
     c.classify_small_name,
     a.goods_code
     from 
-    (
-select  
+    (select  
     a.province_code,
     a.province_name,
     a.city_group_code,
@@ -106,37 +105,36 @@ select
     sum(credit_rate*a.excluding_tax_sales) as credit_fee_amt,
     sum(run_rate*a.excluding_tax_sales) as run_fee_amt,
     sum(joint_venture_rate*a.excluding_tax_sales) as joint_venture_fee_amt
-from csx_dw.dws_sale_r_d_detail a  
-left join
-(select warehouse_code,
-    dimension_value_code as goods_code,
+from
+(
+  select *, regexp_replace(substr(shipped_time, 1, 10), '-', '') as shipped_date
+  from csx_dw.dws_sale_r_d_detail
+  where sdt = '20210524' and sales_type in ('qyg','bbc') and purchase_price_flag = 1
+    and dc_code = 'W0A2' and classify_middle_code in ('B0304','B0305')
+) a left join
+(
+  select
+    warehouse_code,
+    goods_code,
     warehouse_rate,         --仓储率
     delivery_rate,          --配送率
     credit_rate,            --信控率       
     run_rate,               --运营率
     joint_venture_rate,     --联营率
     price_begin_time,
-    price_end_time
-from  csx_ods.source_price_r_d_effective_middle_office_prices
-where dimension_type=0
-and sdt='20210523'
-)b on  a.dc_code=b.warehouse_code and a.goods_code=b.goods_code
-where a.purchase_price_flag=1 
-and a.sdt>='20210501'
-and a.dc_code='W0A2'
-and a.sales_time>=b.price_begin_time 
-and a.sales_time<=b.price_end_time 
-
-
---and a.classify_middle_code in ('B0304','B0305')
-group by 
-    a.province_code,
-    a.province_name,
-    a.city_group_code,
-    a.city_group_name,
-    a.goods_code
+    price_end_time,
+    channel,
+    type,
+    sdt
+  from csx_dw.dws_price_r_d_goods_prices_m
+  where sdt >= '20210510'
+) b on a.dc_code = b.warehouse_code and a.goods_code = b.goods_code 
+  and a.channel_code = cast(b.channel as string) and a.order_category_name = b.type
+  and a.shipped_date = b.sdt
+where a.shipped_time >= b.price_begin_time and a.shipped_time <= b.price_end_time
+group by a.province_code,a.province_name,a.city_group_code,a.city_group_name,a.goods_code
 )a
-;
+
     c.classify_middle_code,
     c.classify_middle_name,
     c.classify_small_code,

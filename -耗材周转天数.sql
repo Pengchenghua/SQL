@@ -148,7 +148,7 @@ select  zone_id,
 coalesce(receipt_qty+material_take_qty,0) as use_qty,
 coalesce(receipt_amt+material_take_amt,0) as use_qty,
 coalesce(case when coalesce(receipt_qty+material_take_qty,0)<=0 and end_inventoty_qty<>0 then 9999 
-else (end_inventoty_qty/(receipt_qty+material_take_qty))*28 end,0) as turn_day 
+else (end_inventoty_qty/(receipt_qty+material_take_qty))*30 end,0) as turn_day 
 from csx_tmp.temp_fact_receipt 
 ;
 

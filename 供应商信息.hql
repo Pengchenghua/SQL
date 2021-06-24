@@ -61,7 +61,7 @@ left join
 -- 行业
 (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=${hiveconf:edate} and dic_type='VENDERVARIETY') d on a.industry_code=d.dic_key
 left join
--- 行业
+-- 对帐日期
 (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=${hiveconf:edate} and dic_type='CONCILIATIONNFLAG') f on a.reconciliation_tag=f.dic_key
  where sdt=${hiveconf:edate}
 ;
