@@ -1,15 +1,7 @@
-DESCRIBE source_pss_r_d_settle_inout_detail ;  --采购出入订单
-DESCRIBE source_pss_r_d_settle_settle_bill  ; --结算单
-DESCRIBE source_pss_r_d_statement_check_ticket ; --勾票单
-DESCRIBE source_pss_r_d_statement_invoice ; --发票单
-DESCRIBE source_pss_r_d_statement_payment ; --付款单
-DESCRIBE source_pss_r_d_statement_source_bill ; -- 对帐源单
-DESCRIBE source_pss_r_d_statement_statement_account ; --对帐单
-
--- 全量分区 20210615
-
+show create table csx_dw.dwd_pss_r_d_statement_source_bill ;
 --  财务信息 （对账信息——对帐表——勾票表——付款表）
 -- 对帐信息表 
+drop table csx_tmp.temp_pss_01;
 create table csx_tmp.temp_pss_01 as 
 select a.purchase_no,           --采购单号
        a.bill_no,               ----1 入库单(批次单号) 2、结算单
@@ -38,7 +30,8 @@ from
    to_date(finance_statement_time) as  finance_statement_date, --财务对帐日期
    to_date(pay_create_time) as  pay_create_date,        --付款生成日期
    to_date(paid_time) paid_date               --付款日期
-from csx_ods.source_pss_r_d_statement_source_bill where sdt='20210615'
+from csx_dw.dwd_pss_r_d_statement_source_bill 
+where sdt>='20190101'
 ) a 
 left join
 --对帐单
@@ -46,8 +39,8 @@ left join
         check_ticket_no, --勾票单号
         to_date(sign_date) as sign_date,     -- 供应商签单日期
         to_date(audit_date) as audit_date  --票核日期
-from csx_ods.source_pss_r_d_statement_statement_account  
-where sdt='20210615'
+from csx_dw.dwd_pss_r_d_statement_statement_account  
+where sdt>='20190101'
 group by
         statement_no,   --对帐单号
         check_ticket_no, --勾票单号
@@ -61,8 +54,8 @@ select check_ticket_no,     --勾票单号
         to_date(check_date) as check_date,         --勾票日期
         to_date(invoice_sub_date)as invoice_sub_date,   --发票录入日期
         to_date(audit_date) as audit_date          --票核日期
-from csx_ods.source_pss_r_d_statement_check_ticket 
-where sdt='20210615' 
+from csx_dw.dwd_pss_r_d_statement_check_ticket 
+where sdt>='20190101' 
 group by check_ticket_no,     --勾票单号
         to_date(check_date) ,         --勾票日期
         to_date(invoice_sub_date),   --发票录入日期
@@ -74,8 +67,8 @@ left join
 select payment_no,      --付款单号
     to_date(payment_time ) as payment_date,       --付款时间
     to_date(review_time) as review_date         --审核时间 
-from csx_ods.source_pss_r_d_statement_payment
-where sdt='20210615' 
+from csx_dw.dwd_pss_r_d_statement_payment
+where sdt>='20190101' 
 group by 
  payment_no,      --付款单号
     to_date(payment_time ) ,       --付款时间
@@ -119,7 +112,7 @@ from
     classify_middle_name,
     classify_small_code,
     classify_small_name
-from csx_ods.source_pss_r_d_settle_inout_detail a  --采购订单
+from csx_dw.dwd_pss_r_d_settle_inout_detail a  --采购订单
 left join 
 (SELECT goods_id,
        classify_large_code,
@@ -130,7 +123,7 @@ left join
        classify_small_name
 FROM csx_dw.dws_basic_w_a_csx_product_m    --商品资料表
 WHERE sdt='current') b on a.product_code=b.goods_id
-where sdt='20210615'
+where sdt>='20190101'
     and a.source_bill_type=1
 group by 
      source_bill_no,  --采购订单
@@ -172,20 +165,20 @@ from csx_dw.dwd_scm_r_d_order_header
 group by  order_code,to_date(create_time),supplier_code,received_order_code) b on c.origin_order_code=b.order_code   
 ;
 
-      a.statement_date,        --对帐日期
-       a.finance_statement_date,    --财务对帐日期
-       a.pay_create_date,   ---付款生成日期
-       a.paid_date,         --付款日期
-       b.sign_date,         --供应商签单日期
-       c.audit_date,        --票核日期
-       c.invoice_sub_date,  --发票录入日期
-       payment_date,      --付款日期
-       review_date,          --审核时间 
-       ;
+    --   a.statement_date,        --对帐日期
+    --   a.finance_statement_date,    --财务对帐日期
+    --   a.pay_create_date,   ---付款生成日期
+    --   a.paid_date,         --付款日期
+    --   b.sign_date,         --供应商签单日期
+    --   c.audit_date,        --票核日期
+    --   c.invoice_sub_date,  --发票录入日期
+    --   payment_date,      --付款日期
+    --   review_date,          --审核时间 
+    --   ;
 
 
 drop table  csx_tmp.temp_pss_02;
-create temporary table csx_tmp.temp_pss_02 as 
+create  table csx_tmp.temp_pss_02 as 
 select source_bill_no,
     order_code,
     entry_order_no,
@@ -216,31 +209,38 @@ select source_bill_no,
     statement_date,        --对帐日期
     finance_statement_date,     --财务对帐日期
     pay_create_date,   ---付款生成日期
-    paid_date,         --付款日期
+    payment_date,         --付款日期
     sign_date,         --供应商签单日期
     audit_date,        --票核日期
     invoice_sub_date,  --发票录入日期
     review_date,        --付款审核日期
-    coalesce(datediff(coalesce(payment_date,''),coalesce(finance_statement_date,'')),'') as finance_days,
-    coalesce(datediff(coalesce(payment_date,''),coalesce(invoice_sub_date,'')),'') as invoice_sub_days,
-    coalesce(datediff(coalesce(payment_date,''),coalesce(audit_date,'')),'') as audit_days,
-    coalesce(datediff(coalesce(payment_date,''),coalesce(pay_create_date,'')),'') as pay_create_days,
-    coalesce(datediff(coalesce(payment_date,''),coalesce(review_date,'')),'') as review_days
+    case when coalesce(finance_statement_date,'')='' then '' 
+        when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(finance_statement_date,''))
+        else coalesce(datediff(coalesce(payment_date,''),coalesce(finance_statement_date,'')),'') end as finance_days,  --财务对帐天数
+    case when coalesce(invoice_sub_date,'')='' then '' 
+        when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(invoice_sub_date,''))
+        else coalesce(datediff(coalesce(payment_date,''),coalesce(invoice_sub_date,'')),'') end as invoice_sub_days,     --发票录入天数
+    case when coalesce(audit_date,'')='' then '' 
+        when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(audit_date,''))
+        else coalesce(datediff(coalesce(payment_date,''),coalesce(audit_date,'')),'') end as audit_days,                 --票核天数
+    case when coalesce(pay_create_date,'')='' then '' 
+        when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(pay_create_date,''))
+        else coalesce(datediff(coalesce(payment_date,''),coalesce(pay_create_date,'')),'') end as pay_create_days,       --付款生成天数
+    case when coalesce(review_date,'')='' then '' 
+        when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(review_date,''))
+        else coalesce(datediff(coalesce(payment_date,''),coalesce(review_date,'')),'')end as review_days,               --付款审核天数
+    payment_status          --  单据状态
 from csx_tmp.temp_pss_00  a 
 left join 
 csx_tmp.temp_pss_01 b on order_code=purchase_no and a.in_out_no=b.bill_no
 left join
 (select supplier_code,supplier_name,reconciliation_tag,dic_value from csx_ods.source_basic_w_a_md_supplier_info a 
  left join
- (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt='20210616' and dic_type='CONCILIATIONNFLAG' ) b on a.reconciliation_tag=b.dic_key 
- where sdt='20210616') c on a.supplier_code=c.supplier_code
+ (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt='20210626' and dic_type='CONCILIATIONNFLAG' ) b on a.reconciliation_tag=b.dic_key 
+ where sdt='20210626') c on a.supplier_code=c.supplier_code
  left join 
  (select shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') d on a.happen_place_code=d.shop_id
   left join 
  (select shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') f on a.settle_place_code=f.shop_id
  
 ;
-
-select * from csx_tmp.temp_pss_02 where company_code='2126' ;
-
-DESCRIBE csx_dw.dws_basic_w_a_csx_supplier_m ;
