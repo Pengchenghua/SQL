@@ -1,0 +1,58 @@
+
+load data inpath '/tmp/pengchenghua/副本五月结存数量.csv' into table csx_tmp.temp_inv_cost_01;
+
+--DC编码	DC名称	公司代码	公司代码名称	库存编码	库存名称	商品编码	商品条码	商品名称	部类编码	部类名称	大类编码	大类名称	中类编码	中类名称	小类编码	小类名称	管理一级分类编码	管理一级分类名称	管理二级编码	管理二级名称	管理三级编码	管理三级名称	课组编码	课组名称	期末库存量	未税期末库存额	含税库存额
+
+
+select a.`?shipped_code`,a.dc_code,b.shop_name,company_code,company_name,a.receive_are_code,
+    d.name,
+    a.goods_code,
+    c.bar_code,
+    goods_name,
+    c.division_code,
+    c.division_name,
+    category_large_code,
+    category_large_name,
+    category_middle_code,
+    category_middle_name,
+    category_small_code,
+    category_small_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    department_id,
+    department_name,
+    a.qty,
+    a.no_tax_amt,
+    a.amt
+from csx_tmp.temp_inv_cost_01 a 
+left join 
+(select shop_id,shop_name,company_code,company_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') b on a.dc_code=b.shop_id
+left join
+(SELECT goods_id,
+       goods_name,
+       bar_code,
+       division_code,
+       division_name,
+       category_large_code,
+       category_large_name,
+       category_middle_code,
+       category_middle_name,
+       category_small_code,
+       category_small_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       department_id,
+       department_name
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current') c on a.goods_code=c.goods_id
+left join
+(select code,name,parent_code from csx_dw.dws_wms_w_a_basic_warehouse_reservoir where level='3') d on a.dc_code=d.parent_code and a.receive_are_code=d.code
+where (qty !=0 or amt!=0);
