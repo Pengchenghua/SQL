@@ -73,6 +73,8 @@ ORDER BY b.province_code,
          b.goods_code,
          b.sdt
         ;
+
+        
 -- 每日负毛利
 select sdt,
               province_code,

@@ -374,4 +374,78 @@ WHERE sdt='20210623'
 
 --逾期客户
  -- 逾期率>80% 应收金额>5000元
-    select * from csx_dw.dws_sss_r_a_customer_accounts where sdt='20210623' and province_name in ('四川省','重庆市','贵州省') and round(overdue_amount/receivable_amount,2)>0.8 and receivable_amount>0 ;
+    select * from csx_dw.dws_sss_r_a_customer_accounts 
+    where sdt='20210623' 
+    and province_name in ('四川省','重庆市','贵州省') 
+    and round(overdue_amount/receivable_amount,2)>0.8 
+    and receivable_amount>0 ;
+
+
+
+
+-----返利数据			
+select
+		customer_no,---客户编码
+		customer_name,---客户名称
+		region_code,
+		region_name,
+		second_category_name,
+		province_code,---省区编码
+		province_name,---省区
+		channel_code,---渠道
+		channel_name,---渠道
+		business_type_code,
+		business_type_name,
+		sales_type,
+		count(distinct mon ) as sales_mon,
+		count(distinct sdt) as sales_sdt,
+		sum(sales_value) sales_value,---销售额
+		sum(profit) profit---毛利额
+		from 
+(select	substr(sdt,1,6) as mon,
+        sdt,
+		customer_no,---客户编码
+		customer_name,---客户名称
+		second_category_name,
+		region_code,
+		region_name,
+		province_code,---省区编码
+		province_name,---省区
+		channel_code,---渠道
+		channel_name,---渠道
+		business_type_code,
+		business_type_name,
+		sales_type,
+		sum(sales_value) sales_value,---销售额
+		sum(profit) profit---毛利额
+from csx_dw.dws_sale_r_d_detail
+where sdt>='20210401' and sales_type ='fanli' and region_name ='华西大区'
+    and business_type_code='1'
+group by 
+	    substr(sdt,1,6),
+        sdt,
+	    customer_no,---客户编码
+	    second_category_name,
+		customer_name,---客户名称
+		region_code,
+		region_name,
+		province_code,---省区编码
+		province_name,---省区
+		channel_code,---渠道
+		channel_name,---渠道
+		business_type_code,
+		business_type_name,
+		sales_type
+)a where sales_value<0
+group by customer_no,---客户编码
+		customer_name,---客户名称
+		second_category_name,
+		region_code,
+		region_name,
+		province_code,---省区编码
+		province_name,---省区
+		channel_code,---渠道
+		channel_name,---渠道
+		business_type_code,
+		business_type_name,
+		sales_type;
