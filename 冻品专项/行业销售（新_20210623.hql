@@ -228,8 +228,12 @@ select
     sum(last_sales_qty) as last_sales_qty,
     sum(last_sales_value) as last_sales_value,
     sum(last_profit) as last_profit,
-    count(distinct case when sales_value>0 then customer_no end ) as sales_cust_number, --日配成交客户数
-    count(distinct case when last_sales_value>0  then customer_no end )as last_sales_cust_number,  --日配环比冻品成交客户数
+    sum(case when business_type_code='1' then  sales_value end ) as daily_sales_value,                      -- 日配销售额
+    sum(case when business_type_code='1' then  profit end ) as daily_profit,                      -- 日配销售额
+    sum(case when business_type_code='1' then  last_sales_value end ) as last_daily_sales_value,            -- 环期日配销售额
+    sum(case when business_type_code='1' then  last_profit end ) as last_daily_profit,            -- 环期日配销售额
+    count(distinct case when sales_value>0  and business_type_code='1' then customer_no end ) as sales_cust_number, --日配成交客户数
+    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_sales_cust_number,  --日配环比冻品成交客户数
     grouping__id
 from 
 (select
@@ -249,6 +253,7 @@ from
     classify_small_code,
     classify_small_name,
     a.customer_no,
+    a.business_type_code,
     sum(sales_qty) as sales_qty,
     sum(sales_value) as sales_value,
     sum(profit) as profit,
@@ -257,7 +262,7 @@ from
     sum(last_profit) as last_profit
   from    csx_tmp.tmp_sale_frozen_01 a
     where classify_middle_code in('B0304','B0305')
-    and a.business_type_code='1'
+   -- and a.business_type_code='1'
    -- and a.region_code='3'
 group by 
     channel_name,
@@ -275,7 +280,8 @@ group by
     a.classify_middle_name,
     a.classify_small_code,
     a.classify_small_name,
-    customer_no
+    customer_no,
+    business_type_code
     ) a
     where  1=1
 group by 
@@ -315,7 +321,7 @@ grouping sets
     region_name,
     province_code,
     province_name,
-     first_category_code,
+    first_category_code,
     first_category_name,
     second_category_code,
     second_category_name,
@@ -400,7 +406,7 @@ grouping sets
 )
 ;
 
-
+--select * from csx_tmp.tmp_sale_frozen_03;
    
 -- 日配总客户数
 drop table if exists  csx_tmp.tmp_sale_frozen_03;
@@ -412,15 +418,19 @@ select
     province_code,
     province_name,
     second_category_code,
-    count(  case when b_sales_value>0 then customer_no end) as b_cust_number,
-    count(  case when last_b_sales_value>0 then customer_no end ) as last_b_cust_number,
-    sum(frozen_sales_qty) as frozen_sales_qty,
-    sum(frozen_sales) as frozen_sales,
-    sum(frozen_profit) as frozen_profit,
+    count(distinct  case when b_sales_value>0  and business_type_code='1' then customer_no end) as b_daily_cust_number,
+    count( distinct case when last_b_sales_value>0 and business_type_code='1' then customer_no end ) as last_b_daily_cust_number,
+    -- sum(frozen_sales_qty) as frozen_sales_qty,
+    -- sum(frozen_sales) as frozen_sales,
+    -- sum(frozen_profit) as frozen_profit,
     sum(b_sales_value) as  b_sales_value,
     sum(b_profit) as b_profit,
     sum(last_b_sales_value) as last_b_sales_value,
     sum(last_b_profit) as last_b_profit,
+    sum(case when business_type_code='1' then b_sales_value end ) as B_daily_sale ,
+    sum(case when business_type_code='1' then b_profit end ) as B_daily_profit ,
+    sum(case when business_type_code='1' then last_b_sales_value end ) as last_B_daily_sale ,
+    sum(case when business_type_code='1' then last_b_profit end ) as last_B_daily_profit ,
     grouping__id
 from
 (
@@ -432,16 +442,16 @@ select
     province_name,
     customer_no,
     second_category_code,
-    sum(case when classify_middle_code in('B0304','B0305') then sales_qty end) as frozen_sales_qty,
-    sum(case when classify_middle_code in('B0304','B0305') then sales_value end) as frozen_sales,
-    sum(case when classify_middle_code in('B0304','B0305') then profit end) as frozen_profit,
+    business_type_code,
+    -- sum(case when classify_middle_code in('B0304','B0305') then sales_qty end) as frozen_sales_qty,
+    -- sum(case when classify_middle_code in('B0304','B0305') then sales_value end) as frozen_sales,
+    -- sum(case when classify_middle_code in('B0304','B0305') then profit end) as frozen_profit,
     sum(sales_value) as b_sales_value,
     sum(profit) as b_profit,
     sum(last_sales_value) as last_b_sales_value,
     sum(last_profit) as last_b_profit
 from csx_tmp.tmp_sale_frozen_01
 where 1=1
-    and business_type_code='1'
 group by 
     channel_name,
     region_code,
@@ -449,7 +459,8 @@ group by
     region_name,
     province_code,
     province_name,
-    customer_no
+    customer_no,
+    business_type_code
 ) a
 group by 
     channel_name,
@@ -546,23 +557,121 @@ grouping sets
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name)    --全国小类
-    ())
+    classify_small_name)    --全国小
+    )
     ) a 
 ;
 
 
---,'481','511','487'
--- select * from csx_tmp.tmp_sale_frozen_02 where grouping__id in ('32257','32263','32287');
--- insert overwrite table  csx_tmp.report_sale_r_d_frozen_industry_fr partition(months) 
+
+
+-- -- 行业中类销售额
+-- drop table if exists  csx_tmp.tmp_sale_frozen_05 ;
+-- create temporary  table csx_tmp.tmp_sale_frozen_05 as 
+-- select  coalesce(a.channel_name,'')as channel_name,
+--     coalesce(a.region_code,'')as region_code,
+--     coalesce(a.region_name,'')as region_name,
+--     coalesce(a.province_code,'') as  province_code,
+--     coalesce(a.province_name,'') as province_name,
+--     coalesce(first_category_code,'')first_category_code,
+--     coalesce(first_category_name,'')first_category_name,
+--     coalesce(second_category_code,'')second_category_code,
+--     coalesce(second_category_name,'')second_category_name,
+--     coalesce(a.classify_large_code,'') as  classify_large_code,
+--     coalesce(a.classify_large_name,'') as  classify_large_name,
+--     coalesce(a.classify_middle_code,'') as  classify_middle_code,
+--     coalesce(a.classify_middle_name,'') as  classify_middle_name,
+--     coalesce(a.classify_small_code,'') as classify_small_code,
+--     coalesce(a.classify_small_name,'') as classify_small_name,
+--     coalesce(sales_qty,0) as small_sales_qty,
+--     coalesce(a.sales_value,0) as small_sales_value,
+--     coalesce(profit,0) as small_profit
+--     from 
+-- (select channel_name,
+--     region_code,
+--     region_name,
+--     province_code,
+--     province_name,
+--     first_category_code,
+--     first_category_name,
+--     second_category_code,
+--     second_category_name,
+--     classify_large_code,
+--     classify_large_name,
+--     classify_middle_code,
+--     classify_middle_name,
+--     classify_small_code,
+--     classify_small_name,
+--     sum(sales_qty) as sales_qty,
+--     sum(sales_value) as sales_value,
+--     sum(profit) as profit
+-- from csx_tmp.tmp_sale_frozen_01 a
+-- group by 
+--     channel_name,
+--     region_code,
+--     region_name,
+--     province_code,
+--     province_name,
+--     first_category_code,
+--     first_category_name,
+--     second_category_code,
+--     second_category_name,
+--     classify_large_code,
+--     classify_large_name,
+--     classify_middle_code,
+--     classify_middle_name,
+--     classify_small_code,
+--     classify_small_name
+-- grouping sets 
+-- ((channel_name,
+--     region_code,
+--     region_name,
+--     province_code,
+--     province_name,
+--     first_category_code,
+--     first_category_name,
+--     second_category_code,
+--     second_category_name,
+--     classify_large_code,
+--     classify_large_name,
+--     classify_middle_code,
+--     classify_middle_name),   --省区
+--     (channel_name,
+--     region_code,
+--     region_name,
+--     first_category_code,
+--     first_category_name,
+--     second_category_code,
+--     second_category_name,
+--     classify_large_code,
+--     classify_large_name,
+--     classify_middle_code,
+--     classify_middle_name),    --大区小类 
+--     (channel_name,
+--     first_category_code,
+--     first_category_name,
+--     second_category_code,
+--     second_category_name,
+--     classify_large_code,
+--     classify_large_name,
+--     classify_middle_code,
+--     classify_middle_name),    --全国小类
+--     ())
+--     ) a 
+-- ;
+
+insert overwrite table  csx_tmp.report_sale_r_d_frozen_industry_new_fr  partition(months)
 select
     case when a.region_code is null then 1 
         when a.province_code is null then 2
-        when a.second_category_code is null then 3 
-        when a.classify_large_code is null then 4 
-        when a.classify_small_name is null then 5 
-        else 6
-    end level_id,  --分组：0 全国，1 全国管理分类，2 大区，3大区管理分类 4省区，5省区管分类
+        when a.classify_small_name is null then 3
+        else 4
+    end level_id,  --分组：1 全国，2 大区，3 省区，4 行业汇总 5、小类汇总
+    case when a.grouping__id in (7,31) then 0 
+        when a.grouping__id in (487,511) then 1 
+        when a.grouping__id in (8167,8191) then 2 
+        when a.grouping__id in (32743,32767) then 3 
+        else 4 end  asc_id,
     substr(${hiveconf:e_dt} ,1,4) as years,
     substr(${hiveconf:e_dt} ,1,6) as smonth,
     coalesce(a.channel_name,'B端')as channel_name,
@@ -586,34 +695,38 @@ select
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
-    coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
-    coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
-    coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
-    coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
     coalesce(small_sales_qty,  0) as small_sales_qty,                                   --小类销量
-    coalesce(small_sales_value, 0) as small_sales,                                      --小类销售额
+    coalesce(small_sales_value, 0) as small_sales_value,                                      --小类销售额
     small_profit ,                                                  --小类毛利额
     small_profit/small_sales_value as small_profit_rate,
-    coalesce(sales_value/small_sales_value,0) as sales_ratio,    -- 行业销售/小类销售占比
-    coalesce(sales_qty/small_sales_qty,0) as sales_qty_ratio,    -- 商品销售量/冻品销售量占比
+    coalesce(sales_value/small_sales_value,0) as small_sales_ratio,    -- 小类销售/小类总销售占比
+    coalesce(sales_qty/small_sales_qty,0) as small_sales_qty_ratio,    -- 小类销售量/小类总销售量占比
     case when coalesce(a.last_sales_value,0)=0 and coalesce(a.sales_value)>0 then 1 
         else coalesce((sales_value -coalesce(last_sales_value,0))/last_sales_value,0) 
-    end as ring_sales_rate ,                                                                 --销售环比增长率
+    end as ring_sales_rate ,                                                                 --冻品、调理销售额环比增长率
     case when coalesce(last_sales_qty,0)=0 and coalesce(a.sales_qty)>0 then 1 
         else  coalesce((sales_qty-coalesce(last_sales_qty,0))/last_sales_qty,0)
-    end as ring_sales_qty_rate ,                                                             --销售量环比增长率
-    coalesce(profit/a.sales_value,0) as profit_rate,                                          --商品定价毛利率
-    coalesce(profit/sales_value,0)- coalesce(last_profit/last_sales_value,0) as goods_diff_profit_rate,     --毛利率差
-    coalesce(sales_cust_number/b_cust_number,0) as cust_penetration_rate ,                                              ---商品渗透率
-    coalesce(last_sales_cust_number/last_b_cust_number,0) as last_cust_penetration_rate ,                   ---环期商品渗透率
-    coalesce(sales_cust_number/b_cust_number,0) - coalesce(last_sales_cust_number/last_b_cust_number ,0)  as diff_cust_penetration_rate ,   --- 商品渗透率环比
-    coalesce( sales_value/b_sales_value,0) as b_sales_ratio,                                                                                -- B端销售额/省区占比
-    coalesce( last_sales_value/last_b_sales_value,0) as last_b_sales_ratio,                                                                 -- B端销售额/省区占比
-    coalesce( sales_value/b_sales_value,0) - coalesce(last_sales_value/last_b_sales_value,0)  as b_diff_sale_ratio,                         --商品占省区占比环比差
+    end as ring_sales_qty_rate ,                                                             --冻品、调理销售量环比增长率
+    coalesce(profit/a.sales_value,0) as profit_rate,                                          --定价毛利率
+    coalesce(profit/sales_value,0)- coalesce(last_profit/last_sales_value,0) as diff_profit_rate,     --毛利率差
+    coalesce(a.daily_sales_value,0) as daily_sales_value,           --日配销售额
+    coalesce(a.daily_profit,0) as daily_profit,                     --日配毛利额
+    coalesce(a.last_daily_sales_value,0) as last_daily_sales_value, --环期日配销售额
+    coalesce(a.last_daily_profit,0) as last_daily_profit,           --环期日配毛利额
+    coalesce(B_daily_sale, 0) as B_daily_sale,                                     --日配行业销售额
+    coalesce(B_daily_profit, 0) as B_daily_profit,                        --日配行业销售毛利
+    coalesce(last_B_daily_sale, 0) as last_B_daily_sale,                               --环期日配销售额
+    coalesce(last_B_daily_profit,0) as last_B_daily_profit,                                 --环期日配行业毛利额
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --日配成交客户数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交客户数
+    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交客户
+    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交客户
+    coalesce(sales_cust_number/b_daily_cust_number,0) as daily_cust_penetration_rate ,               --日配渗透率
+    coalesce(last_sales_cust_number/last_b_daily_cust_number,0) as last_daily_cust_penetration_rate ,  --环期日配渗透率
+    coalesce(sales_cust_number/b_daily_cust_number,0) - coalesce(last_sales_cust_number/last_b_daily_cust_number ,0)  as diff_daily_cust_penetration_rate ,   -- 日配渗透率环比
+    coalesce( daily_sales_value/B_daily_sale,0) as daily_industry_sales_ratio,                                                                                -- 日配行业销售额/行业销售额
+    coalesce( last_daily_sales_value/last_B_daily_sale,0) as last_daily_industry_sales_ratio,                                                                 -- 日配行业销售额/行业销售额
+    coalesce( daily_sales_value/B_daily_sale,0) - coalesce(last_daily_sales_value/last_B_daily_sale,0)  as diff_daily_industry_sale_ratio,                         -- 日配行业销售占比环比差
     a.grouping__id,
     current_timestamp(),
     substr(${hiveconf:e_dt},1,6)
@@ -626,23 +739,20 @@ left join
  csx_tmp.tmp_sale_frozen_04   c  on coalesce(a.region_code,'')=c.region_code 
     and coalesce(a.province_code,'') = c.province_code
     and coalesce(a.classify_small_code,'')=c.classify_small_code
-    where a.region_code='3'
-   --  where a.grouping__id not in ('32257','32263','32287','481','511','487','7681','8161','7687','7711','8167')
-;
-
--- 插入 大区、省区、行业总数据
-
--- insert into table  csx_tmp.report_sale_r_d_frozen_industry_fr partition(months) 
+  where 1=1
+   and a.grouping__id  in ('31','511','8191','8167','511','487','7')
+union all 
 select
-    case when a.grouping__id = '0' then '0'
-     when a.grouping__id='481' then '1'
-     when a.grouping__id = '32737' then '2' 
-    when a.grouping__id = '7' then '2' 
-    when a.grouping__id='487' then '3' 
-    when a.grouping__id='32743' then '4' 
-    when a.grouping__id='31' then '4'
-    when a.grouping__id='511' then '5'
-    else '6' end level_id,  --分组：0 全国，1 全国管理分类，2 大区，3大区管理分类 4省区，5省区管分类
+    case when a.region_code is null then 1 
+        when a.province_code is null then 2
+        when a.classify_small_name is null then 3
+        else 4
+    end level_id,  --分组：0 全国，1 全国管理分类，2 大区，3大区管理分类 4省区，5省区管分类
+    case when a.grouping__id=0 then 0 
+        when a.grouping__id=481 then 1 
+        when a.grouping__id=8161 then 2 
+        when a.grouping__id = 32737 then 3 
+        else 4 end  asc_id,
     substr(${hiveconf:e_dt} ,1,4) as years,
     substr(${hiveconf:e_dt} ,1,6) as smonth,
     coalesce(a.channel_name,'B端')as channel_name,
@@ -658,42 +768,46 @@ select
     coalesce(a.classify_large_name,'') as  classify_large_name,
     coalesce(a.classify_middle_code,'') as  classify_middle_code,
     coalesce(a.classify_middle_name,'') as  classify_middle_name,
-    coalesce(a.classify_small_code,'') as classify_small_code,
-    coalesce(a.classify_small_name,'') as classify_small_name,
+    coalesce(a.classify_small_code,'00') as classify_small_code,
+    coalesce(a.classify_small_name,'小计') as classify_small_name,
     coalesce(sales_qty,0) as sales_qty,
     coalesce(a.sales_value,0) as sales_value,
     coalesce(profit,0) as profit,
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
-    coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
-    coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
-    coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
-    coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
-    coalesce(sum(sales_qty)over(partition by a.region_code,a.province_code),  0) as small_sales_qty,                                   --小类销量
-    coalesce(sum(sales_value)over(partition by a.region_code,a.province_code), 0) as small_sales, 
-    coalesce(sum(profit)over(partition by a.region_code,a.province_code), 0) as small_profit ,                                                  --小类毛利额
-    coalesce(sum(profit)over(partition by a.region_code,a.province_code), 0)/coalesce(sum(sales_value)over(partition by a.region_code,a.province_code), 0) as small_profit_rate,
-    coalesce(sales_value/ coalesce(sum(sales_value)over(partition by a.region_code,a.province_code), 0),0) as sales_ratio,    -- 行业销售/小类销售占比
-    coalesce(sales_qty/coalesce(sum(sales_qty)over(partition by a.region_code,a.province_code),  0),0) as sales_qty_ratio,    -- 商品销售量/冻品销售量占比
+    coalesce(small_sales_qty,  0) as small_sales_qty,                                   --小类销量
+    coalesce(small_sales_value, 0) as small_sales_value,                                      --小类销售额
+    small_profit ,                                                  --小类毛利额
+    small_profit/small_sales_value as small_profit_rate,
+    coalesce(sales_value/small_sales_value,0) as small_sales_ratio,    -- 小类销售/小类总销售占比
+    coalesce(sales_qty/small_sales_qty,0) as small_sales_qty_ratio,    -- 小类销售量/小类总销售量占比
     case when coalesce(a.last_sales_value,0)=0 and coalesce(a.sales_value)>0 then 1 
         else coalesce((sales_value -coalesce(last_sales_value,0))/last_sales_value,0) 
-    end as ring_sales_rate ,                                                                 --销售环比增长率
+    end as ring_sales_rate ,                                                                 --冻品、调理销售额环比增长率
     case when coalesce(last_sales_qty,0)=0 and coalesce(a.sales_qty)>0 then 1 
         else  coalesce((sales_qty-coalesce(last_sales_qty,0))/last_sales_qty,0)
-    end as ring_sales_qty_rate ,                                                             --销售量环比增长率
-    coalesce(profit/a.sales_value,0) as profit_rate,                                          --商品定价毛利率
-    coalesce(profit/sales_value,0)- coalesce(last_profit/last_sales_value,0) as goods_diff_profit_rate,     --毛利率差
-    coalesce(sales_cust_number/b_cust_number,0) as cust_penetration_rate ,                                              ---商品渗透率
-    coalesce(last_sales_cust_number/last_b_cust_number,0) as last_cust_penetration_rate ,                   ---环期商品渗透率
-    coalesce(sales_cust_number/b_cust_number,0) - coalesce(last_sales_cust_number/last_b_cust_number ,0)  as diff_cust_penetration_rate ,   --- 商品渗透率环比
-    coalesce( sales_value/b_sales_value,0) as b_sales_ratio,                                                                                -- B端销售额/省区占比
-    coalesce( last_sales_value/last_b_sales_value,0) as last_b_sales_ratio,                                                                 -- B端销售额/省区占比
-    coalesce( sales_value/b_sales_value,0) - coalesce(last_sales_value/last_b_sales_value,0)  as b_diff_sale_ratio,                         --商品占省区占比环比差
+    end as ring_sales_qty_rate ,                                                             --冻品、调理销售量环比增长率
+    coalesce(profit/a.sales_value,0) as profit_rate,                                          --定价毛利率
+    coalesce(profit/sales_value,0)- coalesce(last_profit/last_sales_value,0) as diff_profit_rate,     --毛利率差
+    coalesce(a.daily_sales_value,0) as daily_sales_value,           --日配销售额
+    coalesce(a.daily_profit,0) as daily_profit,                     --日配毛利额
+    coalesce(a.last_daily_sales_value,0) as last_daily_sales_value, --环期日配销售额
+    coalesce(a.last_daily_profit,0) as last_daily_profit,           --环期日配毛利额
+    coalesce(B_daily_sale, 0) as B_daily_sale,                                     --日配行业销售额
+    coalesce(B_daily_profit, 0) as B_daily_profit,                        --日配行业销售毛利
+    coalesce(last_B_daily_sale, 0) as last_B_daily_sale,                               --环期日配销售额
+    coalesce(last_B_daily_profit,0) as last_B_daily_profit,                                 --环期日配行业毛利额
+    coalesce(sales_cust_number, 0) as sales_cust_number,                                  --日配成交客户数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交客户数
+    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交客户
+    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交客户
+    coalesce(sales_cust_number/b_daily_cust_number,0) as daily_cust_penetration_rate ,               --日配渗透率
+    coalesce(last_sales_cust_number/last_b_daily_cust_number,0) as last_daily_cust_penetration_rate ,  --环期日配渗透率
+    coalesce(sales_cust_number/b_daily_cust_number,0) - coalesce(last_sales_cust_number/last_b_daily_cust_number ,0)  as diff_daily_cust_penetration_rate ,   -- 日配渗透率环比
+    coalesce( daily_sales_value/B_daily_sale,0) as daily_industry_sales_ratio,                                                                                -- 日配行业销售额/行业销售额
+    coalesce( last_daily_sales_value/last_B_daily_sale,0) as last_daily_industry_sales_ratio,                                                                 -- 日配行业销售额/行业销售额
+    coalesce( daily_sales_value/B_daily_sale,0) - coalesce(last_daily_sales_value/last_B_daily_sale,0)  as diff_daily_industry_sale_ratio,                         -- 日配行业销售占比环比差
     a.grouping__id,
     current_timestamp(),
     substr(${hiveconf:e_dt},1,6)
@@ -702,6 +816,78 @@ left join
 (select * from csx_tmp.tmp_sale_frozen_03 ) b on coalesce(a.province_code,'')=coalesce(b.province_code ,'') 
 and coalesce(a.region_code,'')=coalesce(b.region_code ,'') 
 and  coalesce(a.second_category_code,'')=coalesce(b.second_category_code ,'')
-    where a.grouping__id  in ('481','511','487','7681','8161','7687','7711','8167')
+left join 
+ csx_tmp.tmp_sale_frozen_04   c  on coalesce(a.region_code,'')=c.region_code 
+    and coalesce(a.province_code,'') = c.province_code
+    and coalesce(a.classify_small_code,'')=c.classify_small_code
+    where 1=1
+   and a.grouping__id not in ('31','511','8191','8167','511','487','7')
+ 
+
 ;
 
+
+
+
+CREATE TABLE `csx_tmp.report_sale_r_d_frozen_industry_new_fr`(
+  `level_id` int comment '分组', 
+  `years` string comment '年', 
+  `smonth` string comment '销售月', 
+  `channel_name` string comment '销售渠道', 
+  `region_code` string comment '大区编码', 
+  `region_name` string comment '大区名称', 
+  `province_code` string comment '省区编码', 
+  `province_name` string comment '省区名称', 
+  `first_category_code` string comment '一级行业', 
+  `first_category_name` string comment '一级行业', 
+  `second_category_code` string comment '二级行业', 
+  `second_category_name` string comment '二级行业', 
+  `classify_large_code` string comment '一级管理分类', 
+  `classify_large_name` string comment '一级管理分类', 
+  `classify_middle_code` string comment '二级管理分类', 
+  `classify_middle_name` string comment '二级管理分类', 
+  `classify_small_code` string comment '三级管理分类', 
+  `classify_small_name` string comment '三级管理分类', 
+  `sales_qty` decimal(38,6) comment 'B端销量', 
+  `sales_value` decimal(38,6) comment 'B端销售额', 
+  `profit` decimal(38,6) comment 'B端毛利额', 
+  `last_sales_qty` decimal(38,6) comment 'B环期销量', 
+  `last_sales_value` decimal(38,6)comment 'B环期销售额', 
+  `last_profit` decimal(38,6) comment 'B端环期毛利额', 
+  `small_sales_qty` decimal(38,6) comment 'B端小类销量', 
+  `small_sales_value` decimal(38,6) comment 'B端小类销售额', 
+  `small_profit` decimal(38,6) comment 'B端小类毛利额', 
+  `small_profit_rate` decimal(38,18)comment 'B端小类毛利率', 
+  `small_sales_ratio` decimal(38,18)comment '小类销售额占比', 
+  `small_sales_qty_ratio` decimal(38,18)comment '小类销量占比', 
+  `ring_sales_rate` decimal(38,18)comment '环比销售增长率', 
+  `ring_sales_qty_rate` decimal(38,18)comment '环比销量增长率', 
+  `profit_rate` decimal(38,18)comment 'B端毛利率', 
+  `diff_profit_rate` decimal(38,18)comment 'B端环比毛利率差', 
+  `daily_sales_value` decimal(38,6)comment '日配销售额', 
+  `daily_profit` decimal(38,6)comment '日配毛利额', 
+  `last_daily_sales_value` decimal(38,6)comment '环期日配销售额', 
+  `last_daily_profit` decimal(38,6)comment '环期日配毛利额', 
+  `b_daily_sale` decimal(38,6)comment 'B端日配销售额', 
+  `b_daily_profit` decimal(38,6)comment 'B端日配毛利额', 
+  `last_b_daily_sale` decimal(38,6)comment 'B端日配环期销售额', 
+  `last_b_daily_profit` decimal(38,6)comment 'B端日配环期毛利额', 
+  `daily_sales_cust_number` bigint comment '日配成交客户数', 
+  `last_daily_sales_cust_number` bigint comment '日配环期成交客户数', 
+  `b_daily_cust_number` bigint comment 'B端日配成交客户', 
+  `last_b_daily_cust_number` bigint comment 'B端日配环期成交客户', 
+  `daily_cust_penetration_rate` decimal(38,18) comment '日配成交客户渗透率：日配客户/B端日配客户', 
+  `last_daily_cust_penetration_rate` decimal(38,18) comment '环期日配成交客户渗透率：日配客户/B端日配客户', 
+  `diff_daily_cust_penetration_rate` decimal(38,18) comment '日配成交客户渗透率差：当期渗透率-环期渗透率', 
+  `daily_industry_sales_ratio` decimal(38,18) comment '行业占比=小类行业销售额/B端行业销售额', 
+  `last_daily_industry_sales_ratio` decimal(38,18) comment '行业占比=小类行业销售额/B端行业销售额', 
+  `diff_daily_industry_sale_ratio` decimal(38,18) comment '行业占比差=当前占比-环期占比', , 
+  `grouping__id` string, 
+  `_c53` timestamp, 
+  `_c54` string)
+ROW FORMAT SERDE 
+  'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' 
+STORED AS INPUTFORMAT 
+  'org.apache.hadoop.mapred.TextInputFormat' 
+OUTPUTFORMAT 
+  'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
