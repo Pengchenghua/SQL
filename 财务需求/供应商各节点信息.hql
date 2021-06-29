@@ -176,19 +176,19 @@ group by  order_code,to_date(create_time),supplier_code,received_order_code) b o
     --   review_date,          --审核时间 
     --   ;
 
-
+-- 如果付款日期为空，则按当前日期进行计算（搜索下载日或T-1日）；如果被减日期也为空，则计算结果为空
 drop table  csx_tmp.temp_pss_02;
 create  table csx_tmp.temp_pss_02 as 
-select source_bill_no,
-    order_code,
+select 
+    order_code ,
     entry_order_no,
-    in_out_no,          --批次单号
+    in_out_no as batch_co,          --批次单号
     company_code,
     company_name,
-    happen_place_code as receive_shop_id,
-    d.shop_name as receive_shop_name ,
-    settle_place_code as settle_shop_id,
-    f.shop_name as settle_shop_name,
+    happen_place_code as receive_dc_id,
+    d.shop_name as receive_dc_name ,
+    settle_place_code as settle_dc_id,
+    f.shop_name as settle_dc_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -229,7 +229,13 @@ select source_bill_no,
     case when coalesce(review_date,'')='' then '' 
         when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(review_date,''))
         else coalesce(datediff(coalesce(payment_date,''),coalesce(review_date,'')),'')end as review_days,               --付款审核天数
-    payment_status          --  单据状态
+    payment_status,          --  单据状态
+    case when payment_status=0 then '单据未生成'
+        when   payment_status=1 then '单据已生成未审核' 
+        when  payment_status=2 then '单据已生成已审核'
+        when  payment_status=3 then '单据已发起付款'
+        when  payment_status=4 then '单据已付款成功'
+        else '5' end   payment_status_name   --付款状态 0-未生成 1 已生成未审核 2 已生成已审核  3已发起付款 4 已付款成功
 from csx_tmp.temp_pss_00  a 
 left join 
 csx_tmp.temp_pss_01 b on order_code=purchase_no and a.in_out_no=b.bill_no
@@ -244,3 +250,61 @@ left join
  (select shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') f on a.settle_place_code=f.shop_id
  
 ;
+
+-- show create table csx_tmp.temp_pss_02 ;
+SET hive.execution.engine=mr; 
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
+select *,current_timestamp(),regexp_replace(order_create_date,'-','') from csx_tmp.temp_pss_02 where order_create_date>='2021-01-01' and order_create_date<'2021-06-01';
+
+-- show create table csx_tmp.temp_pss_02 ;
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
+select *,current_timestamp(),order_create_date from csx_tmp.temp_pss_02 where order_create_date>='2021-01-01';
+
+drop table csx_tmp.ads_fr_r_d_po_reconciliation_report;
+CREATE TABLE `csx_tmp.ads_fr_r_d_po_reconciliation_report`(
+  `purchase_order_no` string comment '采购订单号', 
+  `entry_order_no` string comment '入库单号', 
+  `batch_no` string comment '批次单号', 
+  `company_code` string comment '公司代码', 
+  `company_name` string comment '公司代码名称', 
+  `receive_dc_code` string comment '入库dc', 
+  `receive_dc_name` string comment '入库DC名称', 
+  `settle_dc_code` string comment '结算dc', 
+  `settle_dc_name` string comment '结算dc', 
+  `classify_large_code` string comment '一级管理分类', 
+  `classify_large_name` string comment '一级管理分类', 
+  `classify_middle_code` string comment '二级管理分类', 
+  `classify_middle_name` string comment '二级管理分类', 
+  `classify_small_code` string comment '三级管理分类', 
+  `classify_small_name` string comment '三级管理分类', 
+  `order_create_date` string comment '订单创建日期', 
+  `supplier_code` string comment '供应商', 
+  `supplier_name` string comment '供应商', 
+  `reconciliation_tag` string comment '对帐日标识', 
+  `reconciliation_tag_name` string comment '对帐日标识名称', 
+  `receive_date` string comment '收货日期指批次收货日期', 
+  `receive_close_date` string comment '入库单关单日期', 
+  `post_date` string comment '单据过帐日期', 
+  `check_ticket_no` string comment'勾票单号', 
+  `statement_no` string comment '对帐单号', 
+  `payment_no` string comment '实际付款单号', 
+  `statement_date` string comment '对帐日期', 
+  `finance_statement_date` string comment '财务对帐日期', 
+  `pay_create_date` string comment'付款生成日期', 
+  `payment_date` string comment '付款日期', 
+  `sign_date` string comment'供应商签单日期', 
+  `audit_date` string comment'票核日期', 
+  `invoice_sub_date` string comment'发票录入日期', 
+  `review_date` string comment '付款审核日期', 
+  `finance_days` string comment '财务对帐天数' , 
+  `invoice_sub_days` string comment'发票录入天数', 
+  `audit_days` string comment '票核天数', 
+  `pay_create_days` string COMMENT'付款生成日期天数', 
+  `review_days` string comment '付款审核天数,以上计算天数：如果付款日期为空，则按当前日期进行计算（搜索下载日或T-1日）；如果被减日期也为空，则计算结果为空', 
+  `payment_status` int COMMENT '付款单单据状态',
+  `payment_status_name` int COMMENT '付款单单据状态',
+  update_time TIMESTAMP COMMENT '插入时间') comment '采购订单对帐查询报表'
+   partitioned by (sdt string comment 'order_create_date采购订单日期分区')
+	STORED AS parquet

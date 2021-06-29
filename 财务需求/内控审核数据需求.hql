@@ -1,5 +1,7 @@
 -- 高周转
 --逻辑说明：期末库存量大于0，干货周转30天以上且库存金额大于2000，水果、蔬菜周转大于5天以上且库存金额大于500，生鲜其他课周转大于15天且金额大于2000，食品部周转大于45天且金额大于2000，用品类周转大于60天且金额大于3000  
+-- 高周转
+--逻辑说明：期末库存量大于0，干货周转30天以上且库存金额大于2000，水果、蔬菜周转大于5天以上且库存金额大于500，生鲜其他课周转大于15天且金额大于2000，食品部周转大于45天且金额大于2000，用品类周转大于60天且金额大于3000  
 
 SELECT a.dist_code,
        a.dist_name,
@@ -48,15 +50,16 @@ JOIN
      AND table_type=1
      AND purpose IN ('01')
      AND sales_region_code='3') c ON a.dc_code=c.shop_id
-WHERE sdt='20210623'
+WHERE sdt='20210627'
   AND a.final_qty>a.entry_qty
-  AND ( (category_large_code='1101' and days_turnover_30>45 AND final_amt>2000)
+  AND ( (category_large_code='1101' and days_turnover_30>45 AND final_amt>3000)
     or (dept_id in ('H02','H03') and days_turnover_30>5 and a.final_amt>500 )
     OR (dept_id IN ('H04','H05','H06','H07','H08','H09','H10','H11') AND days_turnover_30>15 and a.final_amt>2000) 
     or (division_code ='12' and days_turnover_30>45 and final_amt>2000 )
-    or (division_code in ('13','14','15')  and days_turnover_30>60 and final_amt>3000))
-    and final_qty>0 ;
-
+    or (division_code in ('13','14')  and days_turnover_30>60 and final_amt>3000))
+    and final_qty>0
+    and a.entry_days>3
+    and (a.no_sale_days>7 or no_sale_days='');
 
 
 --盘点盈亏数据
@@ -254,13 +257,14 @@ JOIN
      AND sales_region_code='3') c ON a.dc_code=c.shop_id
 WHERE sdt='20210623'
   AND a.final_qty>a.entry_qty
-  AND ((category_large_code='1101'
+  AND (
+        (category_large_code='1101'
         AND (a.no_sale_days>30 or a.max_sale_sdt='' )
-        AND a.entry_days>30)
+        )
        OR (dept_id IN ('H02',
                        'H03')
            AND (a.no_sale_days>5 or a.max_sale_sdt='' )
-           AND a.entry_days>30)
+           )
        OR (dept_id IN ('H04',
                        'H05',
                        'H06',
@@ -270,17 +274,19 @@ WHERE sdt='20210623'
                        'H10',
                        'H11')
             AND (a.no_sale_days>30 or a.max_sale_sdt=''  )
-        AND a.entry_days>30)
+         )
        OR (division_code ='12'
             AND ( a.no_sale_days>30 or a.max_sale_sdt='' )
-        AND a.entry_days>30)
+         )
        OR (division_code IN ('13',
                              '14',
                              '15')
            AND (a.no_sale_days>60 or a.max_sale_sdt='' )
-        AND a.entry_days>30))
+         )
+      )
   AND final_qty>0 
-  and a.final_amt>2000;
+  and a.final_amt>2000
+  AND a.entry_days>30;
 
 
 
@@ -377,7 +383,7 @@ WHERE sdt='20210623'
     select * from csx_dw.dws_sss_r_a_customer_accounts 
     where sdt='20210623' 
     and province_name in ('四川省','重庆市','贵州省') 
-    and round(overdue_amount/receivable_amount,2)>0.8 
+    and round(overdue_amount/receivable_amount,2)>0.8  
     and receivable_amount>0 ;
 
 
