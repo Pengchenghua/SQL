@@ -8,8 +8,7 @@
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_adjust_sale_cost ; 
 -- --工厂成本
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_account_factory_category_cost;  
--- --中台报价
--- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_middle; 
+
 -- -- 销售收入表
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_classify_sales;  
 set edate = '${enddate}';

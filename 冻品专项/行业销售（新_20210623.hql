@@ -38,64 +38,11 @@ set s_dt_30 =regexp_replace(date_sub(${hiveconf:edt},30),'-','');
 -- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
 -- 本期数据 (不含合伙人 purpose!='06')
 
--- drop table if exists csx_tmp.tmp_sale_frozen_01;
--- create temporary table csx_tmp.tmp_sale_frozen_01
--- as 
--- select 
---     case when channel_code in ('1','9','7') then 'B端' end channel_name,
---     a.region_code,
---     a.region_name,
---     a.province_code,
---     a.province_name,
---     a.customer_no,
---     classify_large_code,
---     classify_large_name,
---     a.classify_middle_code,
---     a.classify_middle_name,
---     a.classify_small_code,
---     a.classify_small_name,
---     first_category_code,
---     a.first_category_name,
---     a.second_category_code,
---     a.second_category_name,
---     a.business_type_code,
---     sum(case when sdt>=${hiveconf:s_dt} and sdt<=${hiveconf:e_dt}  then  sales_qty end ) as  sales_qty,
---     sum(case when sdt>=${hiveconf:s_dt} and sdt<=${hiveconf:e_dt}  then a.sales_value end ) as  sales_value,
---     sum(case when sdt>=${hiveconf:s_dt} and sdt<=${hiveconf:e_dt}  then a.profit  end) as  profit,
---     sum(case when sdt>=${hiveconf:last_sdt} and sdt<=${hiveconf:last_edt}  then  sales_qty end ) as last_sales_qty,
---     sum(case when sdt>=${hiveconf:last_sdt} and sdt<=${hiveconf:last_edt}  then a.sales_value end ) as last_sales_value,
---     sum(case when sdt>=${hiveconf:last_sdt} and sdt<=${hiveconf:last_edt}  then a.profit  end) as last_profit
--- from csx_dw.dws_sale_r_d_detail a 
--- where sdt<=${hiveconf:e_dt} and sdt>=${hiveconf:last_sdt} 
---     --  and a.business_type_code !='4'
---     and a.channel_code  in ('1','7','9')
---     -- and a.classify_middle_code='B0304'
--- group by 
---     case when channel_code in ('1','9','7') then 'B端' end,
---     a.region_code,
---     a.region_name,
---     a.province_code,
---     a.province_name,
---     classify_large_code,
---     classify_large_name,
---     a.classify_middle_code,
---     a.classify_middle_name,
---     a.classify_small_code,
---     a.classify_small_name,
---     a.province_code,
---     a.province_name,
---     first_category_code,
---     a.first_category_name,
---     a.second_category_code,
---     a.second_category_name,
---     a.customer_no,
---     business_type_code
--- ;
-
 drop table if exists csx_tmp.tmp_sale_frozen_01;
 create temporary table csx_tmp.tmp_sale_frozen_01
 as 
 select 
+    note,
     channel_name,
     a.region_code,
     a.region_name,
@@ -121,6 +68,7 @@ select
     sum(last_profit) as last_profit
    from ( 
     select  
+    '1' as note,  --本期数据
     case when channel_code in ('1','9','7') then 'B端' end channel_name,
     a.region_code,
     a.region_name,
@@ -150,7 +98,8 @@ select
     and a.channel_code  in ('1','7','9')
     -- and a.classify_middle_code='B0304'
     union all 
-     select  
+     select 
+    '2' as note,  --环期数据 
     case when channel_code in ('1','9','7') then 'B端' end channel_name,
     a.region_code,
     a.region_name,
@@ -181,6 +130,7 @@ select
 )    a 
 where business_type_code!='4'
 group by 
+    note,
     channel_name,
     a.region_code,
     a.region_name,
@@ -232,11 +182,12 @@ select
     sum(case when business_type_code='1' then  profit end ) as daily_profit,                      -- 日配销售额
     sum(case when business_type_code='1' then  last_sales_value end ) as last_daily_sales_value,            -- 环期日配销售额
     sum(case when business_type_code='1' then  last_profit end ) as last_daily_profit,            -- 环期日配销售额
-    count(distinct case when sales_value>0  and business_type_code='1' then customer_no end ) as sales_cust_number, --日配成交客户数
-    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_sales_cust_number,  --日配环比冻品成交客户数
+    count(distinct case when note='1'  and business_type_code='1' then customer_no end ) as sales_cust_number, --日配成交客户数
+    count(distinct case when  note='2' and business_type_code='1' then customer_no end )as last_sales_cust_number,  --日配环比冻品成交客户数
     grouping__id
 from 
 (select
+    note,
     channel_name,
     region_code,
     region_name,
@@ -265,6 +216,7 @@ from
    -- and a.business_type_code='1'
    -- and a.region_code='3'
 group by 
+    note,
     channel_name,
     region_code,
     region_name,
@@ -418,8 +370,8 @@ select
     province_code,
     province_name,
     second_category_code,
-    count(distinct  case when b_sales_value>0  and business_type_code='1' then customer_no end) as b_daily_cust_number,
-    count( distinct case when last_b_sales_value>0 and business_type_code='1' then customer_no end ) as last_b_daily_cust_number,
+    count(distinct  case when  note='1'  and business_type_code='1' then customer_no end) as b_daily_cust_number,
+    count( distinct case when  note='2' and business_type_code='1' then customer_no end ) as last_b_daily_cust_number,
     -- sum(frozen_sales_qty) as frozen_sales_qty,
     -- sum(frozen_sales) as frozen_sales,
     -- sum(frozen_profit) as frozen_profit,
@@ -443,6 +395,7 @@ select
     customer_no,
     second_category_code,
     business_type_code,
+    note,
     -- sum(case when classify_middle_code in('B0304','B0305') then sales_qty end) as frozen_sales_qty,
     -- sum(case when classify_middle_code in('B0304','B0305') then sales_value end) as frozen_sales,
     -- sum(case when classify_middle_code in('B0304','B0305') then profit end) as frozen_profit,
@@ -453,6 +406,7 @@ select
 from csx_tmp.tmp_sale_frozen_01
 where 1=1
 group by 
+    note,
     channel_name,
     region_code,
     second_category_code,
@@ -822,10 +776,7 @@ left join
     and coalesce(a.classify_small_code,'')=c.classify_small_code
     where 1=1
    and a.grouping__id not in ('31','511','8191','8167','511','487','7')
- 
-
 ;
-
 
 
 

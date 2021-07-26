@@ -22,12 +22,15 @@ set mapred.min.split.size.per.node=64000000;
 --一个交换机下split的至少的大小(这个值决定了多个交换机上的文件是否需要合并)    
 set mapred.min.split.size.per.rack=64000000;  
 --执行Map前进行小文件合并  
-set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;   
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat; 
+
+-- set mapreduce.map.java.opts=8g;
+-- set parquet.block.size=268435456;
 
  
 
 set e_date='${enddate}';
-set s_date= date_sub(${hiveconf:e_date},180);
+set s_date= trunc(date_sub(${hiveconf:e_date},120),'MM');
 -- select ${hiveconf:s_date};
 
 drop table csx_tmp.temp_pss_01;
@@ -222,20 +225,20 @@ select
     reconciliation_tag_name,
     account_group,
     account_group_name,
-   coalesce(receive_date,'') as receive_date	,       --收货日期
-   coalesce(receive_close_date,'') as receive_close_date,     --关单日期
-   coalesce(post_date,      '') as post_date,              --过帐日期
-   coalesce(check_ticket_no,'') as check_ticket_no,       --勾票单号
-   coalesce(statement_no,  '')as statement_no,      --对帐单号
-   coalesce(payment_no,    '')as payment_no,        --实际付款单号
-   coalesce(statement_date,'')as statement_date,        --对帐日期
-   coalesce(finance_statement_date,'') as finance_statement_date,     --财务对帐日期
-   coalesce(pay_create_date,'')as pay_create_date,   ---付款生成日期
-   coalesce(payment_date,'')as payment_date,         --付款日期
-   coalesce(sign_date,'')as sign_date,         --供应商签单日期
-   coalesce(audit_date,       '')as audit_date,        --票核日期
-   coalesce(invoice_sub_date, '')as invoice_sub_date,  --发票录入日期
-   coalesce(review_date,      '')as review_date,        --付款审核日期
+    coalesce(receive_date,'') as receive_date	,       --收货日期
+    coalesce(receive_close_date,'') as receive_close_date,     --关单日期
+    coalesce(post_date,      '') as post_date,              --过帐日期
+    coalesce(check_ticket_no,'') as check_ticket_no,       --勾票单号
+    coalesce(statement_no,  '')as statement_no,      --对帐单号
+    coalesce(payment_no,    '')as payment_no,        --实际付款单号
+    coalesce(statement_date,'')as statement_date,        --对帐日期
+    coalesce(finance_statement_date,'') as finance_statement_date,     --财务对帐日期
+    coalesce(pay_create_date,'')as pay_create_date,   ---付款生成日期
+    coalesce(payment_date,'')as payment_date,         --付款日期
+    coalesce(sign_date,'')as sign_date,         --供应商签单日期
+    coalesce(audit_date,       '')as audit_date,        --票核日期
+    coalesce(invoice_sub_date, '')as invoice_sub_date,  --发票录入日期
+    coalesce(review_date,      '')as review_date,        --付款审核日期
     case when coalesce(finance_statement_date,'')='' then '' 
         when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(finance_statement_date,''))
         else coalesce(datediff(coalesce(payment_date,''),coalesce(finance_statement_date,'')),'') end as finance_days,  --财务对帐天数
@@ -277,7 +280,9 @@ left join
 ;
 
 --插入数据
-insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
+-- insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
+drop table if exists csx_tmp.temp_pss_03;
+create temporary table csx_tmp.temp_pss_03 as 
 select purchase_no,
     entry_order_no,
     batch_co,          --批次单号
@@ -321,13 +326,16 @@ select purchase_no,
    review_days,
    payment_status,
    payment_status_name,
-    current_timestamp(),
-    regexp_replace(order_create_date,'-','') 
+    current_timestamp() as update_time,
+    regexp_replace(order_create_date,'-','') as sdt
 from csx_tmp.temp_pss_02
-    where 
-    order_create_date<=regexp_replace(${hiveconf:e_date} ,'-','')
-    and  order_create_date>='2021-05-01';
+    where 1=1
+     ;
+     
 
+--插入供应商节点信息
+insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
+select *  from csx_tmp.temp_pss_03 where sdt>='20200701' and sdt>='20200401' ;
 
 
 
