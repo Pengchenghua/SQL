@@ -99,3 +99,67 @@ group by  mon,supplier_code,supplier_name
 
 
 select distinct purpose,purpose_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current' and purpose in ('01','02','03','08','07');
+
+
+
+-- 永辉供应商复用
+
+ DROP TABLE csx_tmp.supplier_entry_amt_00;
+CREATE table csx_tmp.supplier_entry_amt_00 as 
+SELECT CASE
+           WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
+           ELSE substr(sdt,1,6)
+       END mon,
+       company_code,
+       supplier_code,
+       supplier_name,
+       a.goods_code,
+       a.business_type,
+       a.business_type_name,
+       sum(receive_qty*price) AS amt
+FROM csx_dw.dws_wms_r_d_entry_detail a
+JOIN
+(select shop_id,company_code from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current')b on a.receive_location_code=b.shop_id
+WHERE (business_type in ('ZN01','ZN02','ZC01')
+       OR order_type_code LIKE 'P%')
+  AND (sdt>='20200101'
+       OR sdt='19990101')
+  AND receive_status IN (1,2)
+  AND purpose IN ('01','02','03','08','07')
+GROUP BY CASE
+             WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
+             ELSE substr(sdt,1,6)
+         END,
+         supplier_code,
+         supplier_name,
+         a.goods_code,
+         business_type,
+         a.business_type_name,
+         company_code
+;
+
+select  mon,
+       a.company_code,
+       supplier_code,
+       supplier_name,
+       sum(amt)/10000 amt 
+from csx_tmp.supplier_entry_amt_00 a 
+join 
+(select supplier_num,company_code from csx_tmp.ads_fr_r_m_supplier_reuse group by supplier_num,company_code) b on a.company_code=b.company_code and a.supplier_name=b.supplier_num
+group by  mon,
+       a.company_code,
+       supplier_code,
+       supplier_name
+       ;
+       
+       
+       
+select  mon,
+       
+       sum(amt)/10000 amt 
+from csx_tmp.supplier_entry_amt_00 a 
+join 
+(select supplier_num,company_code from csx_tmp.ads_fr_r_m_supplier_reuse where yh_reuse_tag='是' group by supplier_num,company_code) b on a.company_code=b.company_code and a.supplier_name=b.supplier_num
+group by  mon 
+       ;
+       
