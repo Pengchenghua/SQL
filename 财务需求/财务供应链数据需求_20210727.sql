@@ -37,7 +37,41 @@ GROUP BY CASE
          a.business_type_name
 ;
 
-
+--剔除以下供应商
+ supplier_code not in
+('20015439','20019761','20021783','20024437','20026794','75000002',
+'75000016',
+'75000022',
+'75000031',
+'75000047',
+'75000052',
+'75000079',
+'75000082',
+'75000086',
+'75000087',
+'75000089',
+'75000097',
+'75000104',
+'75000105',
+'75000124',
+'75000143',
+'75000157',
+'75000174',
+'75000182',
+'75000192',
+'75000199',
+'75000203',
+'75000207',
+'75000217',
+'75000223',
+'75000226',
+'75000247',
+'75000251',
+'G2115',
+'G2116',
+'G2126',
+'G2127',
+'G3506')
 -- 1. 供应商集中度
 -- TOP10/TOP30 供应商入库额含永辉供应商
 select mon,supplier_code,supplier_name,amt,sku,aa from (
@@ -96,6 +130,28 @@ group by  mon,supplier_code,supplier_name
 
  ;
 
+--财务供应商入库行业、供应商类别
+select mon,a.supplier_code,a.supplier_name,industry_name,dic_value, sum(amt) amt,count(distinct goods_code) as sku from csx_tmp.supplier_entry_amt  a 
+left join 
+(select vendor_id,supplier_type,dic_value,industry_name from csx_dw.dws_basic_w_a_csx_supplier_m a 
+    join 
+    (select memo,dic_value,dic_key from csx_ods.source_basic_w_a_md_dic where sdt='20210727' and memo like '供应商类%') b on a.supplier_type=b.dic_key
+    where sdt='current') b on a.supplier_code=b.vendor_id
+where 1=1
+group by  mon,a.supplier_code,a.supplier_name,dic_value,industry_name
+;
+
+select mon,a.supplier_code,a.supplier_name,industry_name,dic_value,self_produce_self_sale, sum(amt) amt,count(distinct goods_code) as sku from csx_tmp.supplier_entry_amt  a 
+left join 
+(select vendor_id,supplier_type,dic_value,industry_name,self_produce_self_sale from csx_dw.dws_basic_w_a_csx_supplier_m a 
+    join 
+    (select memo,dic_value,dic_key from csx_ods.source_basic_w_a_md_dic where sdt='20210727' and memo like '供应商类%') b on a.supplier_type=b.dic_key
+    left join 
+    (select bloc_code,self_produce_self_sale from csx_ods.source_master_w_a_md_supplier_base_info where sdt = '20210728') c on a.vendor_id=c.bloc_code
+    where sdt='current') b on a.supplier_code=b.vendor_id
+where 1=1
+group by  mon,a.supplier_code,a.supplier_name,dic_value,industry_name,self_produce_self_sale
+;
 
 
 select distinct purpose,purpose_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current' and purpose in ('01','02','03','08','07');
@@ -154,8 +210,7 @@ group by  mon,
        
        
        
-select  mon,
-       
+select  mon,       
        sum(amt)/10000 amt 
 from csx_tmp.supplier_entry_amt_00 a 
 join 
@@ -163,3 +218,75 @@ join
 group by  mon 
        ;
        
+
+
+
+-- 自由品牌销售
+select substr(sdt,1,6),goods_code,goods_name,
+sum(excluding_tax_profit)/sum(excluding_tax_sales) as profit_rate ,
+sum(excluding_tax_sales)/10000 sales
+from csx_dw.dws_sale_r_d_detail 
+where goods_code in ('1168187','1216354','1168186','1186702','1168188','762651','1216633','1216634','1194209','1194210','1201070','1201071','1201072','1201073','1201074')
+and business_type_code !='4'
+group by  substr(sdt,1,6),goods_code,goods_name
+;
+
+
+
+
+--部类入库
+SELECT CASE
+           WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
+           ELSE substr(sdt,1,6)
+       END mon,
+		case when division_code  in ('10','11') then '11' else '12' end div_id,
+       sum(receive_qty*price)/10000 AS amt
+FROM csx_dw.dws_wms_r_d_entry_detail a
+join
+(select received_order_code from csx_dw.dwd_scm_r_d_order_header where local_purchase_flag =1 group by received_order_code) b on a.order_code =b.received_order_code
+WHERE (business_type in ('ZN01','ZN02' )
+       OR (order_type_code LIKE 'P%' and business_type !='02'))
+  AND ( (sdt>='20200101' and sdt<'20210701')
+       OR sdt='19990101')
+  AND receive_status IN (1,2)
+  AND purpose IN ('01','02','03','08','07','06')
+  and supplier_code not in
+('20015439','20019761','20021783','20024437','20026794','75000002',
+'75000016',
+'75000022',
+'75000031',
+'75000047',
+'75000052',
+'75000079',
+'75000082',
+'75000086',
+'75000087',
+'75000089',
+'75000097',
+'75000104',
+'75000105',
+'75000124',
+'75000143',
+'75000157',
+'75000174',
+'75000182',
+'75000192',
+'75000199',
+'75000203',
+'75000207',
+'75000217',
+'75000223',
+'75000226',
+'75000247',
+'75000251',
+'G2115',
+'G2116',
+'G2126',
+'G2127',
+'G3506')
+GROUP BY CASE
+             WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
+             ELSE substr(sdt,1,6)
+         END,
+         case when division_code  in ('10','11') then '11' else '12' end 
+;

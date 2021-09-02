@@ -82,7 +82,10 @@ join
        classify_small_code,
        classify_small_name
 FROM csx_dw.dws_basic_w_a_csx_product_m
-WHERE sdt='current') g on a.goods_code=g.goods_idinsert overwrite directory '/tmp/pengchenghua/11' row format delimited fields terminated  by '\t'
+WHERE sdt='current') g on a.goods_code=g.goods_id
+;
+
+insert overwrite directory '/tmp/pengchenghua/11' row format delimited fields terminated  by '\t'
 SELECT year,
       week_of_year,
         csx_week,

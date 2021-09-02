@@ -1,0 +1,57 @@
+
+select substr(sdt,1,4) yy,
+	goods_code,
+	goods_name ,
+	channel_code ,
+	channel_name ,
+	business_type_code ,
+	business_type_name ,
+	b.classify_middle_code ,
+	b.classify_middle_name,
+	b.classify_small_code ,
+	b.classify_small_name ,
+	b.category_large_code ,
+	b.category_large_name ,
+	b.category_middle_code ,
+	b.category_middle_name ,
+	b.category_small_code ,
+	b.category_small_name ,
+	b.brand_name,
+	sum(sales_value)/10000 sale,
+	sum(profit)/10000 profit 
+from csx_dw.dws_sale_r_d_detail a 
+join 
+(
+select goods_id ,brand_name ,
+	classify_middle_code ,
+	classify_middle_name,
+	classify_small_code,
+	category_large_name ,
+	classify_small_name,
+	category_large_code ,
+	category_middle_code ,
+	category_middle_name ,
+	category_small_code ,
+	category_small_name 
+from csx_dw.dws_basic_w_a_csx_product_m where sdt='current'  
+and (classify_middle_code ='B0603'
+OR category_large_code ='1250' or category_middle_code ='125101') 
+) b on a.goods_code =b.goods_id
+group by substr(sdt,1,4) ,
+	goods_code,
+	goods_name ,
+	b.classify_middle_code ,
+	b.classify_middle_name,
+	b.classify_small_code ,
+	b.classify_small_name ,
+	b.category_large_code ,
+	b.category_large_name ,
+	b.category_middle_code ,
+	b.category_middle_name ,
+	b.category_small_code ,
+	b.category_small_name ,
+	b.brand_name,
+	channel_code ,
+	channel_name ,
+	business_type_code ,
+	business_type_name ;

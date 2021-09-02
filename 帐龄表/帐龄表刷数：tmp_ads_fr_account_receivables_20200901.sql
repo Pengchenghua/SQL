@@ -1,6 +1,6 @@
---set e_date='${enddate}';
+set e_date='${enddate}';
 
-set e_date='2020-12-31';
+
 
 drop table csx_tmp.temp_account_age;
 CREATE temporary table csx_tmp.temp_account_age
@@ -170,21 +170,35 @@ from
 				and hkont like '1122%'
         ) a
 		left join 
-		(
-			SELECT customer_no,
-                          customer_name,
-                          sales_province,
-                          sales_province_code,
-                          sales_city,
-                          first_category,
-                          second_category,
-                          third_category,
-                          work_no,
-                          sales_name,
-                          first_supervisor_name,
-                          channel
-                        FROM csx_dw.dws_crm_w_a_customer_m_v1
-                            WHERE sdt='current'
+		(SELECT
+             a.customer_no, a.customer_name, channel_code,channel_name as channel,b.city_group_code, b.city_group_name as sales_city, 
+             b.province_code as  sales_province_code, 
+             b.province_name as sales_province, 
+             b.region_code, 
+             b.region_name,
+             first_category , 
+			 second_category , 
+			 third_category , 
+			 work_no , 
+			 sales_name , 
+			 first_supervisor_name
+FROM
+(
+  SELECT customer_no, customer_name,channel_code,channel_name, sales_province_code, sales_province_name, sales_city_code, sales_city_name,	
+           first_category_name  as first_category   ,
+           second_category_name as second_category,
+           third_category_name  as third_category  ,  
+			work_no , 
+			sales_name , 
+			first_supervisor_name
+  FROM csx_dw.dws_crm_w_a_customer
+  WHERE sdt = 'current' 
+) a left join
+( -- 获取省区与城市组信息
+  SELECT
+    city_code, area_province_name, city_group_code, city_group_name, province_code, province_name, region_code, region_name
+  FROM csx_dw.dws_sale_w_a_area_belong
+) b on a.sales_province_name = b.area_province_name and a.sales_city_code = b.city_code
 		) b on lpad(a.kunnr, 10, '0')= lpad(b.customer_no, 10, '0')
 		
 		union all
@@ -254,14 +268,14 @@ from
 				else ac_over3y
 			end ac_over3y,
 			last_sales_date,
-	        	last_to_now_days,
-	        	customer_active_sts_code,
-	        	case when  customer_active_sts_code = 1 then '活跃客户'
-	        		when customer_active_sts_code = 2 then '沉默客户'
-	        		when customer_active_sts_code = 3 then '预流失客户'
-	        		when customer_active_sts_code = 4 then '流失客户'
-	        		else '其他'
-	        		end  as  customer_active_sts,
+	        last_to_now_days,
+	        customer_active_sts_code,
+	        case when  customer_active_sts_code = 1 then '活跃客户'
+	        	when customer_active_sts_code = 2 then '沉默客户'
+	        	when customer_active_sts_code = 3 then '预流失客户'
+	        	when customer_active_sts_code = 4 then '流失客户'
+	        else '其他'
+	        end  as  customer_active_sts,
 	        sdt
 		from
 			csx_dw.account_age_dtl_fct_new a
@@ -303,9 +317,8 @@ select
    a.work_no ,
    a.sales_name ,
    a.first_supervisor_name,
-  
-	b.credit_limit ,
-	b.temp_credit_limit ,
+   b.credit_limit ,
+   b.temp_credit_limit ,
 	 payment_terms,
    payment_name,
    payment_days,
@@ -323,10 +336,10 @@ select
    a.ac_2y ,
    a.ac_3y ,
    a.ac_over3y,
-	a.last_sales_date,
-	a.last_to_now_days,
-	a.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
-	a.customer_active_sts as customer_active_sts,
+   a.last_sales_date,
+   a.last_to_now_days,
+   a.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+   a.customer_active_sts as customer_active_sts,
 	'' as tmp_01,
 	'' as tmp_02,
 	current_timestamp() as update_time,
@@ -341,7 +354,7 @@ from
 left  join 
 (	
 	select 
-		customer_number,
+		customer_no,
 		company_code,
 		payment_terms,
 		payment_name,
@@ -349,14 +362,16 @@ left  join
 		temp_credit_limit,
 		payment_days
 	from 
-		csx_dw.dws_crm_r_a_customer_account_day    --客户账期表
+		csx_dw.dws_crm_w_a_customer_company   --客户账期表
 	where 
 		sdt='current'
-) as b 	on a.customer_no =b.customer_number and a.comp_code=b.company_code
+) as b 	on a.customer_no =b.customer_no and a.comp_code=b.company_code
 left join 
-(select province_code,province_name from csx_dw.dim_area where area_rank='13')c  on a.dist = c.province_name
+(  -- 获取省区与城市组信息
+  SELECT distinct
+     province_code, province_name, region_code, region_name
+  FROM csx_dw.dws_sale_w_a_area_belong )c  on a.dist = c.province_name
 ;
-
 
 -- INVALIDATE METADATA csx_tmp.ads_fr_account_receivables;
 

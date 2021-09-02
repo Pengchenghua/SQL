@@ -1,3 +1,6 @@
+
+-- -- 销售收入表
+-- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_classify_sales;  
 -- -- 中台报价商品成本
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_middle ; 
 -- --公司间的销售
@@ -9,8 +12,6 @@
 -- --工厂成本
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_account_factory_category_cost;  
 
--- -- 销售收入表
--- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_classify_sales;  
 set edate = '${enddate}';
 set edt =regexp_replace(${hiveconf:edate},'-','');
 set sdate=regexp_replace(trunc(${hiveconf:edate},'MM'),'-','');
@@ -19,7 +20,7 @@ set hive.exec.dynamic.partition.mode=nonstrict;
 drop table if exists csx_tmp.temp_fina_sale_00 ;
 create temporary table if not exists csx_tmp.temp_fina_sale_00 as 
     select
-        split(id,'&')[0] as id ,
+        split(id,'&')[0] as credential_no ,
         province_code,
         province_name,
         city_group_code,
@@ -53,9 +54,9 @@ create temporary table if not exists csx_tmp.temp_fina_sale_00 as
         excluding_tax_profit,
         purchase_price,
         middle_office_price,
-        (a.purchase_price*a.sales_qty) as  purchase_price_cost,
+        if(purchase_price=0 ,(sales_cost*sales_qty), (a.purchase_price*a.sales_qty)) as  purchase_price_cost,
         middle_office_cost,
-        (a.purchase_price/(1+a.tax_rate/100))*a.sales_qty as no_tax_purchase_price_cost,
+        if(purchase_price=0 ,(excluding_tax_cost*sales_qty),(a.purchase_price/(1+a.tax_rate/100))*a.sales_qty) as no_tax_purchase_price_cost,
         (a.middle_office_price/(1+a.tax_rate/100))*sales_qty as no_tax_middle_office_cost,
         joint_purchase_flag,
         sales_type,
@@ -90,8 +91,7 @@ create temporary table if not exists csx_tmp.temp_fina_sale_00 as
     )  b on a.goods_code=b.product_code and a.dc_code=b.shop_code
     where sdt >=${hiveconf:sdate}
       and sdt<= ${hiveconf:edt}
-    --  and sales_type in ('qyg','bbc') 
-    --  and purchase_price_flag = 1
+
     
     ;
 
@@ -138,8 +138,6 @@ create temporary table if not exists csx_tmp.temp_sale_01 as
   from
   (select * from csx_tmp.temp_fina_sale_00
     where sales_type in ('qyg','bbc') 
-      and purchase_price_flag = 1
-      and joint_purchase_flag =1
     ) a
    left join
      (
@@ -152,7 +150,13 @@ create temporary table if not exists csx_tmp.temp_sale_01 as
     ) c on a.origin_order_no = c.order_no
  ;
  
-insert overwrite table     csx_tmp.ads_fr_r_d_frozen_financial_middle partition(months)
+ 
+ 
+ 
+ 
+ --中台调节费用  增加调节项
+ --中台调节费用  增加调节项
+insert overwrite table  csx_tmp.ads_fr_r_d_frozen_financial_middle partition(months)
 select  
     substr(${hiveconf:edt},1,6),
     a.province_code,
@@ -176,6 +180,7 @@ select
     credit_fee_amt,
     run_fee_amt,
     joint_venture_fee_amt,
+    adjust_amt,
     no_tax_cost,
     no_tax_profit,
     no_tax_sales,
@@ -186,6 +191,7 @@ select
     no_tax_credit_fee_amt,
     no_tax_run_fee_amt,
     no_tax_joint_venture_fee_amt,
+    no_tax_adjust_amt,
     current_timestamp(),
     substr(${hiveconf:edt},1,6)
 from 
@@ -204,23 +210,29 @@ from
         sum(sales_cost)sales_cost, 
         sum(profit)profit,
         sum(middle_office_cost) as middle_office_cost,
-        sum(purchase_price_cost) as purchase_price_cost,
+        sum(case when  channel_code in  ('1','7','9')  and   purchase_price_flag=1 then (a.purchase_price*a.sales_qty)
+                 when  channel_code in  ('1','7','9')  and   purchase_price_flag=0 then  ( a.cost_price *sales_qty) 
+            end ) as  purchase_price_cost,            --采购成本
         sum(a.sales_value) as sales_value,
         sum(warehouse_rate*a.sales_value) as warehouse_fee_amt,
         sum(delivery_rate*a.sales_value) as deliver_fee_amt,
         sum(credit_rate*a.sales_value) as credit_fee_amt,
         sum(run_rate*a.sales_value) as run_fee_amt,
         sum(joint_venture_rate*a.sales_value) as joint_venture_fee_amt, 
+        sum(adjust_rate*a.sales_value) as adjust_amt  ,
         sum(excluding_tax_cost)as no_tax_cost,   
         sum(excluding_tax_profit)as no_tax_profit, 
         sum(no_tax_middle_office_cost) as no_tax_middle_office_cost,
         sum(a.excluding_tax_sales) as no_tax_sales,
-        sum(no_tax_purchase_price_cost) as no_tax_purchase_price_cost,
+        sum(case when  channel_code in  ('1','7','9') and   purchase_price_flag=1 then (a.purchase_price/(1+a.tax_rate/100))*a.sales_qty 
+                 when  channel_code in  ('1','7','9') and   purchase_price_flag=0 then  ( a.cost_price /(1+a.tax_rate/100))*sales_qty 
+            end ) as no_tax_purchase_price_cost,   --采购报价成本未税
         sum(warehouse_rate*a.excluding_tax_sales) as no_tax_warehouse_fee_amt,
         sum(delivery_rate*a.excluding_tax_sales) as no_tax_deliver_fee_amt,
         sum(credit_rate*a.excluding_tax_sales) as no_tax_credit_fee_amt,
         sum(run_rate*a.excluding_tax_sales) as no_tax_run_fee_amt,
-        sum(joint_venture_rate*a.excluding_tax_sales) as no_tax_joint_venture_fee_amt    
+        sum(joint_venture_rate*a.excluding_tax_sales) as no_tax_joint_venture_fee_amt,
+        sum(adjust_rate*a.excluding_tax_sales) as no_tax_adjust_amt     --调节项金额
     from
     csx_tmp.temp_fina_sale_00 a 
 left join
@@ -233,6 +245,7 @@ left join
          credit_rate,            --信控率       
          run_rate,               --运营率
          joint_venture_rate,     --联营率
+         adjust_rate,            --调节项
          price_begin_time,
          price_end_time,
          channel,
@@ -240,12 +253,13 @@ left join
          sdt
      from csx_dw.dws_price_r_d_goods_prices_m
         where 1=1
-        and sdt >= regexp_replace(date_add(trunc(${hiveconf:edate},'MM'),-30),'-','')
+        and sdt >= regexp_replace(date_add(trunc(${hiveconf:edate},'MM'),-60),'-','')
+        and sdt<= regexp_replace(${hiveconf:edate},'-','')
     ) b on a.dc_code = b.warehouse_code and a.goods_code = b.goods_code 
         and a.channel_code = cast(b.channel as string) and a.order_category_name = b.type
         and a.shipped_date = b.sdt
-    where a.shipped_time >= b.price_begin_time 
-        and a.shipped_time <= b.price_end_time
+    -- where a.shipped_time >= b.price_begin_time 
+    --     and a.shipped_time <= b.price_end_time
     group by a.province_code,
         a.province_name,
         city_group_code,
@@ -275,9 +289,9 @@ select channel_code,
     wms_batch_no
 from csx_dw.dws_wms_r_d_batch_detail a 
 join 
-csx_tmp.temp_fina_sale_00 b on a.credential_no=b.id 
+csx_tmp.temp_fina_sale_00 b on a.credential_no=b.credential_no 
  where a.move_type in ('107A','108A')
- and b.joint_purchase_flag=1
+ -- and b.joint_purchase_flag=1
 group by 
     wms_batch_no,
     channel_code,
@@ -388,7 +402,7 @@ join
         classify_small_code,
         classify_small_name
     from csx_dw.dws_basic_w_a_csx_product_info a 
-    left  join 
+      join 
     (select 
         classify_large_code,
         classify_large_name,
@@ -490,7 +504,10 @@ group by
          (channel_code,
         channel_name , classify_large_code, 
     classify_large_name),())
- ) a    ;
+ ) a    
+ ;
+
+
 
 
 
@@ -649,7 +666,7 @@ from
     )  b on a.product_code=b.product_code and a.location_code=b.shop_code
 	    	where  sdt >= ${hiveconf:sdate}
 	            and sdt<=${hiveconf:edt}
-	            and joint_purchase_flag=1
+	           -- and joint_purchase_flag=1
 	    )a
 )a
 left join csx_tmp.temp_fina_sale_00 c on a.item_source_order_no=c.order_no and a.product_code=c.goods_code
@@ -671,7 +688,7 @@ group by   coalesce(c.channel_code,'1') ,
 	a.classify_small_code,
 	a.classify_small_name;
 
-
+--插入销售成本表
 -- set hive.exec.dynamic.partition.mode=nonstrict;
 insert overwrite table csx_tmp.ads_fr_r_d_frozen_adjust_sale_cost partition(months)
 select 
@@ -710,10 +727,10 @@ select
     coalesce(adj_bj_db_no,0 )as adj_bj_db_no, 
     coalesce(adj_bj_db,0 )as adj_bj_db, 
     coalesce(adj_bj_qt_no,0 )as adj_bj_qt_no, 
-    coalesce(adj_bj_qt,0 )as adj_bj_qt, 
-    coalesce(no_tax_sales_value,0)as no_tax_sales_value,
+    coalesce(adj_bj_qt,0 )as adj_bj_qt,    
     coalesce(adj_ddfkc_no, 0)+coalesce(adj_cgth_no,0 )+coalesce(adj_gc_xs_no,0 )+coalesce(adj_gc_db_no,0 )+coalesce(adj_gc_qt_no,0 )+coalesce(adj_sg_no,0 )+coalesce(adj_bj_xs_no,0 )+coalesce(adj_bj_db_no,0)+coalesce(adj_bj_qt_no,0 ) as adj_no_tax_sum_value,
     coalesce(adj_ddfkc, 0)+coalesce(adj_cgth,0 )+coalesce(adj_gc_xs,0 )+coalesce(adj_gc_db,0 )+coalesce(adj_gc_qt,0 )+coalesce(adj_sg,0 )+coalesce(adj_bj_xs,0 )+coalesce(adj_bj_db,0)+coalesce(adj_bj_qt,0 ) as adj_sum_value,
+    coalesce(no_tax_sales_value,0)as no_tax_sales_value,
     current_timestamp(),
    substr( ${hiveconf:edt},1,6)
 from (
@@ -877,130 +894,134 @@ group by channel_code,
 
  -- 4.0 返利支出  csx_tmp.ads_fr_r_d_frozen_fanli_out 
 -- create  table csx_tmp.ads_fr_r_d_frozen_fanli_out  as 
-insert overwrite table csx_tmp.ads_fr_r_d_frozen_fanli_out  partition(months)
-select   substr(${hiveconf:edt},1,6), 
-        case when channel_code is null then '00'
-             else channel_code
-        end channel_code,
-        case when channel_code is null then '合计'
-             else channel_name 
-        end channel_name,
-        case when business_type_code is null then '00' 
-             else  business_type_code 
-        end business_type_code,
-        case when business_type_name is null and channel_code is null then '合计'  
-             when business_type_name is null then channel_name 
-             else business_type_name 
-        end business_type_name,
-        case when classify_large_code is null and business_type_name is null then '00' 
-             when classify_large_code is null then '00'
-             else classify_large_code 
-        end classify_large_code,
-        case when classify_large_name is null and business_type_name is null then '00' 
-             when classify_large_name is null then '合计'
-             else classify_large_name 
-        end classify_large_name,
-        case when classify_middle_code is null and classify_large_code is null then '00' 
-             when classify_middle_code is null then '00'
-             else classify_middle_code 
-        end classify_middle_code,
-        case when classify_middle_name is null and classify_large_code is null then '合计' 
-             when classify_middle_name is null then '合计'
-             else classify_middle_name
-             end classify_middle_name,
-        case when classify_small_code is null and classify_middle_name is null then '00' 
-             when classify_small_code is null then '00'
-             else classify_small_code 
-        end classify_small_code,
-        case when classify_small_code is null and classify_middle_code is null then '合计'
-             when classify_small_code is null then classify_middle_name 
-             else classify_small_name 
-        end classify_small_name, 
-    no_tax_sale_value,
-    sales_value,
-    current_timestamp(),
-     substr(${hiveconf:edt},1,6) 
-from (
-select channel_code, 
-    channel_name, 
-    business_type_code, 
-    business_type_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name, 
-    classify_small_code, 
-    classify_small_name, 
-    sum(excluding_tax_sales) no_tax_sale_value,
-    sum(sales_value) sales_value
-from  csx_tmp.temp_fina_sale_00
-where  joint_purchase_flag =1
-group by channel_code, 
-    channel_name, 
-    business_type_code, 
-    business_type_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name, 
-    classify_small_code, 
-    classify_small_name
-grouping sets (( channel_code, 
-    channel_name, 
-    business_type_code, 
-    business_type_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name, 
-    classify_small_code, 
-    classify_small_name),
-        ( channel_code, 
-    channel_name, 
-    business_type_code, 
-    business_type_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name),  -- 业务中类合计
-        ( channel_code, 
-    channel_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name, 
-    classify_small_code, 
-    classify_small_name),  -- 渠道三级分类
-        ( channel_code, 
-    channel_name, 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name),  --渠道+二级分类合计
-        ( 
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name, 
-    classify_small_code, 
-    classify_small_name),   --三级分类汇总
-        (
-    classify_large_code, 
-    classify_large_name, 
-    classify_middle_code, 
-    classify_middle_name),  --二级分类汇总
-        ( channel_code, 
-    channel_name, 
-    business_type_code, 
-    business_type_name, 
-    classify_large_code, 
-    classify_large_name),  -- 一级分类汇总
-         (channel_code,
-        channel_name , classify_large_code, 
-    classify_large_name),())
-) a ;
+-- insert overwrite table csx_tmp.ads_fr_r_d_frozen_fanli_out  partition(months)
+-- select   substr(${hiveconf:edt},1,6), 
+--         case when channel_code is null then '00'
+--              else channel_code
+--         end channel_code,
+--         case when channel_code is null then '合计'
+--              else channel_name 
+--         end channel_name,
+--         case when business_type_code is null then '00' 
+--              else  business_type_code 
+--         end business_type_code,
+--         case when business_type_name is null and channel_code is null then '合计'  
+--              when business_type_name is null then channel_name 
+--              else business_type_name 
+--         end business_type_name,
+--         case when classify_large_code is null and business_type_name is null then '00' 
+--              when classify_large_code is null then '00'
+--              else classify_large_code 
+--         end classify_large_code,
+--         case when classify_large_name is null and business_type_name is null then '00' 
+--              when classify_large_name is null then '合计'
+--              else classify_large_name 
+--         end classify_large_name,
+--         case when classify_middle_code is null and classify_large_code is null then '00' 
+--              when classify_middle_code is null then '00'
+--              else classify_middle_code 
+--         end classify_middle_code,
+--         case when classify_middle_name is null and classify_large_code is null then '合计' 
+--              when classify_middle_name is null then '合计'
+--              else classify_middle_name
+--              end classify_middle_name,
+--         case when classify_small_code is null and classify_middle_name is null then '00' 
+--              when classify_small_code is null then '00'
+--              else classify_small_code 
+--         end classify_small_code,
+--         case when classify_small_code is null and classify_middle_code is null then '合计'
+--              when classify_small_code is null then classify_middle_name 
+--              else classify_small_name 
+--         end classify_small_name, 
+--     no_tax_sale_value,
+--     sales_value,
+--     current_timestamp(),
+--      substr(${hiveconf:edt},1,6) 
+-- from (
+-- select channel_code, 
+--     channel_name, 
+--     business_type_code, 
+--     business_type_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name, 
+--     classify_small_code, 
+--     classify_small_name, 
+--     sum(excluding_tax_sales) no_tax_sale_value,
+--     sum(sales_value) sales_value
+-- from  csx_tmp.temp_fina_sale_00
+-- where 1=1 
+--   -- and joint_purchase_flag =1
+-- group by channel_code, 
+--     channel_name, 
+--     business_type_code, 
+--     business_type_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name, 
+--     classify_small_code, 
+--     classify_small_name
+-- grouping sets (( channel_code, 
+--     channel_name, 
+--     business_type_code, 
+--     business_type_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name, 
+--     classify_small_code, 
+--     classify_small_name),
+--         ( channel_code, 
+--     channel_name, 
+--     business_type_code, 
+--     business_type_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name),  -- 业务中类合计
+--         ( channel_code, 
+--     channel_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name, 
+--     classify_small_code, 
+--     classify_small_name),  -- 渠道三级分类
+--         ( channel_code, 
+--     channel_name, 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name),  --渠道+二级分类合计
+--         ( 
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name, 
+--     classify_small_code, 
+--     classify_small_name),   --三级分类汇总
+--         (
+--     classify_large_code, 
+--     classify_large_name, 
+--     classify_middle_code, 
+--     classify_middle_name),  --二级分类汇总
+--         ( channel_code, 
+--     channel_name, 
+--     business_type_code, 
+--     business_type_name, 
+--     classify_large_code, 
+--     classify_large_name),  -- 一级分类汇总
+--          (channel_code,
+--         channel_name , classify_large_code, 
+--     classify_large_name),())
+-- ) a ;
 
 
+
+
+--销售汇总
  drop table if exists temp_classify_sales;
  create temporary table if not exists csx_tmp.temp_classify_sales as  
 -- insert overwrite table csx_tmp.ads_fr_r_d_frozen_financial_classify_sales partition(months)
@@ -1140,6 +1161,59 @@ grouping sets (( channel_code,
 
   ;
 
+-- 后台收入W0AQ DC
+ DROP TABLE IF EXISTS csx_tmp.temp_classify_sales_01;
+  create temporary table csx_tmp.temp_classify_sales_01 as   
+ select
+ channel_code,
+ business_type_code,
+ classify_large_code,
+ '00'classify_middle_code,
+ '00' classify_small_code,
+ sum(no_tax_back_amt) no_tax_back_amt,
+ sum(back_total_amt) back_total_amt
+ from (
+ select '1' channel_code,
+    '1' business_type_code,
+    'B03' classify_large_code,
+    '00' classify_middle_code,
+    substr(SDT,1,6) months,
+    sum(net_value) no_tax_back_amt,
+    sum(value_tax_total) as back_total_amt
+from  csx_dw.dwd_gss_r_d_settle_bill
+where settle_place_code ='W0AQ' 
+	AND sdt >= ${hiveconf:sdate}
+	and sdt<=${hiveconf:edt}
+	group by  substr(SDT,1,6) 
+) a 
+group by  channel_code,
+ business_type_code,
+ classify_large_code
+ grouping sets 
+ (( channel_code,
+ business_type_code,
+ classify_large_code),
+ (business_type_code,
+ classify_large_code),
+ ( channel_code,
+ classify_large_code),
+ ());
+ 
+ 
+ --销售表关联后台收入
+  DROP TABLE IF EXISTS csx_tmp.temp_classify_sales_02;
+  create temporary table csx_tmp.temp_classify_sales_02 as  
+select a.*,coalesce(b.no_tax_back_amt,0) as no_tax_back_amt,
+coalesce(b.back_total_amt,0) as back_total_amt
+from  csx_tmp.temp_classify_sales  a 
+left join  
+csx_tmp.temp_classify_sales_01 b on coalesce(b.channel_code,'00')=a.channel_code
+and  a.business_type_code=coalesce(b.business_type_code,'00')
+and a.classify_large_code=coalesce(b.classify_large_code,'00')
+and a.classify_middle_code=coalesce(b.classify_middle_code,'00')
+and a.classify_small_code= coalesce(b.classify_small_code,'00')
+;
+
 -- 5.0 销售收入 csx_tmp.ads_fr_r_d_frozen_financial_classify_sales
  insert overwrite table csx_tmp.ads_fr_r_d_frozen_financial_classify_sales partition(months)
  select  substr(${hiveconf:edt},1,6),
@@ -1165,12 +1239,12 @@ grouping sets (( channel_code,
         sum(adj_sum_value) as adj_sum_value,
         sum(no_tax_rebate_out_value) as no_tax_rebate_out_value,    --未税返利支出金额
         sum(rebate_out_value ) as rebate_out_value ,             --含税返利支出金额
-        sum(no_tax_rebate_in_value) as no_tax_rebate_in_value,       --未税返利收入金额
-        sum(rebate_in_value) as rebate_in_value,               --含税税返利收入金额
-        sum(no_tax_profit)+sum(adj_no_tax_sum_value)+(sum(no_tax_rebate_in_value)-sum(no_tax_rebate_out_value)) as no_tax_net_profit,            --综合毛利=定价毛利+调整成本+（后台收入-后台支出）
-        sum(profit)+sum(adj_sum_value)+(sum(rebate_in_value)-sum(rebate_out_value)) as no_tax_net_profit ,          --综合毛利=定价毛利+调整成本+（后台收入-后台支出）
-        (sum(no_tax_profit)+sum(adj_no_tax_sum_value)+(sum(no_tax_rebate_in_value)-sum(no_tax_rebate_out_value)))/sum(no_tax_sales) as no_tax_net_profit_rate,
-        (sum(profit)+sum(adj_sum_value)+(sum(rebate_in_value)-sum(rebate_out_value)))/sum(no_tax_sales) as net_profit_rate,
+        sum(no_tax_rebate_in_value) as no_tax_rebate_in_value,       --未税后台W0AQ收入金额
+        sum(rebate_in_value) as rebate_in_value,               --含税后台W0AQ收入金额
+        sum(no_tax_profit)-sum(adj_no_tax_sum_value)+(sum(no_tax_rebate_in_value)-sum(no_tax_rebate_out_value)) as no_tax_net_profit,            --综合毛利=定价毛利+调整成本+（后台收入-后台支出）
+        sum(profit)-sum(adj_sum_value)+(sum(rebate_in_value)-sum(rebate_out_value)) as net_profit ,          --综合毛利=定价毛利+调整成本+（后台收入-后台支出）
+        (sum(no_tax_profit)-sum(adj_no_tax_sum_value)+(sum(no_tax_rebate_in_value)-sum(no_tax_rebate_out_value)))/sum(no_tax_sales) as no_tax_net_profit_rate,
+        (sum(profit)-sum(adj_sum_value)+(sum(rebate_in_value)-sum(rebate_out_value)))/sum(no_tax_sales) as net_profit_rate,
         current_timestamp(),
         substr(${hiveconf:edt},1,6)
   from 
@@ -1194,9 +1268,10 @@ grouping sets (( channel_code,
         0 adj_sum_value,
         0 no_tax_rebate_out_value,    --未税返利支出金额
         0 rebate_out_value ,             --含税返利支出金额
-        0 no_tax_rebate_in_value,       --未税返利收入金额
-        0 rebate_in_value               --含税税返利收入金额
-  from  csx_tmp.temp_classify_sales
+        no_tax_back_amt as no_tax_rebate_in_value,       --未税W0AQ后台收入
+        back_total_amt as  rebate_in_value               --含税W0AQ后台收入
+  from  csx_tmp.temp_classify_sales_02
+
  union all 
  --关联销售调整数据
  select channel_code,
@@ -1222,31 +1297,7 @@ grouping sets (( channel_code,
         0 no_tax_rebate_in_value,       --未税返利收入金额
         0 rebate_in_value     
     from  csx_tmp.ads_fr_r_d_frozen_adjust_sale_cost 
- union all 
- --关联返利支出数据
-  select channel_code,
-        channel_name,
-        business_type_code,
-        business_type_name,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name,
-        0 sales_cost,
-        0 sales_value,
-        0 profit,
-        0 no_tax_sales_cost,
-        0 no_tax_sales,
-        0 no_tax_profit,
-        0 adj_no_tax_sum_value,
-        0 adj_sum_value,
-        coalesce(no_tax_sale_value,0) as no_tax_rebate_out_value,    --未税返利支出金额
-        coalesce(sales_value,0) as rebate_out_value ,             --含税返利支出金额
-        0 no_tax_rebate_in_value,       --未税返利收入金额
-        0 rebate_in_value     
-    from csx_tmp.ads_fr_r_d_frozen_fanli_out
+    where months=substr( ${hiveconf:edt},1,6)
     ) a 
     group by channel_code,
         channel_name,
@@ -1259,6 +1310,7 @@ grouping sets (( channel_code,
         classify_small_code,
         classify_small_name
         ;
+        
         
         
    -- 公司间销售  csx_tmp.ads_fr_r_d_frozen_direct_sales 2116公司调拨
@@ -1426,3 +1478,154 @@ grouping sets (( channel_code,
         channel_name , classify_large_code, 
     classify_large_name),())
 ) a ;
+
+
+-- 采购销售入库成本
+drop table  csx_tmp.temp_frozen_purch_amt;
+create table csx_tmp.temp_frozen_purch_amt as 
+select 
+    a.credential_no,
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    a.goods_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    origin_order_no, 
+    order_no, 
+    dc_code,
+    tax_rate,
+    sales_cost,
+    sales_qty,
+    sales_value,
+    profit,
+    excluding_tax_cost,
+    excluding_tax_profit,
+    excluding_tax_sales,
+    coalesce(purchase_qty,0 )purchase_qty,
+    coalesce(purchase_amt,0)purchase_amt,
+    coalesce(no_tax_purchase_amt,0 )no_tax_purchase_amt,
+    coalesce(return_qty,0)return_qty,
+    coalesce(return_amt,0)return_amt,
+    coalesce(no_tax_return_amt,0)no_tax_return_amt
+from 
+ (select * from
+    csx_tmp.temp_fina_sale_00
+   -- where   channel_code in ('1','7','9')
+) a 
+  left join 
+(
+  select
+    goods_code,
+    credential_no,
+    sum(case when move_type='107A' then qty end ) as purchase_qty,
+    sum(case when move_type='107A' then price_no_tax*qty end ) as no_tax_purchase_amt,
+    sum(case when move_type='107A' then price *qty end ) as purchase_amt,
+    sum(case when move_type='108A' then qty end ) as return_qty,
+    sum(case when move_type='108A' then price_no_tax *qty end ) as no_tax_return_amt,
+    sum(case when move_type='108A' then price *qty end ) as return_amt
+  from csx_dw.dws_wms_r_d_batch_detail
+  where move_type in ('107A','108A')
+  group by goods_code, credential_no
+) b on a.credential_no = b.credential_no and a.goods_code = b.goods_code
+
+;
+
+drop table  csx_tmp.temp_frozen_purch_amt;
+create table csx_tmp.temp_frozen_purch_amt as 
+select 
+    a.credential_no,
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    a.goods_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    origin_order_no, 
+    order_no, 
+    dc_code,
+    tax_rate,
+    sales_cost,
+    sales_qty,
+    sales_value,
+    profit,
+    excluding_tax_cost,
+    excluding_tax_profit,
+    excluding_tax_sales,
+    coalesce(purchase_qty,0 )purchase_qty,
+    coalesce(purchase_amt,0)purchase_amt,
+    coalesce(no_tax_purchase_amt,0 )no_tax_purchase_amt,
+    coalesce(return_qty,0)return_qty,
+    coalesce(return_amt,0)return_amt,
+    coalesce(no_tax_return_amt,0)no_tax_return_amt
+from 
+ (select * from
+    csx_tmp.temp_fina_sale_00
+   -- where   channel_code in ('1','7','9')
+) a 
+  left join 
+(
+  select
+    goods_code,
+    credential_no,
+    sum(case when move_type='107A' then qty end ) as purchase_qty,
+    sum(case when move_type='107A' then price_no_tax*qty end ) as no_tax_purchase_amt,
+    sum(case when move_type='107A' then price *qty end ) as purchase_amt,
+    sum(case when move_type='108A' then qty end ) as return_qty,
+    sum(case when move_type='108A' then price_no_tax *qty end ) as no_tax_return_amt,
+    sum(case when move_type='108A' then price *qty end ) as return_amt
+  from csx_dw.dws_wms_r_d_batch_detail
+  where move_type in ('107A','108A')
+  group by goods_code, credential_no
+) b on a.credential_no = b.credential_no and a.goods_code = b.goods_code
+
+;
+
+select   classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(no_tax_purchase_amt-no_tax_return_amt) purchase_amt
+from  csx_tmp.temp_frozen_purch_amt
+group by classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+union all 
+select   classify_large_code,
+    classify_large_name,
+    '00'classify_middle_code,
+    '00'classify_middle_name,
+    '00'classify_small_code,
+    '00'classify_small_name,
+    sum(no_tax_purchase_amt-no_tax_return_amt)  as purchase_amt
+from  csx_tmp.temp_frozen_purch_amt
+group by classify_large_code,
+    classify_large_name
+    union all 
+select   classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    '00'classify_small_code,
+    '00'classify_small_name,
+    sum(no_tax_purchase_amt-no_tax_return_amt) purchase_amt
+from  csx_tmp.temp_frozen_purch_amt
+group by classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name;

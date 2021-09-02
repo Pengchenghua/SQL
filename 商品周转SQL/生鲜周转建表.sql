@@ -1,7 +1,9 @@
 --增加 DC用途、是否联采
+drop table csx_tmp.report_wms_r_d_turnover_fresh_fr;
 CREATE TABLE `csx_tmp.report_wms_r_d_turnover_fresh_fr`(
-  `zone_id` string comment '大区编码', 
-  `zone_name` string comment '大区名称', 
+level_id STRING COMMENT '层级分组',
+  `region_code` string comment '大区编码', 
+  `region_name` string comment '大区名称', 
   `dist_code` string comment '省区编码', 
   `dist_name` string comment '省区名称', 
   `city_code` string comment '城市编码', 
@@ -35,25 +37,24 @@ CREATE TABLE `csx_tmp.report_wms_r_d_turnover_fresh_fr`(
   `stock_sku_40` bigint comment '15-40天SKU', 
   `stock_sku_365` bigint comment '40-365天SKU', 
   `stock_sku_365_last` bigint comment '365天以上SKU',
-  `stock_sku_ratio_7` bigint comment '0-7天SKU占比', 
-  `stock_sku_ratio_15` bigint comment '7-15天SKU占比', 
-  `stock_sku_ratio_40` bigint comment '15-40天SKU占比', 
-  `stock_sku_ratio_365` bigint comment '40-365天SKU占比', 
-  `stock_sku_ratio_365_last` bigint comment '365天以上SKU占比',
+  `stock_sku_ratio_7` decimal(38,6)  comment '0-7天SKU占比', 
+  `stock_sku_ratio_15` decimal(38,6)  comment '7-15天SKU占比', 
+  `stock_sku_ratio_40` decimal(38,6)  comment '15-40天SKU占比', 
+  `stock_sku_ratio_365` decimal(38,6)  comment '40-365天SKU占比', 
+  `stock_sku_ratio_365_last` decimal(38,6)  comment '365天以上SKU占比',
   `final_amt_ratio_7` decimal(38,6) comment '0-7天库存金额占比', 
   `final_amt_ratio_15` decimal(38,6) comment '7-15库存金额占比', 
   `final_amt_ratio_40` decimal(38,6) comment '15-40天库存金额占比', 
   `final_amt_ratio_365` decimal(38,6) comment '40-365库存金额占比', 
   `final_amt_ratio_365_last` decimal(38,6) comment '365天以库存金额占比',
   purpose_code string comment 'DC用途统计',
-  joint_purchase_flag string comment '联采商品统计',
+  purpose_name string comment 'DC用途名称',
+  joint_purchase_flag string comment '联采商品统计 0 否 1 是',
   update_time TIMESTAMP comment '更新日期'
   )comment '生鲜库存周转占比'
  partitioned by (sdt string COMMENT '数据分区日期')
     STORED AS PARQUET 
 ;
-
-
 
 set hive.map.aggr = true;
 set hive.groupby.skewindata=false;
