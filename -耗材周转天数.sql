@@ -163,7 +163,8 @@ select  zone_id,
     receipt_amt,        --领用金额
     receipt_qty,        --领用数量
     material_take_amt,  --原料消耗金额
-    material_take_qty,  --原料消耗数量coalesce(receipt_qty+material_take_qty,0) as use_qty,       --合计使用数量=领用+原料消耗
+    material_take_qty,  --原料消耗数量
+    coalesce(receipt_qty+material_take_qty,0) as use_qty,       --合计使用数量=领用+原料消耗
 coalesce(receipt_amt+material_take_amt,0) as use_amt,
 coalesce(case when coalesce(receipt_qty+material_take_qty,0)<=0 and end_inventoty_qty<>0 then 9999 
 else (((begin_inventoty_qty+end_inventoty_qty)/2)/(receipt_qty+material_take_qty))*30 end,0) as turn_day  ,                    --公式有问题，待确认
