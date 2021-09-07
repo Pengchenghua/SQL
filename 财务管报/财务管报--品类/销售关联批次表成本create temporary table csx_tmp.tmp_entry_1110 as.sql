@@ -190,3 +190,20 @@ left join
 ;
 
 
+
+
+
+select * from csx_dw.dws_wms_r_d_batch_detail where batch_no='CB20210816019016' and goods_code='1277751'
+
+;
+select * from csx_dw.dws_wms_r_d_batch_detail where batch_no ='CB20210801006351' and goods_code='1153249'
+;
+
+select * from csx_dw.dws_wms_r_d_batch_detail where batch_no='CB20210628103929' and goods_code='1214076';
+
+
+select * from csx_dw.dws_wms_r_d_batch_detail where batch_no='CB20210803020424' and goods_code='1175095';
+
+
+select * from csx_dw.dws_wms_r_d_batch_detail where credential_no='PZ20210803182312' and goods_code='1175095';
+
