@@ -302,7 +302,7 @@ join
     source_order_no,
     credential_no
   from csx_dw.dws_wms_r_d_batch_detail
-  where move_type in ('107A','108A') --107A 销售出库 108A 退货入库
+  where move_type in ('107A' ) --107A 销售出库 108A 退货入库
     and source_order_no like 'PO%'
 ) b on a.credential_no = b.credential_no and a.goods_code = b.goods_code
 
