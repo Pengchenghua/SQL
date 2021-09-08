@@ -182,7 +182,8 @@
       "powershell": ".ps1",
       "typescript": ".ts"
     },
-    "files.autoGuessEncoding": true
+    "files.autoGuessEncoding": true,
+    "editor.fontSize": 18
   },
   "extensions": {
     "recommendations": [

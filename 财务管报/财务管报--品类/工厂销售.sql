@@ -42,8 +42,6 @@ join
 ;
 
 
-
-
 --工单推采购原料
 drop table csx_tmp.tmp_sales_batch_detail_02;
 create temporary table csx_tmp.tmp_sales_batch_detail_02
