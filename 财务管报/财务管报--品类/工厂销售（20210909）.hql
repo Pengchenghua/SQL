@@ -92,8 +92,6 @@ create temporary table if not exists csx_tmp.temp_fina_sale_00 as
     --  and joint_purchase_flag='1'
     ;
 
-
-
  
 -- 成品成本 source_order_type_code like 'KN%' 包含商品转码、原料转成品
 drop table if exists csx_tmp.temp_fac_sale_01;
@@ -341,7 +339,7 @@ group by  channel_code,
 ;
 
 
--- 2.1计算原料领用金额
+-- 计算原料领用金额
 insert overwrite  table csx_tmp.ads_fr_r_d_frozen_account_factory_category_cost partition(months) 
 select   substr(${hiveconf:edt},1,6) as sales_months,
     case when channel_code is null then '00'

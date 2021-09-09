@@ -1,5 +1,6 @@
 --冻品管报SQL聚合 更新2021-09-09
 
+
 -- -- 销售收入表
 -- REFRESH csx_tmp.ads_fr_r_d_frozen_financial_classify_sales;  
 -- -- 中台报价商品成本
@@ -18,6 +19,7 @@ set edt =regexp_replace(${hiveconf:edate},'-','');
 set sdate=regexp_replace(trunc(${hiveconf:edate},'MM'),'-','');
 set hive.exec.dynamic.partition.mode=nonstrict;
 
+--销售表处理
 drop table if exists csx_tmp.temp_fina_sale_00 ;
 create temporary table if not exists csx_tmp.temp_fina_sale_00 as 
     select
