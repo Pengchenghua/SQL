@@ -274,19 +274,7 @@ from  csx_tmp.temp_cbgb_tz_v11
  )  b on a.dc_type=b.dc_type 
  ;
  
- 
---  select channel_code,
---         channel_name,
---         business_type_code,
---         business_type_name,
---         classify_large_code,
---         classify_large_name,
---         classify_middle_code,
---         classify_middle_name,
---         classify_small_code,
 
--- drop table csx_tmp.temp_tz_03;
--- create table csx_tmp.temp_tz_03 as 
 insert overwrite table `csx_tmp.ads_fr_r_d_frozen_adjust_apportion` partition(months)
 select substr(${hiveconf:edt},1,6)months,
 dc_type,
