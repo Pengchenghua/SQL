@@ -86,8 +86,9 @@ left join
   select 
     goods_code,--成品
     order_code,--工单号
+    product_code,
     sum(goods_plan_receive_qty) as goods_plan_receive_qty,  --商品计划生产数量
-	sum(goods_reality_receive_qty) as goods_reality_receive_qty,  --商品实际产量
+	  sum(goods_reality_receive_qty) as goods_reality_receive_qty,  --商品实际产量
     sum(p_total) as p_total,  --计划成本小计(工单计划成本)
     sum(fact_qty) as fact_qty,  --原料数量
     sum(product_price*fact_qty)fact_values_01,
@@ -137,6 +138,104 @@ from
         classify_small_name
 
 ;
+
+
+
+-- 原料、转码、成品数据汇总
+select  
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    0  as raw_no_tax_amt,
+    0 as raw_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
+from 
+  csx_tmp.temp_fac_sale_01  a 
+   group by 
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name
+;
+
+
+-- 原料、转码、成品数据汇总
+select  
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    0  as raw_no_tax_amt,
+    0 as raw_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
+from 
+  csx_tmp.temp_fac_sale_01  a 
+   group by 
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name
+;
+
+
+-- 原料、转码、成品数据汇总
+select  
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    0  as raw_no_tax_amt,
+    0 as raw_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
+from 
+  csx_tmp.temp_fac_sale_01  a 
+   group by 
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name
+;
+
 
 
 
