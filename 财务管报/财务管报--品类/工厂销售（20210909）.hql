@@ -27,7 +27,8 @@ select channel_code,
     link_wms_batch_no,
     link_wms_order_no,
     move_type,
-    source_order_no
+    source_order_no,
+    order_no
 from  csx_tmp.temp_fina_sale_00 a 
  join 
 (
@@ -49,62 +50,129 @@ from  csx_tmp.temp_fina_sale_00 a
   from csx_dw.dws_wms_r_d_batch_detail a
   where move_type in ('107A','108A') --107A 销售出库 108A 退货入库
   --   and source_order_no like 'WO%'
-  --  and source_order_type_code in ('PO','KN')
+   and source_order_type_code in ('KN')
 ) b 
  on a.credential_no=b.credential_no 
  and a.goods_code=b.goods_code
 
-
 ; 
-select sum(case when source_order_type_code='KN' then  qty*price_no_tax end ), sum(case when source_order_type_code!='KN' then  qty*price_no_tax end ) 
-from  csx_tmp.temp_fac_sale_01
-;
-
-
 
 
 --工单推采购原料 
-drop table csx_tmp.tmp_sales_batch_detail_02;
-create temporary table csx_tmp.tmp_sales_batch_detail_03
-as
 
+drop table csx_tmp.tmp_sales_batch_detail_02;
+create temporary table csx_tmp.tmp_sales_batch_detail_02
+as
 select
+  channel_code,
+  channel_name,
+  business_type_code,
+  business_type_name,
+  province_code,
+  province_name,
+  city_group_code,
+  city_group_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
   order_no,
+  a.goods_code,
   a.qty,
   a.price,
   order_code,
-  goods_plan_receive_qty,
+  product_code,
   goods_reality_receive_qty,
   p_total,
-  fact_qty,
+  no_tax_p_total,
+  no_tax_fact_values,
   fact_values,
-  fact_values_01
+  qty*fact_values/goods_reality_receive_qty as batch_fact_values,--物料批次原料成本含税
+  qty*no_tax_fact_values/goods_reality_receive_qty as no_tax_batch_fact_values,--物料批次原料成本未税
+  qty*p_total/goods_reality_receive_qty as batch_p_total, --物料批次总成本
+  qty*no_tax_p_total/goods_reality_receive_qty as no_tax_batch_p_total --物料批次总成本 未税
 from
-    csx_tmp.temp_fac_sale_01  a 
-left join
 (
   select 
-    goods_code,--成品
-    order_code,--工单号
-    product_code,
-    sum(goods_plan_receive_qty) as goods_plan_receive_qty,  --商品计划生产数量
-	  sum(goods_reality_receive_qty) as goods_reality_receive_qty,  --商品实际产量
-    sum(p_total) as p_total,  --计划成本小计(工单计划成本)
-    sum(fact_qty) as fact_qty,  --原料数量
-    sum(product_price*fact_qty)fact_values_01,
-    sum(fact_values) as fact_values  --原料金额成本(原料成本即入库成本)
-  from csx_dw.dws_mms_r_a_factory_order
-  group by goods_code,order_code
+    channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    province_code,
+    province_name,
+    city_group_code,
+    city_group_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    wms_batch_no,
+    batch_no,
+    order_no,
+    goods_code,
+    qty,
+    price,
+    source_order_no
+  from csx_tmp.temp_fac_sale_01  --销售订单商品
+) a
+left join
+(
+  select  
+	goods_code,
+	order_code,
+	product_code,
+	sum(goods_reality_receive_qty) over(partition by goods_code,order_code) as goods_reality_receive_qty,
+	p_total,
+	no_tax_p_total,
+	no_tax_fact_values,
+	fact_values
+  from 
+  (
+    select 
+      goods_code,--成品
+      order_code,--工单号
+  	  product_code,
+  	  sum(goods_reality_receive_qty) as goods_reality_receive_qty,  --商品实际产量
+      sum(p_total) as no_tax_p_total,  --计划成本小计(工单计划成本)
+      sum(p_total*(1+tax_rate/100)) as p_total,
+      sum(no_tax_fact_values) as no_tax_fact_values,  --不含税原料金额成本(原料成本即入库成本)
+      sum(fact_values) as fact_values
+    from   csx_dw.dws_mms_r_a_factory_order a 
+    left join 
+    (select goods_id,tax_rate from csx_dw.dws_basic_w_a_csx_product_m where sdt='current')  b on a.goods_code=b.goods_id
+    group by goods_code,order_code,product_code
+  ) a 
 ) b on a.source_order_no = b.order_code and a.goods_code = b.goods_code
 ;
-) b on a.batch_no = b.batch_no and a.goods_code = b.goods_code
-where source_order_no like 'WO%'
-;
 
 
 
 
+-- 原料、转码、成品数据汇总
 
+
+drop table if exists csx_tmp.temp_fac_sale_03;
+create temporary table if not exists csx_tmp.temp_fac_sale_03 as 
+
+select  channel_code,
+    channel_name,
+    business_type_code,
+    business_type_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(raw_no_tax_amt)   as raw_no_tax_amt,
+    sum(raw_amt) as raw_amt,
+    sum(finished_no_tax_amt) as finished_no_tax_amt,
+    sum(finished_amt) as finished_amt
+from (
 --商品转码金额
 select  
     channel_code,
@@ -117,8 +185,8 @@ select
     classify_middle_name,
     classify_small_code,
     classify_small_name,
-    0  as raw_no_tax_amt,
-    0 as raw_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end )   as raw_no_tax_amt,
+    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as raw_amt,
     sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
     sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
 from 
@@ -136,14 +204,9 @@ from
         classify_middle_name,
         classify_small_code,
         classify_small_name
-
-;
-
-
-
--- 原料、转码、成品数据汇总
-select  
-    channel_code,
+union all 
+select 
+ channel_code,
     channel_name,
     business_type_code,
     business_type_name,
@@ -153,29 +216,12 @@ select
     classify_middle_name,
     classify_small_code,
     classify_small_name,
-    0  as raw_no_tax_amt,
-    0 as raw_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
-from 
-  csx_tmp.temp_fac_sale_01  a 
-   group by 
-        channel_code,
-        channel_name,
-        business_type_code,
-        business_type_name,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name
-;
-
-
--- 原料、转码、成品数据汇总
-select  
-    channel_code,
+    sum(no_tax_batch_fact_values)   as raw_no_tax_amt,
+    sum(batch_fact_values) as raw_amt,
+    sum(no_tax_batch_p_total) as finished_no_tax_amt,
+    sum(batch_p_total) as finished_amt
+from csx_tmp.tmp_sales_batch_detail_02
+group by  channel_code,
     channel_name,
     business_type_code,
     business_type_name,
@@ -184,30 +230,9 @@ select
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name,
-    0  as raw_no_tax_amt,
-    0 as raw_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
-from 
-  csx_tmp.temp_fac_sale_01  a 
-   group by 
-        channel_code,
-        channel_name,
-        business_type_code,
-        business_type_name,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name
-;
-
-
--- 原料、转码、成品数据汇总
-select  
-    channel_code,
+    classify_small_name
+    ) a 
+group by  channel_code,
     channel_name,
     business_type_code,
     business_type_name,
@@ -216,28 +241,14 @@ select
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name,
-    0  as raw_no_tax_amt,
-    0 as raw_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
-from 
-  csx_tmp.temp_fac_sale_01  a 
-   group by 
-        channel_code,
-        channel_name,
-        business_type_code,
-        business_type_name,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name
+    classify_small_name
 ;
 
 
 
+
+-- select sum(finished_no_tax_amt) ,sum(raw_no_tax_amt) from  csx_tmp.temp_fac_sale_03
+-- ;
 
 -- 2.1计算原料领用金额
 insert overwrite  table csx_tmp.ads_fr_r_d_frozen_account_factory_category_cost partition(months) 
@@ -297,12 +308,12 @@ from
     classify_middle_name,
     classify_small_code,
     classify_small_name,
-    0  as raw_no_tax_amt,
-    0 as raw_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price_no_tax,0) end ) as finished_no_tax_amt,
-    sum( case when source_order_type_code='KN' then  coalesce(qty*price,0) end ) as finished_amt
+    sum(raw_no_tax_amt)   as raw_no_tax_amt,
+    sum(raw_amt) as raw_amt,
+    sum(finished_no_tax_amt) as finished_no_tax_amt,
+    sum(finished_amt) as finished_amt
 from 
-  csx_tmp.temp_fac_sale_01  a 
+  csx_tmp.temp_fac_sale_03  a 
    group by 
         channel_code,
         channel_name,
@@ -370,31 +381,5 @@ from
     classify_large_name),())
  ) a    
  ;
-
-
-
-
-select
- 
-  sum(finished_amt),	
-  sum(finished_no_tax_amt),
-  sum(raw_no_tax_amt),
-  sum(raw_amt)
-from
-   --销售订单商品
- csx_tmp.temp_fac_sale_01  a
-left join
-( select a.batch_no,
-    sum(case when a.in_or_out=1 and a.move_type in ('119A','109A','119B','109B') then coalesce(if(move_type  in ('119A','109A'),amt_no_tax,amt_no_tax*-1),0) end ) as raw_no_tax_amt,   --原料领用成本未税
-    sum(case when a.in_or_out=1 and a.move_type in ('119A','109A','119B','109B') then coalesce(if(move_type in ('119A','109A'),amt,amt*-1),0) end ) as raw_amt ,              -- 原料领用成本含税
-     sum(case when a.in_or_out=0 and a.move_type in ('120A','120B') then coalesce(if(move_type='120A',amt_no_tax,amt_no_tax*-1),0) end ) as finished_no_tax_amt,   --成品未税
-    sum(case when a.in_or_out=0 and a.move_type in ('120A','120B') then coalesce(if(move_type='120A',amt,amt*-1),0) end ) as finished_amt                    --成品含税
-    from  csx_dw.dws_wms_r_d_batch_detail a 
-    where  a.move_type in ('119A','109A','119B','109B') 
-    group by a.batch_no
-  ) b on a.batch_no = b.batch_no  
-where source_order_no like 'WO%'
-;
-
 
 
