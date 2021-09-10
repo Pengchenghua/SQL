@@ -1,4 +1,98 @@
 
+-- set tez.queue.name=caishixian;
+set hive.exec.parallel=true; 
+set hive.exec.parallel.thread.number=100;
+set hive.exec.max.dynamic.partitions.pernode=100;
+set hive.exec.max.dynamic.partitions=1000;
+set hive.exec.dynamic.partition=true;
+set hive.exec.max.dynamic.partitions.pernode=1000000;--每个mapper节点最多创建1000个分区
+set hive.exec.dynamic.partition.mode=nonstrict;
+set edate = '${enddate}';
+set edt =regexp_replace(${hiveconf:edate},'-','');
+set sdate=regexp_replace(trunc(${hiveconf:edate},'MM'),'-','');
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+drop table if exists csx_tmp.temp_fina_sale_00 ;
+create temporary table if not exists csx_tmp.temp_fina_sale_00 as 
+    select
+        split(id,'&')[0] as credential_no ,
+        case when sales_type = 'bbc' then substr(order_no, 7, 10)
+         else order_no end as order_no,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        b.classify_large_code,
+        b.classify_large_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+        b.classify_small_name,
+        origin_order_no, 
+        dc_code, 
+        goods_code, 
+        tax_rate,
+        case when channel_code in ('1','7','9') then '1' when channel_code in ('5','6') then '4' else  channel_code end channel_code,
+        case when channel_code in ('1','7','9') then '大客户'  when channel_code in ('5','6') then '大宗'  else  channel_name end channel_name ,
+        case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '21'
+            when channel_code='2' then '22' else business_type_code  end business_type_code,
+        case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'
+            when channel_code='2' then '非代加工' else business_type_name end business_type_name,
+        order_category_name, 
+        shipped_time, 
+        regexp_replace(substr(shipped_time, 1, 10), '-', '') as shipped_date,
+        purchase_price_flag,
+        cost_price,
+        sales_qty,
+        sales_value,
+        sales_cost,
+        profit,
+        excluding_tax_sales,
+        excluding_tax_cost,
+        excluding_tax_profit,
+        purchase_price,
+        middle_office_price,
+        if(purchase_price=0 ,(a.cost_price*sales_qty), (a.purchase_price*a.sales_qty)) as  purchase_price_cost,
+        middle_office_cost,
+        if(purchase_price=0 ,(a.cost_price/(1+a.tax_rate/100))*a.sales_qty,(a.purchase_price/(1+a.tax_rate/100))*a.sales_qty) as no_tax_purchase_price_cost,
+        (a.middle_office_price/(1+a.tax_rate/100))*sales_qty as no_tax_middle_office_cost,
+        joint_purchase_flag,
+        sales_type,
+        is_factory_goods
+    from csx_dw.dws_sale_r_d_detail a
+    join
+    (select shop_code,
+        product_code,
+        joint_purchase_flag,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name
+    from csx_dw.dws_basic_w_a_csx_product_info a 
+    left  join 
+    (select 
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name,
+        category_small_code
+    from csx_dw.dws_basic_w_a_manage_classify_m 
+        where sdt='current' 
+         and classify_middle_code in ('B0304','B0305')
+    ) b 
+    where sdt='current'  
+        and a.small_category_code=b.category_small_code
+    )  b on a.goods_code=b.product_code and a.dc_code=b.shop_code
+    where sdt >=${hiveconf:sdate}
+      and sdt<= ${hiveconf:edt}
+    --  and joint_purchase_flag='1'
+    ;
+
+ 
 -- 成品成本 source_order_type_code like 'KN%' 包含商品转码、原料转成品
 drop table if exists csx_tmp.temp_fac_sale_01;
 create temporary table if not exists csx_tmp.temp_fac_sale_01 as 
@@ -245,12 +339,7 @@ group by  channel_code,
 ;
 
 
-
-
--- select sum(finished_no_tax_amt) ,sum(raw_no_tax_amt) from  csx_tmp.temp_fac_sale_03
--- ;
-
--- 2.1计算原料领用金额
+-- 计算原料领用金额
 insert overwrite  table csx_tmp.ads_fr_r_d_frozen_account_factory_category_cost partition(months) 
 select   substr(${hiveconf:edt},1,6) as sales_months,
     case when channel_code is null then '00'
@@ -381,5 +470,3 @@ from
     classify_large_name),())
  ) a    
  ;
-
-
