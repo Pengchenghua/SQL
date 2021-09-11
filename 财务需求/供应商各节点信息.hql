@@ -1,5 +1,6 @@
+--供应商入库对帐信息节点
 set  mapreduce.job.reduces = 100;
-set hive.exec.reducers.max=299;  -- reduce 个数，默认 299 不建议
+--set hive.exec.reducers.max=299;  -- reduce 个数，默认 299 不建议
 -- set  hive.map.aggr = true;
 -- set  hive.groupby.skewindata = false;
 set hive.exec.parallel.thread.number = 16;
@@ -28,12 +29,13 @@ set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
 -- set parquet.block.size=268435456;
 
  
-
+--select regexp_replace(${hiveconf:s_date} ,'-','');
 set e_date='${enddate}';
-set s_date= trunc(date_sub(${hiveconf:e_date},120),'MM');
+set s_date= trunc(date_sub(${hiveconf:e_date},90),'MM');
+-- set s_date= '2019-01-01';
 -- select ${hiveconf:s_date};
 
-drop table csx_tmp.temp_pss_01;
+drop table if exists csx_tmp.temp_pss_01;
 create table csx_tmp.temp_pss_01 as 
 select a.purchase_no,           --采购单号
        a.bill_no,               ----1 入库单(批次单号) 2、结算单
@@ -64,6 +66,7 @@ from
    to_date(paid_time) paid_date               --付款日期
 from csx_dw.dwd_pss_r_d_statement_source_bill 
 where sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+and sdt<=regexp_replace(${hiveconf:e_date} ,'-','')
 ) a 
 left join
 --对帐单
@@ -72,7 +75,9 @@ left join
         to_date(sign_date) as sign_date,     -- 供应商签单日期
         to_date(audit_date) as audit_date  --票核日期
 from csx_dw.dwd_pss_r_d_statement_statement_account  
-where sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+where 1=1 
+--and  sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+and sdt<=regexp_replace(${hiveconf:e_date} ,'-','')
 group by
         statement_no,   --对帐单号
         check_ticket_no, --勾票单号
@@ -87,7 +92,8 @@ select check_ticket_no,     --勾票单号
         to_date(invoice_sub_date)as invoice_sub_date,   --发票录入日期
         to_date(audit_date) as audit_date          --票核日期
 from csx_dw.dwd_pss_r_d_statement_check_ticket 
-where sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+where 1=1
+    --and sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
 group by check_ticket_no,     --勾票单号
         to_date(check_date) ,         --勾票日期
         to_date(invoice_sub_date),   --发票录入日期
@@ -100,7 +106,8 @@ select payment_no,      --付款单号
     to_date(payment_time ) as payment_date,       --付款时间
     to_date(review_time) as review_date         --审核时间 
 from csx_dw.dwd_pss_r_d_statement_payment
-where sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+where 1=1
+ -- and sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
 group by 
  payment_no,      --付款单号
     to_date(payment_time ) ,       --付款时间
@@ -110,7 +117,7 @@ group by
 
 
 -- 采购订单 创建日期 入库日期 、关单日期  管理分类
-drop table  csx_tmp.temp_pss_00 ;
+drop table if exists csx_tmp.temp_pss_00 ;
 create table csx_tmp.temp_pss_00 as 
 select source_bill_no,  --采购订单
     b.order_code,
@@ -130,7 +137,8 @@ select source_bill_no,  --采购订单
     supplier_code,
     receive_date	,
     receive_close_date,
-    post_date
+    post_date,
+    sdt
 from 
 (select source_bill_no,  --采购订单
     in_out_no,          --批次单号
@@ -143,7 +151,8 @@ from
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name
+    classify_small_name,
+    sdt
 from csx_dw.dwd_pss_r_d_settle_inout_detail a  --采购订单
 left join 
 (SELECT goods_id,
@@ -155,7 +164,9 @@ left join
        classify_small_name
 FROM csx_dw.dws_basic_w_a_csx_product_m    --商品资料表
 WHERE sdt='current') b on a.product_code=b.goods_id
-where sdt>=regexp_replace(${hiveconf:s_date} ,'-','')
+where 1=1
+    and sdt>=regexp_replace(${hiveconf:s_date} ,'-','')   --业务发生日期
+    and sdt<=regexp_replace(${hiveconf:e_date} ,'-','')
     and a.source_bill_type=1
 group by 
      source_bill_no,  --采购订单
@@ -169,9 +180,9 @@ group by
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name
+    classify_small_name,
+    sdt
 ) a 
-
 left join
 -- 入库批次表
 (select batch_code,
@@ -182,7 +193,7 @@ left join
     origin_order_code
     from csx_dw.dws_wms_r_d_entry_batch 
   --  where batch_code='TK190925001725'
-  where (sdt>=regexp_replace(${hiveconf:s_date} ,'-','') or sdt='19990101')
+  where 1=1
  group by  batch_code,to_date(receive_time) 	,
     to_date(close_time),
     order_code,
@@ -193,16 +204,16 @@ left join
 -- 采购订单表头
 (select order_code,to_date(create_time)as order_create_date,supplier_code ,received_order_code
 from csx_dw.dwd_scm_r_d_order_header 
-    where  (sdt>=regexp_replace(${hiveconf:s_date} ,'-','') or sdt='19990101')
+    where   1=1
 group by  order_code,to_date(create_time),supplier_code,received_order_code) b on c.origin_order_code=b.order_code   
 ;
 
-
-
+-- show create table  csx_dw.dwd_pss_r_d_settle_inout_detail;
+-- select min(order_create_date) from csx_tmp.temp_pss_00;
 -- 如果付款日期为空，则按当前日期进行计算（搜索下载日或T-1日）；如果被减日期也为空，则计算结果为空
-drop table  csx_tmp.temp_pss_02;
+drop table if exists csx_tmp.temp_pss_02;
 create  table csx_tmp.temp_pss_02 as 
-select 
+select sdt,
     coalesce(order_code ,source_bill_no) as purchase_no,
     entry_order_no,
     in_out_no as batch_co,          --批次单号
@@ -225,20 +236,20 @@ select
     reconciliation_tag_name,
     account_group,
     account_group_name,
-    coalesce(receive_date,'') as receive_date	,       --收货日期
-    coalesce(receive_close_date,'') as receive_close_date,     --关单日期
-    coalesce(post_date,      '') as post_date,              --过帐日期
-    coalesce(check_ticket_no,'') as check_ticket_no,       --勾票单号
-    coalesce(statement_no,  '')as statement_no,      --对帐单号
-    coalesce(payment_no,    '')as payment_no,        --实际付款单号
-    coalesce(statement_date,'')as statement_date,        --对帐日期
-    coalesce(finance_statement_date,'') as finance_statement_date,     --财务对帐日期
-    coalesce(pay_create_date,'')as pay_create_date,   ---付款生成日期
-    coalesce(payment_date,'')as payment_date,         --付款日期
-    coalesce(sign_date,'')as sign_date,         --供应商签单日期
-    coalesce(audit_date,       '')as audit_date,        --票核日期
-    coalesce(invoice_sub_date, '')as invoice_sub_date,  --发票录入日期
-    coalesce(review_date,      '')as review_date,        --付款审核日期
+   coalesce(receive_date,'') as receive_date	,       --收货日期
+   coalesce(receive_close_date,'') as receive_close_date,     --关单日期
+   coalesce(post_date,      '') as post_date,              --过帐日期
+   coalesce(check_ticket_no,'') as check_ticket_no,       --勾票单号
+   coalesce(statement_no,  '')as statement_no,      --对帐单号
+   coalesce(payment_no,    '')as payment_no,        --实际付款单号
+   coalesce(statement_date,'')as statement_date,        --对帐日期
+   coalesce(finance_statement_date,'') as finance_statement_date,     --财务对帐日期
+   coalesce(pay_create_date,'')as pay_create_date,   ---付款生成日期
+   coalesce(payment_date,'')as payment_date,         --付款日期
+   coalesce(sign_date,'')as sign_date,         --供应商签单日期
+   coalesce(audit_date,       '')as audit_date,        --票核日期
+   coalesce(invoice_sub_date, '')as invoice_sub_date,  --发票录入日期
+   coalesce(review_date,      '')as review_date,        --付款审核日期
     case when coalesce(finance_statement_date,'')='' then '' 
         when coalesce(payment_date,'')='' then datediff(date_sub(current_date() ,1),coalesce(finance_statement_date,''))
         else coalesce(datediff(coalesce(payment_date,''),coalesce(finance_statement_date,'')),'') end as finance_days,  --财务对帐天数
@@ -265,13 +276,13 @@ from csx_tmp.temp_pss_00  a
 left join 
 csx_tmp.temp_pss_01 b on order_code=purchase_no and a.in_out_no=b.bill_no
 left join
-(select supplier_code,supplier_name,reconciliation_tag,b.dic_value  as reconciliation_tag_name,account_group,c.dic_value as account_group_name from csx_ods.source_basic_w_a_md_supplier_info a 
+(select a.vendor_id supplier_code,a.vendor_name supplier_name,is_reconcile as reconciliation_tag,b.dic_value  as reconciliation_tag_name,acct_grp as account_group,c.dic_value as account_group_name from csx_dw.dws_basic_w_a_csx_supplier_m a 
  left join
- (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(${hiveconf:e_date} ,'-','') and dic_type='CONCILIATIONNFLAG' ) b on a.reconciliation_tag=b.dic_key 
+ (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') and dic_type='CONCILIATIONNFLAG' ) b on a.is_reconcile=b.dic_key 
  left join 
- (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(${hiveconf:e_date} ,'-','') and dic_type='ZTERM' ) c on a.account_group=c.dic_key 
-  where sdt=regexp_replace(${hiveconf:e_date} ,'-','')
- ) c on a.supplier_code=c.supplier_code
+ (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') and dic_type='ZTERM' ) c on a.acct_grp=c.dic_key 
+  where sdt='current'
+  ) c on a.supplier_code=c.supplier_code
  left join 
  (select shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') d on a.happen_place_code=d.shop_id
   left join 
@@ -279,7 +290,6 @@ left join
  
 ;
 
---插入数据
 -- insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
 drop table if exists csx_tmp.temp_pss_03;
 create temporary table csx_tmp.temp_pss_03 as 
@@ -325,19 +335,22 @@ select purchase_no,
    pay_create_days,
    review_days,
    payment_status,
-   payment_status_name,
+   payment_status_name ,
     current_timestamp() as update_time,
-    regexp_replace(order_create_date,'-','') as sdt
+    sdt
 from csx_tmp.temp_pss_02
     where 1=1
-     ;
-     
+;
 
---插入供应商节点信息
+
+
+--插入数据
 insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
-select *  from csx_tmp.temp_pss_03 where sdt>='20200701' and sdt>='20200401' ;
+select *  from csx_tmp.temp_pss_03
+where sdt<=regexp_replace(${hiveconf:e_date} ,'-','')
+ and sdt>=regexp_replace(${hiveconf:s_date} ,'-','');
 
-
+select min(sdt),max(sdt)  from csx_tmp.temp_pss_03
 
 
  drop table csx_tmp.ads_fr_r_d_po_reconciliation_report;
