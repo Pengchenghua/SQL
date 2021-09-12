@@ -255,7 +255,7 @@ grouping sets
     city_code,
     city_name,
     supplier_type_code,
-    supplier_type_name),
+    supplier_type_name),  --明细
     (  type,section,
     sales_region_code,
     sales_region_name,
@@ -280,22 +280,29 @@ grouping sets
     sales_region_code,
     sales_region_name,
     supplier_type_code,
-    supplier_type_name),
-    (  type,
+    supplier_type_name),    --大区层级汇总
+    (type,
     section,
     sales_region_code,
-    sales_region_name),
-    ( section,
-    supplier_type_code,
-    supplier_type_name),
-    ( type,
+    sales_region_name), --大区汇总
+    (  type,
     section,
     supplier_type_code,
-    supplier_type_name)
+    supplier_type_name),  --类型层级
+    ( type,
+    section)    --类型汇总
+    ,
+    (
+    section,
+    supplier_type_code,
+    supplier_type_name),
+    (section)
     )
 ;
 
---区间汇总
+-- select * from csx_tmp.temp_entry_02 where type ='1' and sales_region_code is null ;
+
+--无区间汇总
 drop table if exists csx_tmp.temp_entry_03;
  create   table csx_tmp.temp_entry_03 as 
 select 
@@ -442,7 +449,7 @@ grouping sets
 drop table  csx_tmp.temp_supplier_type_analysis;
 
 create table csx_tmp.temp_supplier_type_analysis as
-select case when sales_region_code is null and province_code is  null then '0' else type end as type ,
+select case when type is null and sales_region_code is  null then '0' else type end as type ,
     case when sales_region_code is null and province_code is  null then '00' else sales_region_code end sales_region_code,
     case when sales_region_code is null and province_code is  null then '合计' else sales_region_name end sales_region_name,
     case when province_code is null and city_code is  null then '00'  else province_code end province_code,
@@ -464,7 +471,7 @@ select case when sales_region_code is null and province_code is  null then '0' e
     no_tax_net_receive_amt
 from csx_tmp.temp_entry_02
 union all 
-select   case when sales_region_code is null and province_code is  null then '0' else type end as type ,
+select case when type is null and sales_region_code is  null then '0' else type end  as type ,
     case when sales_region_code is null and province_code is  null then '00' else sales_region_code end sales_region_code,
     case when sales_region_code is null and province_code is  null then '合计' else sales_region_name end sales_region_name,
     case when province_code is null and city_code is  null then '00'  else province_code end province_code,
@@ -504,4 +511,4 @@ select * from csx_tmp.temp_supplier_type_analysis where type='0';
 --16    永辉生活
 
 
-select * from csx_tmp.temp_entry_02 where type is null and sales_region_code is null    ;
+select * from  csx_tmp.temp_entry_02 where type='1' and sales_region_code is null    ;
