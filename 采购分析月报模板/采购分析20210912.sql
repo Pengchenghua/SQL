@@ -291,10 +291,7 @@ grouping sets
     ( type,
     section,
     supplier_type_code,
-    supplier_type_name),
-     (type, 
-     section),
-    ( section)
+    supplier_type_name)
     )
 ;
 
