@@ -504,6 +504,7 @@ from  csx_tmp.temp_cbgb_tz_v11
  )  b on a.dc_type=b.dc_type 
  ;
  
+ 
  --3。5 插入数据 表
 insert overwrite table `csx_tmp.ads_fr_r_d_frozen_adjust_apportion` partition(months)
 select substr(${hiveconf:edt},1,6)months,

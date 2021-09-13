@@ -612,148 +612,11 @@ from
 
     --冻品管报调整成本+盘点&报损
 
-    -- 盘点—+报损
-    drop table csx_tmp.tmp_loss_01;
-    create temporary table csx_tmp.tmp_loss_01 
-    as 
-        SELECT location_code  as dc_code,
-                location_name,
-                company_code,
-                company_name,
-                goods_code ,
-                goods_name ,
-                unit,
-                price_no_tax,
-                credential_no,
-                posting_time,
-                purchase_group_code,
-                purchase_group_name,
-                move_type,
-                reservoir_area_code,
-                wms_biz_type_code,
-                wms_order_no,
-                wms_biz_type_name,
-                cost_center_code,
-                cost_center_name,
-                coalesce( case when move_type IN ('117B') then -1*qty when move_type IN ('117A') then  qty end,0) loss_qty,
-                coalesce( case when move_type IN ('117B') then -1*amt_no_tax when move_type IN ('117A') then  amt_no_tax end,0) no_tax_loss_amt,
-                coalesce( case when move_type IN ('117B') then -1*amt when move_type IN ('117A') then amt end,0)  loss_amt,
-                coalesce( case when move_type IN ('115B') then -1*qty when move_type IN ('115A') then  qty end,0) pd_profit_qty,   --盘盈数量
-                coalesce( case when move_type IN ('115B') then -1*amt_no_tax when move_type IN ('115A') then  amt_no_tax end,0)  no_tax_pd_profit_amt, --未税盘盈金额
-                coalesce( case when move_type IN ('115B') then -1*amt when move_type IN ('115A') then amt end,0) pd_profit_amt,       --含税盘盈金额
-                coalesce( case when move_type IN ('116B') then -1*qty when move_type IN ('116A') then  qty end,0) pd_loss_qty,        --盘亏数量
-                coalesce( case when move_type IN ('116B') then -1*amt_no_tax when move_type IN ('116A') then  amt_no_tax end,0)  no_tax_pd_loss_amt,  --盘亏未税金额
-                coalesce( case when move_type IN ('116B') then -1*amt when move_type IN ('116A') then amt end,0) pd_loss_amt  --盘亏含税金额
-            FROM csx_dw.dws_cas_r_d_account_credential_detail a
-            join 
-            (select shop_code,product_code from csx_dw.dws_basic_w_a_csx_product_info where sdt='current' and joint_purchase_flag=1)b on a.goods_code=b.product_code and a.location_code=b.shop_code
-            WHERE sdt>=${hiveconf:sdate}
-            AND sdt<=${hiveconf:edt}
-            and move_type in ('117A','117B','115A','115B','116A','116B')
-            --  and wms_biz_type_code in (35, 36, 37, 38, 39, 40, 41, 64, 66, 76, 77, 78)
-    ;
-
-
-    
-    drop  table if exists csx_tmp.temp_cbgb_tz_v11;
-    create temporary table if not exists csx_tmp.temp_cbgb_tz_v11 
-    as 
-    select 
-        dc_code,
-        case when dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'
-            when dc_code in ('W0J8','W0G1') then '大宗一部'
-            when dc_code in ('W0H4') then '大宗二部'
-            else ''
-            end dc_type,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name,
-        sum(adj_ddfkc_no) adj_ddfkc_no,
-        sum(a.adj_ddfkc) adj_ddfkc,
-        sum(a.adj_cgth_no) adj_cgth_no,
-        sum(adj_cgth) adj_cgth,
-        sum(a.adj_gc_xs_no) adj_gc_xs_no,
-        sum(adj_gc_xs) adj_gc_xs,
-        sum(a.adj_gc_db_no) adj_gc_db_no,
-        sum(adj_gc_db) adj_gc_db,
-        sum(a.adj_gc_qt_no) adj_gc_qt_no,
-        sum(adj_gc_qt) adj_gc_qt,
-        sum(a.adj_sg_no) adj_sg_no,
-        sum(adj_sg) adj_sg,
-        sum(a.adj_bj_xs_no) adj_bj_xs_no,
-        sum(adj_bj_xs) adj_bj_xs,
-        sum(a.adj_bj_db_no) adj_bj_db_no,
-        sum(adj_bj_db) adj_bj_db,
-        sum(a.adj_bj_qt_no) adj_bj_qt_no,
-        sum(adj_bj_qt) adj_bj_qt,
-        sum(loss_qty) loss_qty,
-        sum(no_tax_loss_amt) no_tax_loss_amt,
-        sum(loss_amt) loss_amt,
-        sum(pd_profit_qty) pd_profit_qty,   --盘盈数量
-        sum(no_tax_pd_profit_amt) no_tax_pd_profit_amt, --未税盘盈金额
-        sum(pd_profit_amt) pd_profit_amt,       --含税盘盈金额
-        sum(pd_loss_qty) pd_loss_qty,        --盘亏数量
-        sum(no_tax_pd_loss_amt) no_tax_pd_loss_amt,  --盘亏未税金额
-        sum(pd_loss_amt) pd_loss_amt,
-        sum(adj_ddfkc_no+adj_cgth_no+adj_gc_xs_no+adj_gc_db_no+adj_gc_qt_no+adj_sg_no+adj_bj_xs_no+adj_bj_db_no+adj_bj_qt_no+(pd_profit_amt-no_tax_loss_amt-no_tax_pd_loss_amt)) as total_no_tax_amt,
-        sum(adj_ddfkc+adj_cgth+adj_gc_xs+adj_gc_db+adj_gc_qt+adj_sg+adj_bj_xs+adj_bj_db+adj_bj_qt+(pd_profit_amt-loss_amt-pd_loss_amt)) as total_amt
-
-    from
-    (select a.dc_code,
-        a.goods_code,
-        sum(coalesce(adj_ddfkc_no_tax,0)) adj_ddfkc_no,
-        sum(coalesce(a.adj_ddfkc,0)) adj_ddfkc,
-        sum(coalesce(a.adj_cgth_no_tax,0)) adj_cgth_no,
-        sum(coalesce(adj_cgth,0)) adj_cgth,
-        sum(coalesce(a.adj_gc_xs_no_tax,0)) adj_gc_xs_no,
-        sum(coalesce(adj_gc_xs,0)) adj_gc_xs,
-        sum(coalesce(a.adj_gc_db_no_tax,0)) adj_gc_db_no,
-        sum(coalesce(adj_gc_db,0)) adj_gc_db,
-        sum(coalesce(a.adj_gc_qt_no_tax,0)) adj_gc_qt_no,
-        sum(coalesce(adj_gc_qt,0)) adj_gc_qt,
-        sum(coalesce(a.adj_sg_no_tax,0)) adj_sg_no,
-        sum(coalesce(adj_sg,0)) adj_sg,
-        sum(coalesce(a.adj_bj_xs_no_tax,0)) adj_bj_xs_no,
-        sum(coalesce(adj_bj_xs,0)) adj_bj_xs,
-        sum(coalesce(a.adj_bj_db_no_tax,0)) adj_bj_db_no,
-        sum(coalesce(adj_bj_db,0)) adj_bj_db,
-        sum(coalesce(a.adj_bj_qt_no_tax,0)) adj_bj_qt_no,
-        sum(coalesce(adj_bj_qt,0)) adj_bj_qt,
-        0 loss_qty,
-        0 no_tax_loss_amt,
-        0 loss_amt,
-        0 pd_profit_qty,   --盘盈数量
-        0 no_tax_pd_profit_amt, --未税盘盈金额
-        0 pd_profit_amt,       --含税盘盈金额
-        0 pd_loss_qty,        --盘亏数量
-        0 no_tax_pd_loss_amt,  --盘亏未税金额
-        0 pd_loss_amt  
-    from 
-    csx_dw.dws_sync_r_d_data_relation_cas_sale_adjustment  a 
-    where  sdt >= ${hiveconf:sdate}
-    and sdt<=${hiveconf:edt}
-    group by  a.dc_code,
-        a.goods_code
-    union all 
-    select  a.dc_code,
-        a.goods_code,
-        0 adj_ddfkc_no,
-        0 adj_ddfkc,
-        0 adj_cgth_no,
-        0 adj_cgth,
-        0 adj_gc_xs_no,
-        0 adj_gc_xs,
-        0 adj_gc_db_no,
-        0 adj_gc_db,
      
 
 -- 3.0 销售成本调整 csx_tmp.ads_fr_r_d_frozen_adjust_sale_cost
 
  --冻品管报调整成本+盘点&报损
-
 -- 盘点—+报损
 drop table csx_tmp.tmp_loss_01;
 create temporary table csx_tmp.tmp_loss_01 
@@ -787,8 +650,6 @@ as
                coalesce( case when move_type IN ('116B') then -1*amt_no_tax when move_type IN ('116A') then  amt_no_tax end,0)  no_tax_pd_loss_amt,  --盘亏未税金额
                coalesce( case when move_type IN ('116B') then -1*amt when move_type IN ('116A') then amt end,0) pd_loss_amt  --盘亏含税金额
         FROM csx_dw.dws_cas_r_d_account_credential_detail a
-        join 
-        (select shop_code,product_code from csx_dw.dws_basic_w_a_csx_product_info where sdt='current' and joint_purchase_flag=1)b on a.goods_code=b.product_code and a.location_code=b.shop_code
         WHERE sdt>=${hiveconf:sdate}
           AND sdt<=${hiveconf:edt}
           and move_type in ('117A','117B','115A','115B','116A','116B')
@@ -923,6 +784,13 @@ join
     where sdt='current' 
         and classify_middle_code in ('B0304','B0305')
     ) b on a.goods_code=b.goods_id
+    left join 
+(select shop_code,
+    product_code,
+    joint_purchase_flag
+    from csx_dw.dws_basic_w_a_csx_product_info 
+    where sdt='current' 
+    ) c on a.goods_code=c.product_code and a.dc_code=c.shop_code 
 left join 
 
 -- W0G1\W0J8 大宗一  W0H4 大宗二
@@ -942,7 +810,7 @@ left join
             and table_type=1 
         --    and purchase_org ='P620'
     ) d on d.shop_id=a.dc_code
--- and c.joint_purchase_flag=1
+where  c.joint_purchase_flag=1
 group by   dc_code,
     case when dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'
         when dc_code in ('W0J8','W0G1') then '大宗一部'
@@ -1616,7 +1484,7 @@ grouping sets (
         0 purchase_qty,
         0 purchase_amt,
         0 no_tax_purchase_amt
-    from  csx_tmp.ads_fr_r_d_frozen_adjust_apportion
+    from  csx_tmp.ads_fr_r_d_frozen_adjust_apportion_join 
     where months=substr( ${hiveconf:edt},1,6)
     union all 
     select channel_code,
@@ -1658,7 +1526,6 @@ grouping sets (
         classify_small_name
         ;
            
-        
 -- show create table  csx_tmp.ads_fr_r_d_frozen_direct_sales_join;
         
    -- 公司间销售  csx_tmp.ads_fr_r_d_frozen_direct_sales 2116公司调拨
