@@ -512,3 +512,67 @@ select * from csx_tmp.temp_supplier_type_analysis where type='0';
 
 
 select * from  csx_tmp.temp_entry_02 where type='1' and sales_region_code is null    ;
+
+
+
+-- 20210914 合伙人项目与联营入库数据
+-- drop table csx_tmp.temp_entry_00 ;
+-- create table csx_tmp.temp_entry_00 as
+select  
+    source_type_name,
+    sum(receive_qty) receive_qty,
+    sum(receive_amt) receive_amt,
+    sum(no_tax_receive_amt) as no_tax_receive_amt,
+    sum(shipped_qty) shipped_qty,
+    sum(shipped_amt) shipped_amt,
+    sum(no_tax_shipped_amt) as no_tax_shipped_amt,
+     sum(receive_amt-shipped_amt) net_receive_amt
+from 
+(
+select origin_order_code order_no,
+    receive_location_code as dc_code,
+    goods_code,
+    supplier_code,
+    sum(receive_qty) receive_qty,
+    sum(price/(1+tax_rate/100)*receive_qty) as no_tax_receive_amt,
+    sum(price*receive_qty) as receive_amt,
+    0 shipped_qty,
+    0 shipped_amt,
+    0 no_tax_shipped_amt
+from csx_dw.dws_wms_r_d_entry_batch
+where sdt>='20210101' 
+    and regexp_replace( to_date(receive_time ),'-','')<='20210831'
+    and  regexp_replace( to_date(receive_time ),'-','')>='20210801'
+    and order_type_code like 'P%'
+    and business_type !='02'
+    and receive_status in ('1','2')
+   group by receive_location_code,goods_code,origin_order_code,supplier_code
+union all 
+select origin_order_no order_no, 
+    shipped_location_code as dc_code,
+    goods_code,
+    supplier_code,
+    0 receive_qty,
+    0 no_tax_receive_amt,
+    0 receive_amt,
+    sum(shipped_qty) shipped_qty,
+    sum(price*shipped_qty) as shipped_amt,
+    sum(price/(1+tax_rate/100)*shipped_qty) as no_tax_shipped_amt
+from csx_dw.dws_wms_r_d_ship_detail
+where regexp_replace( to_date(send_time),'-','') >='20210801' 
+    and  regexp_replace( to_date(send_time),'-','') <='20210831'
+    and sdt>='20210101'
+    and order_type_code like 'P%'
+    and business_type_code in ('05')
+    and status in ('6','7','8')
+    group by shipped_location_code,goods_code,origin_order_no,supplier_code
+) a 
+join 
+(select  order_code,source_type,source_type_name 
+    from csx_dw.dws_scm_r_d_header_item_price 
+    where super_class in ('2','1')  
+    and source_type in ('4','15')  
+    group by  order_code,source_type,source_type_name
+)b on a.order_no=b.order_code
+group by source_type_name
+;
