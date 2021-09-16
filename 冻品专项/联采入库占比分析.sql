@@ -67,7 +67,7 @@ select regexp_replace(to_date(a.send_time),'-','') as sdt,
     (price*shipped_qty) as shipped_amt,
     (price/(1+tax_rate/100)*shipped_qty) as no_tax_shipped_amt
 from csx_dw.dws_wms_r_d_ship_detail  a 
-  where 
+  where 1=1
     -- regexp_replace( to_date(send_time),'-','') >='20210801' 
 --     and  regexp_replace( to_date(send_time),'-','') <='20210831'
     and sdt<'20210901'
@@ -109,11 +109,12 @@ join
     category_small_code
     from csx_dw.dws_basic_w_a_csx_product_m
         where sdt='current' 
-    and classify_middle_code in ('B0304','B0305')
+    
     ) b on a.product_code=b.goods_id
     where sdt='current' ) c on a.dc_code=c.shop_code and a.goods_code=c.product_code and a.category_small_code=c.category_small_code
  join 
 (select vendor_id,vendor_name,joint_purchase from  csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') d on a.supplier_code=d.vendor_id
+where  classify_middle_code in ('B0304','B0305') 
 group by origin_order_no,
     order_code,
     dc_code,
@@ -156,6 +157,14 @@ select sdt,
     origin_order_no,
     dc_code,
     goods_code,
+    goods_name,
+    unit_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
     source_type,
     source_type_name,
     receive_qty,
@@ -167,7 +176,12 @@ select sdt,
     joint_purchase,         --供应商联采标识 
     joint_purchase_flag ,    --商品联采标识
     product_level,
-    product_level_name
+    product_level_name,
+    price,
+    order_qty,
+    order_amt,
+    update_time,
+    create_by
 from 
 (select sdt,
     sales_province_code,
@@ -207,7 +221,12 @@ from
     (no_tax_receive_amt) as no_tax_receive_amt,
     (shipped_qty) shipped_qty,
     (shipped_amt) shipped_amt,
-    (no_tax_shipped_amt) as no_tax_shipped_amt
+    (no_tax_shipped_amt) as no_tax_shipped_amt,
+    price,
+    order_qty,
+    order_amt,
+    update_time,
+    create_by
 from csx_tmp.temp_entry_00 a 
 join 
 (select  order_code,
@@ -215,7 +234,12 @@ join
         source_type_name,
         header_remark,
         items_remark,
-        goods_code
+        goods_code,
+        price,
+        order_qty,
+        order_qty*price as order_amt,
+        update_time,
+        create_by
     from csx_dw.dws_scm_r_d_header_item_price 
     where super_class in ('2','1')  
     and source_type in ('1','2','10','14')
@@ -261,3 +285,53 @@ join
 
 
 select * from  csx_tmp.temp_entry_01   ;
+
+
+
+
+CREATE TABLE `csx_tmp.ads_fr_r_d_frozen_purch_join_ratio`(
+  `sdt` string COMMENT '日期,入库按照关单日期，出库按照出库日期', 
+  `sales_province_code` string comment '大区', 
+  `sales_province_name` string comment '大区', 
+  `sales_region_code` string comment '销售省区', 
+  `sales_region_name` string comment '销售省区', 
+  `city_code` string comment '城市物理', 
+  `city_name` string comment '城市物理', 
+  `province_code` string comment '省区物理', 
+  `province_name` string comment '省区物理', 
+  `purpose` string comment 'DC用途', 
+  `supplier_code` string comment '供应商编码', 
+  `vendor_name` string comment '供应商名称', 
+  `order_code` string comment '采购订单号', 
+  `dc_code` string comment 'DC编码', 
+  `goods_code` string comment '商品编码', 
+  `goods_name` string comment '商品名称', 
+  `unit_name` string comment '单位', 
+  `classify_large_code` string comment '管理一级分类', 
+  `classify_large_name` string comment '管理一级分类', 
+  `classify_middle_code` string comment '管理二级', 
+  `classify_middle_name` string comment '管理二级', 
+  `classify_small_code` string comment '管理三级', 
+  `classify_small_name` string comment '管理三级', 
+  `source_type` int comment '来源采购订单编码', 
+  `source_type_name` string comment '来源采购订单名称', 
+  `receive_qty` decimal(38,6) comment '入库量', 
+  `receive_amt` decimal(38,6) comment '入库额', 
+  `no_tax_receive_amt` decimal(38,6) comment '未税入库额', 
+  `shipped_qty` decimal(38,6) comment '出库量', 
+  `shipped_amt` decimal(38,6) comment '出库额', 
+  `no_tax_shipped_amt` decimal(38,6) comment '未税入库额', 
+  `joint_purchase_supplier` int comment '供应商联采标识', 
+  `joint_purchase_goods` int comment '商品联采标识', 
+  `product_level` string comment '商品等级', 
+  `product_level_name` string comment '商品等级', 
+  `price` decimal(38,6) comment '订单售价', 
+  `order_qty` decimal(38,6) comment '订单量/额', 
+  `order_amt` decimal(38,6) comment '订单量/额', 
+  `order_update_time` string comment '订单更新日期', 
+  `create_by` string comment '创建人',
+  update_time string comment '数据更新时间'
+  )comment '冻品联采采购分析占比'
+partitioned by (sdt string comment '按日分区')
+STORED AS parquet 
+ ;
