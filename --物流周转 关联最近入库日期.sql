@@ -67,14 +67,14 @@ select a.sdt,
    b.sdt as entry_max_sdt,
    qty   as entry_qty,
    receive_amt mc_entry_amt ,
-    coalesce(datediff(date_sub(CURRENT_DATE,1),from_unixtime(unix_timestamp(entry_max_sdt,'yyyyMMdd'),'yyyy-MM-dd')),9999) as entry_date,
+   coalesce(datediff(date_sub(CURRENT_DATE,1),from_unixtime(unix_timestamp( b.sdt,'yyyyMMdd'),'yyyy-MM-dd')),9999) as entry_date,
    dc_uses 
 from csx_tmp.ads_wms_r_d_goods_turnover a 
 JOIN 
 (SELECT shop_id,sales_region_code,sales_region_name FROM CSX_DW.dws_basic_w_a_csx_shop_m WHERE SDT='current' and purpose in ('01','02','07')) c on a.dc_code=c.shop_id
 left join 
  csx_tmp.temp_entry_max  b on  a.dc_code=b.dc_code and a.goods_id=b.goods_code
-where a.sdt='20210912'
+where a.sdt='20210921'
     and a.dc_code like 'W%'
     
 ;
@@ -84,11 +84,4 @@ select `(dc_uses)?+.+`, coalesce(datediff(date_sub(CURRENT_DATE,1),from_unixtime
 from csx_tmp.temp_turn_01 where division_code in ('12','13','14','15')
 ;
 
-
--- purpose 	purpose_name
--- 01	大客户物流
--- 02	商超物流
--- 03	工厂
--- 06	合伙人物流
--- 07	BBC物流
--- 08	代加工工厂
+select * from csx_tmp.temp_turn_01 where division_code in ('12','13','14','15')

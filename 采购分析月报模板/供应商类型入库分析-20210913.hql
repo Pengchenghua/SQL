@@ -6,8 +6,8 @@ set hive.exec.max.dynamic.partitions=1000;
 set hive.exec.dynamic.partition=true;
 set hive.exec.max.dynamic.partitions.pernode=1000000;--每个mapper节点最多创建1000个分区
 set hive.exec.dynamic.partition.mode=nonstrict;
-set sdt='20210101';
-set edt='20210731';
+set s_date='20210101';
+set e_date='20210731';
 
 drop table csx_tmp.temp_entry_00 ;
 create table csx_tmp.temp_entry_00 as
