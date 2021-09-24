@@ -287,3 +287,100 @@ group by mon,province_name
 ) a WHERE MON='202106'
 group by mon,province_name
 ;
+
+
+
+--四川 基地入库情况
+select mon, province_name,goods_code,goods_name,sum(amt)/sum(qty) price from  csx_tmp.temp_supp_sale 
+where  1=1
+and province_name in ( '四川省' )
+and goods_code in ('3695','1330713','262352','2230','1330712','153890',
+    '1065513','1251396','576','263859','2112','562','538','883188','620',
+    '1134244','1356734','317132','1374480')
+group by mon, province_name,goods_code,goods_name
+;
+
+
+--省区供应商明细
+select mon, province_name,supplier_code,vendor_name,all_net_amt,(all_net_amt),aa supplier_net_amt from 
+(select mon, province_name,supplier_code,vendor_name,all_net_amt,row_number()over (partition by province_name,mon order by all_net_amt desc ) aa from
+(
+select mon,'全国' province_name,a.supplier_code,a.vendor_name,sum(net_amt)/10000 all_net_amt from  csx_tmp.temp_supp_sale a 
+where classify_middle_code ='B0302' 
+group by mon,a.supplier_code,vendor_name
+union all
+select mon, province_name,supplier_code,vendor_name,sum(net_amt)/10000 all_net_amt from  csx_tmp.temp_supp_sale 
+where classify_middle_code ='B0302' 
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by mon,province_name,supplier_code,vendor_name
+) a 
+) a where aa<11;
+
+
+
+-- 蔬菜水果 入库额
+-- 蔬菜水果 入库额
+
+SELECT concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) mon,
+       province_name,
+    --   goods_code,
+    --   goods_name,
+       supplier_code,
+       vendor_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       sum(net_amt)/10000 all_net_amt
+FROM csx_tmp.temp_supp_sale
+WHERE classify_large_code ='B02'
+  AND (province_name IN ('四川省',
+                         '安徽省')
+       OR city_name='福州市')
+GROUP BY concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+         province_name,
+        --  goods_code,
+        --  goods_name,
+        supplier_code,
+        vendor_name,
+         classify_large_code,
+         classify_large_name,
+          classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name
+
+union all 
+-- 全国蔬菜三级分类
+SELECT concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) mon,
+      '全国' province_name,
+    --   goods_code,
+    --   goods_name,
+        supplier_code,
+        vendor_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       sum(net_amt)/10000 all_net_amt
+FROM csx_tmp.temp_supp_sale
+WHERE classify_large_code ='B02'
+ 
+GROUP BY concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+        --  goods_code,
+        --  goods_name,
+        supplier_code,
+        vendor_name,
+         classify_large_code,
+         classify_large_name,
+          classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name;
+
+
+
