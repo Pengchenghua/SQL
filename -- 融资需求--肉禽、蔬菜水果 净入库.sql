@@ -384,3 +384,101 @@ GROUP BY concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
 
 
 
+-- 猪肉入库明细
+
+SELECT mon,
+       province_name,
+       purpose,
+       purpose_name,
+       dc_code,
+       shop_name,
+       supplier_code,
+       vendor_name,
+       goods_code,
+       goods_name,
+       brand_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       sum(qty) qty,
+       sum(amt) amt,
+       sum(shipp_qty)shipp_qty,
+       sum(shipp_amt)shipp_amt,
+       sum(net_qty) net_qty,
+       sum(net_amt) net_amt
+FROM csx_tmp.temp_supp_sale
+WHERE classify_middle_code ='B0302'
+-- and (province_name in ( '四川省', '安徽省') or city_name='福州市')
+AND mon BETWEEN '202001' AND '202004'
+GROUP BY  mon,
+       province_name,
+       purpose,
+       purpose_name,
+       dc_code,
+       shop_name,
+       supplier_code,
+       vendor_name,
+       goods_code,
+       goods_name,
+       brand_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name ;
+
+
+-- 食百明细
+
+SELECT mon,
+       province_name,
+       purpose,
+       purpose_name,
+       dc_code,
+       shop_name,
+       supplier_code,
+       vendor_name,
+       goods_code,
+       goods_name,
+       brand_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       department_id,
+       department_name,
+       sum(qty) qty,
+       sum(amt) amt,
+       sum(shipp_qty)shipp_qty,
+       sum(shipp_amt)shipp_amt,
+       sum(net_qty) net_qty,
+       sum(net_amt) net_amt
+FROM csx_tmp.temp_supp_sale
+WHERE ( substr(department_id,1,1) in ('A','P') OR department_id='105') 
+and mon='202106'
+GROUP BY  mon,
+       province_name,
+       purpose,
+       purpose_name,
+       dc_code,
+       shop_name,
+       supplier_code,
+       vendor_name,
+       goods_code,
+       goods_name,
+       brand_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       department_id,
+       department_name ;
+       
+       
+       
+       
+      
