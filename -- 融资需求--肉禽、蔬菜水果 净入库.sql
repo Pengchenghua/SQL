@@ -478,7 +478,327 @@ GROUP BY  mon,
        department_id,
        department_name ;
        
-       
-       
-       
-      
+  --蔬菜水果TOP10 供应商明细
+select  a.mon,
+    a.province_name,
+    a.supplier_code,
+    vendor_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    all_net_amt,
+    all_amt,
+    aa
+
+from
+(
+select  concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon,
+    '全国' province_name,
+    a.supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+    from  csx_tmp.temp_supp_sale a 
+where  a.classify_large_code ='B02' 
+ and mon>='202104'
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    a.supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)  mon,
+    province_name,
+    supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale a
+where   a.classify_large_code ='B02' 
+ and mon>='202104'
+  AND dc_code!='W0K4'
+
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    province_name,
+    supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+) a 
+join 
+(select mon, province_name,supplier_code,all_net_amt as all_amt,row_number()over (partition by province_name,mon order by all_net_amt desc ) aa from
+(
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) mon,'全国' province_name,a.supplier_code,sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale a 
+where  a.classify_large_code ='B02' 
+ and mon>='202104' 
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),a.supplier_code
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon, province_name,supplier_code,sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale  a
+where  a.classify_large_code ='B02' 
+ and mon>='202104'
+  AND dc_code!='W0K4'
+ 
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name,supplier_code
+) a 
+) b on a.province_name=b.province_name and a.supplier_code=b.supplier_code and a.mon=b.mon
+
+join 
+(select vendor_id,vendor_name from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') c on a.supplier_code=c.vendor_id
+where aa<11
+;
+
+
+-- 猪肉TOP10 供应商明细
+
+select  a.mon,
+    a.province_name,
+    a.supplier_code,
+    vendor_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    all_net_amt,
+    all_amt,
+    aa
+
+from
+(
+select  concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon,
+    '全国' province_name,
+    a.supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+    from  csx_tmp.temp_supp_sale a 
+where  a.classify_middle_code ='B0302' 
+ and mon='202106'
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    a.supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)  mon,
+    province_name,
+    supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale a
+where  a.classify_middle_code ='B0302' 
+ and mon='202106'
+  AND dc_code!='W0K4'
+
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    province_name,
+    supplier_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+) a 
+join 
+(select mon, province_name,supplier_code,all_net_amt as all_amt,row_number()over (partition by province_name,mon order by all_net_amt desc ) aa from
+(
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) mon,'全国' province_name,a.supplier_code,sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale a 
+where a.classify_middle_code ='B0302' 
+ and mon='202106' 
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),a.supplier_code
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon, province_name,supplier_code,sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale  a
+where  a.classify_middle_code ='B0302' 
+ and mon='202106'
+  AND dc_code!='W0K4'
+
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name,supplier_code
+) a 
+) b on a.province_name=b.province_name and a.supplier_code=b.supplier_code and a.mon=b.mon
+
+join 
+(select vendor_id,vendor_name from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') c on a.supplier_code=c.vendor_id
+where aa<11
+;
+
+--食百供应商TOP 明细
+select  a.mon,
+    a.province_name,
+    a.supplier_code,
+    vendor_name,
+    department_id,
+    department_name,
+     classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    all_net_amt,
+    all_amt,
+    aa
+
+from
+(
+select  concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon,
+    '全国' province_name,
+    a.supplier_code,
+     department_id,
+    department_name,
+     classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+    from  csx_tmp.temp_supp_sale a 
+where  ( substr(department_id,1,1) in ('A','P') OR department_id='105') 
+ and mon>='202106'
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    a.supplier_code,
+    department_id,
+    department_name,
+     classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)  mon,
+    province_name,
+    supplier_code,
+    department_id,
+    department_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(net_amt)/10000 all_net_amt 
+from  csx_tmp.temp_supp_sale 
+where  ( substr(department_id,1,1) in ('A','P') OR department_id='105') 
+and mon>='202106'
+ AND dc_code!='W0K4'
+
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),
+    province_name,
+    supplier_code,
+    department_id,
+    department_name,
+     classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+) a 
+join 
+(select mon, province_name,supplier_code,all_net_amt as all_amt,row_number()over (partition by province_name,mon order by all_net_amt desc ) aa from
+(
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) mon,'全国' province_name,a.supplier_code,sum(net_amt)/10000 all_net_amt from  csx_tmp.temp_supp_sale a 
+where ( substr(department_id,1,1) in ('A','P') OR department_id='105') 
+ and mon>='202106'
+  AND dc_code!='W0K4'
+
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),a.supplier_code
+union all
+select concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) as mon, province_name,supplier_code,sum(net_amt)/10000 all_net_amt from  csx_tmp.temp_supp_sale 
+where ( substr(department_id,1,1) in ('A','P') OR department_id='105') 
+ and mon>='202106' 
+ AND dc_code!='W0K4'
+and (province_name in ( '四川省', '安徽省')or city_name='福州市')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name,supplier_code
+) a 
+) b on a.province_name=b.province_name and a.supplier_code=b.supplier_code and a.mon=b.mon
+
+join 
+(select vendor_id,vendor_name from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') c on a.supplier_code=c.vendor_id
+where aa<11
+;
+
+
+--福建TOP商品入库
+select mon,
+a.dc_code,
+a.shop_name,
+a.goods_code,
+a.goods_name,
+sum(a.net_amt)net_amt,
+sum(a.net_no_tax_amt)net_no_tax_amt 
+from  csx_tmp.temp_supp_sale a 
+where goods_code in ('8773','1285376','23748','1388920','59324','1168188','7632',
+'651368','1285347','1295923','1296123','1295849','860131',
+'1279391','634720','1277914','977399','1122756','8775','278956')
+and city_name='福州市'
+ AND dc_code!='W0K4'
+ group by 
+a.dc_code,a.shop_name,a.goods_code,a.goods_name,mon
+;
+
+
+-- 安徽TOP商品入库
+select mon,
+a.province_name,
+a.dc_code,
+a.shop_name,
+a.goods_code,
+a.goods_name,
+sum(a.net_amt)net_amt,
+sum(a.net_no_tax_amt)net_no_tax_amt 
+from  csx_tmp.temp_supp_sale a 
+where goods_code in ('1197634','612425','276132','834063','843623','650712','1286630','795397',
+'8773','1404542','263871','8775',
+'1410317','1057928','8172','771720','1371553','449672','1057910','1030016')
+and province_name in (  '安徽省')
+ group by 
+a.dc_code,a.shop_name,a.goods_code,a.goods_name,mon,province_name
+;
+-- 四川TOP商品入库
+select mon,
+a.province_name,
+a.dc_code,
+a.shop_name,
+a.goods_code,
+a.goods_name,
+sum(a.net_amt)net_amt,
+sum(a.net_no_tax_amt)net_no_tax_amt 
+from  csx_tmp.temp_supp_sale a 
+where goods_code in ('1364628','1277967','1277914','1327013','1277744','1412840','874989','1099633',
+'1276142','1277731','699304','1277959','1277964','1167806','1277753','1405516','834098','1277735','1277918','1277737')
+and province_name in (  '四川省')
+ group by 
+a.dc_code,a.shop_name,a.goods_code,a.goods_name,mon,province_name
+;
