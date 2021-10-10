@@ -3,8 +3,8 @@
 -- 2304 B10008 北京顺鑫农业股份有限公司鹏程食品分公司
 -- 2304 20020588 中粮肉食（北京）有限公司大兴分公司
 -- 2、剔除W0K4
-DROP TABLE csx_tmp.temp_supp_sale;
-create temporary table csx_tmp.temp_supp_sale as 
+DROP TABLE csx_tmp.temp_order_entry;
+create  table csx_tmp.temp_order_entry as 
 select  mon,
     province_code,
     province_name,
@@ -12,10 +12,15 @@ select  mon,
     city_name,
     purpose,
     purpose_name,
+    origin_order_code,
+    source_type_name,
+    source_type,
     dc_code,
     shop_name,
     goods_code,
     goods_name,
+    spu_goods_code,
+    spu_goods_name,
     brand_name,
     classify_large_code,
     classify_large_name,
@@ -27,52 +32,46 @@ select  mon,
     department_name,
     supplier_code,
     vendor_name,
-    sum(qty) qty,
-    sum(amt) amt,
-    sum(shipp_qty )shipp_qty,
-    sum(shipp_amt )shipp_amt,
-    sum(qty-shipp_qty) net_qty,
-    sum(amt-shipp_amt) net_amt
+    (qty) qty,
+    (amt) amt,
+    (shipp_qty )shipp_qty,
+    (shipp_amt )shipp_amt,
+    (qty-shipp_qty) net_qty,
+    (amt-shipp_amt) net_amt
 from 
 (select substr(sdt,1,6) mon,
+    a.origin_order_code,
     receive_location_code dc_code,
     goods_code,
     supplier_code,
-    sum(case when business_type like 'ZNR%' THEN receive_qty*-1 ELSE receive_qty END) qty,
-    sum(price*case when business_type like 'ZNR%' THEN receive_qty*-1 ELSE receive_qty END) amt,
+    (case when business_type like 'ZNR%' THEN receive_qty*-1 ELSE receive_qty END) qty,
+    (price*case when business_type like 'ZNR%' THEN receive_qty*-1 ELSE receive_qty END) amt,
     0 shipp_qty,
     0 shipp_amt
 from csx_dw.dws_wms_r_d_entry_detail a
 where 1=1 
 and sdt>='20200101' 
-and sdt<'20210701'
+and sdt<'20211001'
 and receive_status in (1,2)
 and (a.business_type in ('ZN01','ZN02','ZNR1','ZNR2')
        OR (a.order_type_code LIKE 'P%' and business_type !='02')  )
-group by substr(sdt,1,6) ,
-    receive_location_code  ,
-    goods_code,
-    supplier_code
 union all 
 select substr(regexp_replace(to_date(send_time),'-',''),1,6) mon,
+    a.origin_order_no origin_order_code,
     shipped_location_code dc_code,
     goods_code,
     supplier_code,
     0 qty,
     0 amt,
-    sum(shipped_qty) shipp_qty,
-    sum(shipped_qty*price) shipp_amt
+    (shipped_qty) shipp_qty,
+    (shipped_qty*price) shipp_amt
 from csx_dw.dws_wms_r_d_ship_detail a
 where 1=1
 -- supplier_code in ('20046634','20042204','20051662','20043882','20024248','20029976','20028053','20048472','20043203','20043203','20041365','20038251')
     and sdt>='20200101'
-    and sdt<'20210701'
+    and sdt<'20211001'
     and status in ('6','7','8')
     AND (( order_type_code LIKE 'P%'  and business_type_code ='05') or a.business_type_code in ('ZN01','ZN02','ZNR1','ZNR2'))
-group by substr(regexp_replace(to_date(send_time),'-',''),1,6) ,
-    shipped_location_code  ,
-    supplier_code,
-    goods_code
     ) a 
  join 
  (SELECT shop_id,
@@ -90,20 +89,22 @@ group by substr(regexp_replace(to_date(send_time),'-',''),1,6) ,
 FROM csx_dw.dws_basic_w_a_csx_shop_m
 WHERE sdt='current'
   AND table_type=1 
-  and purchase_org !='P620'
-  and shop_id not in ('W0J8','W0K4')
+  --and purchase_org !='P620'
+  --and shop_id not in ('W0J8','W0K4')
   AND purpose IN ('01',
                   '02',
                   '03',
                   '08',
                   '07',
-                --'06', 合伙人仓
+                -- '06', 合伙人仓
                   '05' --彩食鲜小店
-               -- '04' 寄售小店
+                -- '04' 寄售小店
                   )) b on a.dc_code=b.shop_id
 join 
 (SELECT goods_id,
        goods_name,
+       spu_goods_code,
+       spu_goods_name,
        brand_name,
        classify_large_code,
        classify_large_name,
@@ -122,33 +123,41 @@ join
 FROM csx_dw.dws_basic_w_a_csx_supplier_m
 WHERE sdt='current'
 )d  on a.supplier_code=d.vendor_id
+left join
+(select order_code,source_type_name,source_type 
+from csx_dw.dws_scm_r_d_header_item_price 
+group by order_code,source_type_name,source_type )f on a.origin_order_code=f.order_code
  where 1=1
+ and (source_type !='15' or source_type is null)
     -- and classify_large_code in('B03','B02')
-    and supplier_code not in ('20020295','B10008','20020588')
-    group by 
-    mon,
-    province_code,
-    province_name,
-    purpose,
-    purpose_name,
-    dc_code,
-    shop_name,
-    goods_code,
-    goods_name,
-    brand_name,
-    classify_middle_code,
-    classify_middle_name,
-    classify_small_code,
-    classify_small_name,
-    supplier_code,
-    vendor_name,
-    city_code,
-    city_name,
-     classify_large_code,
-    classify_large_name,
-    department_id,
-       department_name
+    -- and supplier_code not in ('20020295','B10008','20020588')
+    -- group by 
+    -- mon,
+    -- province_code,
+    -- province_name,
+    -- purpose,
+    -- purpose_name,
+    -- dc_code,
+    -- shop_name,
+    -- goods_code,
+    -- goods_name,
+    -- spu_goods_code,
+    -- spu_goods_name,
+    -- brand_name,
+    -- classify_middle_code,
+    -- classify_middle_name,
+    -- classify_small_code,
+    -- classify_small_name,
+    -- supplier_code,
+    -- vendor_name,
+    -- city_code,
+    -- city_name,
+    -- classify_large_code,
+    -- classify_large_name,
+    -- department_id,
+    -- department_name
     ;
+    
     
 
 -- 全国入库金额
