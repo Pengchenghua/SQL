@@ -177,37 +177,4 @@ WHERE ( shipped_status in ('6','7','8') or a.receive_status='2') and ((a.receive
        OR (shipped_date >='20210201'
            AND shipped_date<='20210331'))
            
-;           
-group by 
-sales_region_code,
-        sales_region_name ,
-        sales_province_code,
-        sales_province_name,
-        receive_location_code,
-       receive_location_name,
-       source_type_name,
-       super_class ,
-       supplier_code,
-       supplier_name,
-       shipped_location_code,
-       shipped_location_name,
-       local_purchase_flag,
-       receive_business_type,
-       shipped_business_type,
-       goods_code,
-       b.goods_name,
-        unit_name,
-        standard,
-        brand_name,
-        division_code,
-        division_name,
-        department_id,
-        department_name,
-        classify_large_code,
-        classify_large_name,
-        classify_middle_code,
-        classify_middle_name,
-        classify_small_code,
-        classify_small_name,
-        b.category_large_code,
-        b.category_large_name;
+;   

@@ -1,17 +1,20 @@
+-- 财务库存成本&定价成本 计算周转
 -- 月末库存金额&销售成本--指定DC
+-- 月末库存金额-- 月末库存金额&销售成本--指定DC
 -- 月末库存金额
 select province_code,province_name,substr(a.sdt,1,6)mon,
 a.classify_large_code ,
 classify_large_name,
+classify_middle_code,
+classify_middle_name,
 SUM(amt)/10000 amt,
 SUM(amt_no_tax)/10000 amt_no_tax 
 from csx_dw.dws_wms_r_d_accounting_stock_m  a 
-
 join
 (
 select DISTINCT  regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','') sdt
 from csx_dw.dws_basic_w_a_date  
-where calday >'20200101'  and calday <'20210701'
+where calday >='20210701'  and calday <'20211001'
 ) b on a.sdt=b.sdt
 join 
 (select shop_id,province_code,province_name from csx_dw.dws_basic_w_a_csx_shop_m
@@ -39,21 +42,28 @@ and shop_id in  ('9905','9906','9910','9951','9952','9955','9957','9958','9961',
     'E599','E5DJ','W0AW','W0AK','W0BY','WA93')
 ) c on a.dc_code=c.shop_id
 where reservoir_area_code  not in ('PD01','PD02','TS01')
-group by province_code,province_name, substr(a.sdt,1,6),a.classify_large_code ,classify_large_name
+group by province_code,province_name, substr(a.sdt,1,6),a.classify_large_code ,classify_large_name,
+classify_middle_code,
+classify_middle_name
  ;
 
  
-select * from csx_dw.ads_supply_order_flow  where order_code ='POW0A8200916003422';
+-- select * from csx_dw.ads_supply_order_flow  where order_code ='POW0A8200916003422';
 
 
 
 -- 每月销售成本
-select a.dc_province_code,a.dc_province_name, substr(a.sdt,1,6)mon,a.classify_large_code ,classify_large_name,
+select a.dc_province_code,a.dc_province_name, 
+substr(a.sdt,1,6)mon,
+a.classify_large_code ,
+classify_large_name,
+classify_middle_code,
+classify_middle_name,
 SUM(excluding_tax_cost)/10000 no_tax_amt,
 sum(sales_cost)/10000 cost_amt
 from csx_dw.dws_sale_r_d_detail  a 
 where business_type_code !='4'
-and sdt >='20200101'  and sdt <'20210701'
+and sdt >='20210701'  and sdt <'20211001'
  and dc_code  in ('9905','9906','9910','9951','9952','9955','9957','9958','9961','9963',
     '9964','9966','9967','9968','9969','9973','9975','9976','9978','9981','9983','9991',
     '9992','9993','9994','9995','9996','99A0','99A1','99A2','99A3','99A4','99A5','99A6',
@@ -75,6 +85,7 @@ and sdt >='20200101'  and sdt <'20210701'
     'E464','E496','E502','E531','E549','E557','E559','E598','E5C8','E5EM','E629','E630',
     'E660','E700','E712','E839','E845','E848','E872','E893','E053','E127','E194','E224',
     'E599','E5DJ','W0AW','W0AK','W0BY','WA93')
-group by a.dc_province_code,a.dc_province_name,substr(a.sdt,1,6),a.classify_large_code ,classify_large_name
+group by a.dc_province_code,a.dc_province_name,substr(a.sdt,1,6),a.classify_large_code ,classify_large_name,classify_middle_code,
+classify_middle_name
  ;
  
