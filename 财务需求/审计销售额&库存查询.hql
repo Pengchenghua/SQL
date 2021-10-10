@@ -1,3 +1,4 @@
+--财务库存成本&定价成本计算周转
 --销售额
 
 -- 公司代码	公司名称	利润中心	课组	课组名称	大类编码	大类名称	不含税收入	不含税成本
@@ -41,7 +42,9 @@ SELECT b.company_code,
        sum(a.amt_no_tax)as  no_tax_sale
 FROM csx_dw.dws_wms_r_d_accounting_stock_m a 
 join 
-(select shop_id,company_code,company_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current' and table_type='1' and purpose !='06') b on a.dc_code=b.shop_id
+(select shop_id,company_code,company_name 
+from csx_dw.dws_basic_w_a_csx_shop_m 
+where sdt='current' and table_type='1' and purpose !='06') b on a.dc_code=b.shop_id
 WHERE sdt='20201231'
 and reservoir_area_code not in ('PD01','PD02','TS01')
 group by 
