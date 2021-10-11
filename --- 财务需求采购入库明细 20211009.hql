@@ -61,7 +61,7 @@ where (( sdt<=${hiveconf:e_date}
     and receive_status in ('1','2')
 union all 
 select origin_order_no order_no, 
-    receive_location_code as dc_code,
+    shipped_location_code  as dc_code,
     business_type_code as business_type,
     business_type_name,
     goods_code,
@@ -106,11 +106,8 @@ join
 
 
 
-
--- 关联采购订单&DC类型&复用供应商
--- select * from csx_tmp.temp_entry_01 where sales_region_name ='大宗' and province_name='福建省'; 
-drop table  csx_tmp.temp_entry_01;
-create temporary table csx_tmp.temp_entry_01 as 
+drop table  csx_tmp.temp_cg_01;
+create temporary table csx_tmp.temp_cg_01 as 
 select substr(receive_sdt,1,6) mon,
     -- sales_region_code,
     -- sales_region_name ,
@@ -227,25 +224,32 @@ join
         super_class
 )b on a.order_no=b.order_code
  join 
-(select 
-    sales_province_code,
+(select sales_province_code,
     sales_province_name,
-    case when purchase_org ='P620' and purpose!='07' then '9' else  sales_region_code end sales_region_code,
-    case when purchase_org ='P620' and purpose!='07' then '大宗' else  sales_region_name end sales_region_name,
+    case when (purchase_org ='P620' and purpose!='07') or shop_id='W0J8' then '9' else  sales_region_code end sales_region_code,
+    case when (purchase_org ='P620' and purpose!='07') or shop_id='W0J8' then '平台' else  sales_region_name end sales_region_name,
     shop_id,
     shop_name,
     company_code,
-    case when shop_id in ('W0H4','W0G1','W0J8')  then '' else city_code end  city_code,
-    case when shop_id in ('W0H4','W0G1','W0J8')  then '' else city_name end  city_name,
-    case when shop_id in ('W0H4') then '900001' when shop_id in ('W0G1','W0J8')  then '900002' else province_code end province_code,
-    case when shop_id in ('W0H4') then '大宗二' when shop_id in ('W0G1','W0J8')  then '大宗一' else  province_name  end province_name,
+    company_name ,
+    case when purchase_org ='P620' and purpose!='07'  then '' else city_code end  city_code,
+    case when purchase_org ='P620' and purpose!='07'  then '' else city_name end  city_name,
+    case when shop_id in ('W0H4') then '900001' 
+        when shop_id in ('W0G1','W0J8','W0H1')  then '900002' 
+        when shop_id in ('WB09') then '900003'
+        WHEN province_name LIKE '%江苏%' and city_name='南京市' then '320100'
+        when province_name LIKE '%江苏%' and city_name !='南京市' then '320500' 
+    else province_code end province_code,
+    case when shop_id in ('W0H4') then '大宗二' 
+        when shop_id in ('W0G1','W0J8','W0H1')  then '大宗一' 
+        when shop_id in ('WB09') then '平台酒水'
+       WHEN province_name LIKE '%江苏%' and city_name='南京市' then '南京市'
+        when province_name LIKE '%江苏%' and city_name !='南京市' then '昆山市' 
+    else  province_name  end province_name,
     purpose
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
-    and  table_type=1 
-    and purpose  in ('01','02','03','07','08','05','04','06') 
-) d on a.dc_code=d.shop_id
-
+    and  table_type=1) d on a.dc_code=d.shop_id
 ) j 
 left join  
 (select company_code,supplier_code,yh_reuse_tag 
@@ -258,12 +262,11 @@ left join
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
     and  table_type=1 
-    and purpose  in ('01','02','03','07','08','05','04','06') 
 ) m on j.send_dc_code=m.send_dc_code
  
 
 ;
 
-select * from  csx_tmp.temp_entry_01 where (purpose!='06' or source_type_name not like '%合伙%');
+select *  from  csx_tmp.temp_cg_01 where (purpose!='06' and source_type_name not like '%合伙%' and source_type_name not like '%联营%');
 
-select * from  csx_tmp.temp_entry_01 where purpose='06' or source_type_name  like '%合伙%';
+select * from  csx_tmp.temp_cg_01 where purpose='06' or source_type_name  like '%合伙%' or source_type_name  like '%联营%';
