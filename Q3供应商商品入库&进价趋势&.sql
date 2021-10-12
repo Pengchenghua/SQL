@@ -9,6 +9,7 @@
 DROP TABLE csx_tmp.temp_order_entry;
 create  table csx_tmp.temp_order_entry as 
 select  mon,
+    purchase_org,
     province_code,
     province_name,
     city_code,
@@ -91,7 +92,8 @@ where 1=1
        purpose_name,
        shop_name,
        city_code,
-       city_name
+       city_name,
+       purchase_org
 FROM csx_dw.dws_basic_w_a_csx_shop_m
 WHERE sdt='current'
   AND table_type=1 
@@ -129,7 +131,7 @@ join
     vendor_name,
     supplier_type,
     case when supplier_type='0' then '空'
-        when supplier_type   ='1' then '代理商'
+        when supplier_type ='1' then '代理商'
         when supplier_type ='2' then '生产厂商'
         when supplier_type ='3' then '经销商(资产)'
         when supplier_type ='4' then '集成商(资产)'
@@ -148,16 +150,6 @@ group by order_code,source_type_name,source_type )f on a.origin_order_code=f.ord
 ;
     
     
-select province_name, concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)as qq,
-sum(net_amt)/10000,
-sum(case when spu_goods_code is not null then net_amt end )/10000 as spu_amt
-from csx_tmp.temp_order_entry 
-where classify_middle_code='B0304' 
-and dc_code not in ('W0K4','W0J8')
-and source_type !='4'
--- and province_name in ( '四川省', '安徽省','福建省')
-group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name
-;
 
 
 select  concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)as qq,
@@ -231,7 +223,7 @@ from csx_dw.dws_basic_w_a_csx_shop_m
 where 1=1
 and dc_code not in ('W0K4')
 and source_type !='4'
-and mon>='202106'
+and mon>='202107'
 -- and province_name in ( '四川省')
 group by
 sales_region_code,
@@ -488,6 +480,361 @@ where sdt>='20200101' and sdt<'20211001'
  and dc_code !='W0K4'
  and a.business_type_code!='4'
  group by a.province_code,a.province_name,
-concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) ,
+    concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) ,
 dc_code
 ;
+
+
+--按照入库计算单价
+
+
+with  temp_01 as (
+select Q,
+      goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+    net_qty,
+    net_amt,
+    avg_price,
+    dense_rank()over(partition by Q order by net_amt desc) as aa
+from (
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry
+where classify_middle_code='B0304'
+AND MON between '202107' and '202109'
+group by  goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a 
+),
+temp_02 as 
+(select 
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+    sum(case when Q='2020Q1' then avg_price end) as price_2020Q1,
+    sum(case when Q='2020Q2' then avg_price end) as price_2020Q2,
+    sum(case when Q='2020Q3' then avg_price end) as price_2020Q3,
+    sum(case when Q='2020Q4' then avg_price end) as price_2020Q4,
+    sum(case when Q='2021Q1' then avg_price end) as price_2021Q1,
+    sum(case when Q='2021Q2' then avg_price end) as price_2021Q2,
+    sum(case when Q='2021Q3' then avg_price end) as price_2021Q3
+from(
+
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry
+where classify_middle_code='B0304'
+-- AND MON between '202107' and '202109'
+group by  goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a
+    group by 
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name
+    )
+select a.*,
+price_2020Q1,
+price_2020Q2,
+price_2020Q3,
+price_2020Q4,
+price_2021Q1,
+price_2021Q2,
+price_2021Q3 
+from temp_01 a 
+left join 
+(select * from temp_02) b on a.goods_code=b.goods_code
+where aa<51
+
+    ;
+
+
+-- 福建、安徽 冻品净入库额
+select province_name, concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)as qq,
+sum(net_amt)/10000,
+sum(case when spu_goods_code is not null then net_amt end )/10000 as spu_amt
+from csx_tmp.temp_order_entry a
+join (SELECT shop_id
+FROM csx_dw.dws_basic_w_a_csx_shop_m
+    where sdt='current'
+     and purchase_org !='P620' ) b on a.dc_code=b.shop_id
+where classify_middle_code='B0304' 
+and dc_code not in ('W0K4','W0J8')
+and source_type !='4'
+ and province_name in ( '四川省', '安徽省','福建省')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name
+;
+
+
+-- 入库进价趋势按照SPU 排名
+
+with  temp_01 as (
+select Q,
+    spu_goods_code,
+    spu_goods_name,
+    net_qty,
+    net_amt,
+    avg_price,
+    dense_rank()over(partition by Q order by net_amt desc) as aa
+from (
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry
+where classify_middle_code='B0304'
+AND MON between '202107' and '202109'
+group by   
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a 
+),
+temp_02 as 
+(select 
+    spu_goods_code,
+    spu_goods_name,
+    sum(case when Q='2020Q1' then avg_price end) as price_2020Q1,
+    sum(case when Q='2020Q2' then avg_price end) as price_2020Q2,
+    sum(case when Q='2020Q3' then avg_price end) as price_2020Q3,
+    sum(case when Q='2020Q4' then avg_price end) as price_2020Q4,
+    sum(case when Q='2021Q1' then avg_price end) as price_2021Q1,
+    sum(case when Q='2021Q2' then avg_price end) as price_2021Q2,
+    sum(case when Q='2021Q3' then avg_price end) as price_2021Q3
+from(
+
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry
+where classify_middle_code='B0304'
+-- AND MON between '202107' and '202109'
+group by   
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a
+    group by 
+    spu_goods_code,
+    spu_goods_name
+    )
+select a.*,
+price_2020Q1,
+price_2020Q2,
+price_2020Q3,
+price_2020Q4,
+price_2021Q1,
+price_2021Q2,
+price_2021Q3 
+from temp_01 a 
+left join 
+(select * from temp_02) b on a.spu_goods_code=b.spu_goods_code
+where aa<51
+
+    ;
+
+-- 福建冻品销售明细
+
+select a.province_code,a.province_name,
+concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) mon,
+    channel_code,
+    channel_name,
+    dc_code,
+    dc_name,
+    customer_no,
+    customer_name,
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name,
+    sum(a.sales_value) sale,
+    sum(a.profit) profit,
+    sum(case when business_type_code='1' then a.sales_value end) day_sale,
+    sum(case when business_type_code='1' then a.profit end ) day_profit
+from csx_dw.dws_sale_r_d_detail a 
+join 
+(select goods_id,
+    spu_goods_code,
+    spu_goods_name 
+from csx_dw.dws_basic_w_a_csx_product_m 
+where sdt='current' 
+and classify_middle_code in ('B0304')
+)b on a.goods_code=b.goods_id
+where sdt>='20210101' 
+    and sdt<'20211001'
+    and province_name in ( '福建省')
+    and a.channel_code in ('1','7','9')
+   -- and channel_code !='2'
+    and dc_code !='W0K4'
+    and a.business_type_code!='4'
+  group by a.province_code,a.province_name,
+    concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) ,
+    dc_code,
+    channel_code,
+    channel_name,
+    business_type_name,
+    dc_name,
+    customer_no,
+    customer_name,
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name
+;
+
+
+--联采商品采购入库  指定DC仓
+
+select  province_name,concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)as qq,
+sum(net_amt)/10000,
+sum(case when spu_goods_code is not null then net_amt end )/10000 as spu_amt
+from csx_tmp.temp_order_entry 
+where classify_middle_code='B0304' 
+and dc_code   in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS',
+                    'W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2',
+                    'W0P8','W0Q9','W0BR','W0BH')
+and source_type !='4'
+and province_name in ( '四川省', '安徽省','福建省')
+group by concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1),province_name
+;
+
+
+
+
+--日配自营销售数据 20211012 指定联采仓
+select a.province_code,a.province_name,
+concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) mon,
+    sum(a.sales_value) sale,
+    sum(a.profit) profit,
+    sum(case when business_type_code='1' then a.sales_value end) day_sale,
+    sum(case when business_type_code='1' then a.profit end ) day_profit
+from csx_dw.dws_sale_r_d_detail a 
+join 
+(select goods_id,
+    spu_goods_code,
+    spu_goods_name 
+from csx_dw.dws_basic_w_a_csx_product_m 
+where sdt='current' 
+and classify_middle_code in ('B0304')
+
+)b on a.goods_code=b.goods_id
+where sdt>='20210101' 
+    and sdt<'20211001'
+    and province_name in ( '福建省','安徽省')
+    and a.channel_code in ('1','7','9')     
+   -- and channel_code !='2'
+   and dc_code   in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS',
+                    'W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2',
+                    'W0P8','W0Q9','W0BR','W0BH')
+    and a.business_type_code!='4'   --不含城市服务商
+  group by a.province_code,a.province_name,
+    concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) 
+  
+;
+--SPU 季度平均价趋势 按指定仓 20211012
+
+
+with  temp_01 as (
+select Q,
+    spu_goods_code,
+    spu_goods_name,
+    net_qty,
+    net_amt,
+    avg_price,
+    dense_rank()over(partition by Q order by net_amt desc) as aa
+from (
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry 
+where classify_middle_code='B0304'
+and dc_code in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS','W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2','W0P8','W0Q9','W0BR','W0BH')
+AND MON between '202107' and '202109'
+group by   
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a 
+),
+temp_02 as 
+(select 
+    spu_goods_code,
+    spu_goods_name,
+    sum(case when Q='2020Q1' then avg_price end) as price_2020Q1,
+    sum(case when Q='2020Q2' then avg_price end) as price_2020Q2,
+    sum(case when Q='2020Q3' then avg_price end) as price_2020Q3,
+    sum(case when Q='2020Q4' then avg_price end) as price_2020Q4,
+    sum(case when Q='2021Q1' then avg_price end) as price_2021Q1,
+    sum(case when Q='2021Q2' then avg_price end) as price_2021Q2,
+    sum(case when Q='2021Q3' then avg_price end) as price_2021Q3
+from(
+
+select 
+    concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1) Q,
+    spu_goods_code,
+    spu_goods_name,
+    sum(qty)net_qty,
+    sum(amt) net_amt,
+    sum(amt)/sum(qty) as avg_price
+from csx_tmp.temp_order_entry
+where classify_middle_code='B0304'
+-- AND MON between '202107' and '202109'
+and dc_code in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS','W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2','W0P8','W0Q9','W0BR','W0BH')
+group by   
+    spu_goods_code,
+    spu_goods_name,
+     concat(substr(mon,1,4),'Q',floor(substr(mon,5,2)/3.1)+1)
+    )a
+    group by 
+    spu_goods_code,
+    spu_goods_name
+    )
+select a.*,
+price_2020Q1,
+price_2020Q2,
+price_2020Q3,
+price_2020Q4,
+price_2021Q1,
+price_2021Q2,
+price_2021Q3 
+from temp_01 a 
+left join 
+(select * from temp_02) b on a.spu_goods_code=b.spu_goods_code
+where aa<51
+
+    ;

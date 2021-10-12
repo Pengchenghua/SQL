@@ -1,4 +1,5 @@
-select distinct send_location_code,send_location_name,supplier_code,supplier_name from csx_dw.dws_wms_r_d_entry_detail where business_type ='ZC01' AND SYS='old';
+select distinct send_location_code,send_location_name,supplier_code,
+supplier_name from csx_dw.dws_wms_r_d_entry_detail where business_type ='ZC01' AND SYS='old';
 
 
 
@@ -6,7 +7,7 @@ select * from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current';
 
 show create table csx_dw.dws_basic_w_a_csx_supplier_m ;
 
--- 剔除合伙人仓、寄售小店仓
+-- 剔除合伙人仓、寄售小店仓、彩食鲜小店
 DROP TABLE csx_tmp.supplier_entry_amt;
 CREATE table csx_tmp.supplier_entry_amt as 
 SELECT CASE
@@ -72,6 +73,8 @@ GROUP BY CASE
 'G2126',
 'G2127',
 'G3506')
+
+
 -- 1. 供应商集中度
 -- TOP10/TOP30 供应商入库额含永辉供应商
 select mon,supplier_code,supplier_name,amt,sku,aa from (

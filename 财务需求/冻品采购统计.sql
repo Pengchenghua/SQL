@@ -63,7 +63,8 @@ group by  CASE
 select   CASE
            WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
            ELSE substr(sdt,1,6)
-       END  mon,classify_middle_name,classify_middle_code,sum(a.receive_qty*price) as amt from csx_dw.dws_wms_r_d_entry_detail a 
+       END  mon,classify_middle_name,classify_middle_code,sum(a.receive_qty*price) as amt 
+from csx_dw.dws_wms_r_d_entry_detail a 
 join
 (select location_code,zone_id,zone_name,purpose_code from csx_dw.csx_shop 
 where sdt='current' 
