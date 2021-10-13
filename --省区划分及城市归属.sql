@@ -1,8 +1,10 @@
---省区划分及城市归属select 
+-- DC省区划分&城市归属 DC
+select 
     sales_province_code,
     sales_province_name,
-    case when purchase_org ='P620' and purpose!='07' then '9' else  sales_region_code end sales_region_code,
-    case when purchase_org ='P620' and purpose!='07' then '平台' else  sales_region_name end sales_region_name,
+    purchase_org,
+    case when (purchase_org ='P620' and purpose!='07') or shop_id ='W0J8' then '9' else  sales_region_code end sales_region_code,
+    case when (purchase_org ='P620' and purpose!='07') or shop_id ='W0J8' then '平台' else  sales_region_name end sales_region_name,
     shop_id,
     shop_name,
     case when purchase_org ='P620' and purpose!='07'  then '' else city_code end  city_code,
@@ -22,4 +24,5 @@
     purpose
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
-    and  table_type=1
+    and  table_type=1 
+    
