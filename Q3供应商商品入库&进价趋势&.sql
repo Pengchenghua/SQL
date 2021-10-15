@@ -746,8 +746,8 @@ join
     spu_goods_name 
 from csx_dw.dws_basic_w_a_csx_product_m 
 where sdt='current' 
+and  product_level!='5'
 and classify_middle_code in ('B0304')
-
 )b on a.goods_code=b.goods_id
 where sdt>='20210101' 
     and sdt<'20211001'
@@ -762,7 +762,7 @@ where sdt>='20210101'
     concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) 
   
 ;
---SPU 季度平均价趋势 按指定仓 20211012
+--SPU 季度平均价趋势 按指定仓 20211012  剔除定制 and  product_level!='5'
 
 
 with  temp_01 as (
@@ -783,6 +783,7 @@ select
     sum(amt)/sum(qty) as avg_price
 from csx_tmp.temp_order_entry 
 where classify_middle_code='B0304'
+and  product_level!='5'
 and dc_code in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS','W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2','W0P8','W0Q9','W0BR','W0BH')
 AND MON between '202107' and '202109'
 group by   
@@ -814,6 +815,7 @@ select
 from csx_tmp.temp_order_entry
 where classify_middle_code='B0304'
 -- AND MON between '202107' and '202109'
+and  product_level!='5'
 and dc_code in ('W0A3','W0A5','W088','W0R9','W0R8','W0K3','W0AR','W0N1','W0AS','W0A2','W0N0','W079','W0A7','W039','W0A8','W053','W0BK','W0Q2','W0P8','W0Q9','W0BR','W0BH')
 group by   
     spu_goods_code,
