@@ -21,7 +21,8 @@ select
        WHEN province_name LIKE '%江苏%' and city_name='南京市' then '南京市'
         when province_name LIKE '%江苏%' and city_name !='南京市' then '昆山市' 
     else  province_name  end province_name,
-    purpose
+    purpose,
+    purpose_name
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
     and  table_type=1 
