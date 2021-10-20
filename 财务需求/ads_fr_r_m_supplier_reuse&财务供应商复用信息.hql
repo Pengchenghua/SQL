@@ -1,4 +1,4 @@
-
+--更改门店信息表
 -- set mapreduce.job.reduces =80;
 -- set hive.execution.engine=tez;
 -- set tez.queue.name=caishixian;
@@ -49,10 +49,10 @@ from
         pay_condition
     from csx_ods.source_basic_w_a_md_purchasing_info a 
  join 
-(select location_code,
+(select shop_id ,
         company_code,
         purchase_org 
-from csx_dw.csx_shop 
+from csx_dw.dws_basic_w_a_csx_shop_m 
 where sdt='current') b on a.purchase_org= b.purchase_org 
 where sdt=${hiveconf:w_edt} 
 group by supplier_code,
