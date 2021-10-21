@@ -28,8 +28,6 @@ set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
 -- set mapreduce.map.java.opts=8g;
 -- set parquet.block.size=268435456;
 
- 
---select regexp_replace(${hiveconf:s_date} ,'-','');
 set e_date='${enddate}';
 set s_date= trunc(date_sub(${hiveconf:e_date},120),'MM');
 -- set s_date= '2019-01-01';
@@ -108,6 +106,7 @@ group by
     to_date(payment_time ) ,       --付款时间
     to_date(review_time)            
 ) d on a.payment_no=d.payment_no
+
 ;
 
 
@@ -120,6 +119,8 @@ select source_bill_no,  --采购订单
     in_out_no,          --批次单号
     company_code,
     company_name,
+    a.purchase_org_code,
+    a.purchase_org_name,
     happen_place_code,
     settle_place_code,
     classify_large_code,
@@ -138,6 +139,8 @@ from
     in_out_no,          --批次单号
     company_code,
     company_name,
+    a.purchase_org_code,
+    a.purchase_org_name,
     happen_place_code,
     settle_place_code,
     classify_large_code,
@@ -171,9 +174,10 @@ group by
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name
+    classify_small_name,
+    a.purchase_org_code,
+    a.purchase_org_name
 ) a 
-
 left join
 -- 入库批次表
 (select batch_code,
@@ -210,6 +214,8 @@ select
     in_out_no as batch_co,          --批次单号
     company_code,
     company_name,
+    a.purchase_org_code,
+    a.purchase_org_name,
     happen_place_code as receive_dc_id,
     d.shop_name as receive_dc_name ,
     settle_place_code as settle_dc_id,
@@ -225,8 +231,10 @@ select
     supplier_name,
     reconciliation_tag,
     reconciliation_tag_name,
-    account_group,
-    account_group_name,
+    account_group,                                      --帐户组
+    account_group_name,                                 --公司帐户组名称
+    pay_condition,                                      --付款条件
+    pay_condition_name,                                 --付款条件名称
    coalesce(receive_date,'') as receive_date	,       --收货日期
    coalesce(receive_close_date,'') as receive_close_date,     --关单日期
    coalesce(post_date,      '') as post_date,              --过帐日期
@@ -277,9 +285,18 @@ left join
  left join
  (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') and dic_type='CONCILIATIONNFLAG' ) b on a.is_reconcile=b.dic_key 
  left join 
- (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') and dic_type='ZTERM' ) c on a.acct_grp=c.dic_key 
+ (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') and dic_type='VENDERAGROUP' ) c on a.acct_grp=c.dic_key 
   where sdt='current'
   ) c on a.supplier_code=c.supplier_code
+  left join 
+  (select distinct purchase_org, supplier_code , pay_condition,dic_value as pay_condition_name  
+  from csx_ods.source_basic_w_a_md_purchasing_info a 
+  left join 
+  (select dic_type,dic_key,dic_value 
+    from csx_ods.source_basic_w_a_md_dic 
+    where sdt=regexp_replace(date_sub(current_date(),1) ,'-','')
+    and dic_type='ACCOUNTCYCLE' ) b on a.pay_condition=b.dic_key
+    where sdt=regexp_replace(date_sub(current_date(),1) ,'-','') ) m ON a.purchase_org_code=m.purchase_org and a.supplier_code=m.supplier_code
  left join 
  (select shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') d on a.happen_place_code=d.shop_id
   left join 
@@ -295,6 +312,8 @@ select purchase_no,
     batch_co,          --批次单号
     company_code,
     company_name,
+    purchase_org_code,
+    purchase_org_name,
     receive_dc_id,
     receive_dc_name ,
     settle_dc_id,
@@ -312,6 +331,8 @@ select purchase_no,
     reconciliation_tag_name,
     account_group,
     account_group_name,
+     pay_condition,                                      --付款条件
+    pay_condition_name,                                 --付款条件名称
    coalesce(receive_date,'') as receive_date	,       --收货日期
    coalesce(receive_close_date,'') as receive_close_date,     --关单日期
    coalesce(post_date,      '') as post_date,              --过帐日期
@@ -339,9 +360,64 @@ from csx_tmp.temp_pss_02
     where 1=1
 ;
 
-
-
---插入数据
+--插入结果表
 insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
 select *  from csx_tmp.temp_pss_03
-;
+
+--建表语句 ads_fr_r_d_po_reconciliation_report
+
+drop table csx_tmp.ads_fr_r_d_po_reconciliation_report;
+CREATE TABLE `csx_tmp.ads_fr_r_d_po_reconciliation_report`(
+  `purchase_order_no` string COMMENT '采购订单号', 
+  `entry_order_no` string COMMENT '入库单号', 
+  `batch_no` string COMMENT '批次单号', 
+  `company_code` string COMMENT '公司代码', 
+  `company_name` string COMMENT '公司代码名称', 
+  purchase_org_code string comment '采购组织',
+  purchase_org_name string comment '采购组织名称',
+  `receive_dc_code` string COMMENT '入库dc', 
+  `receive_dc_name` string COMMENT '入库DC名称', 
+  `settle_dc_code` string COMMENT '结算dc', 
+  `settle_dc_name` string COMMENT '结算dc', 
+  `classify_large_code` string COMMENT '一级管理分类', 
+  `classify_large_name` string COMMENT '一级管理分类', 
+  `classify_middle_code` string COMMENT '二级管理分类', 
+  `classify_middle_name` string COMMENT '二级管理分类', 
+  `classify_small_code` string COMMENT '三级管理分类', 
+  `classify_small_name` string COMMENT '三级管理分类', 
+  `order_create_date` string COMMENT '订单创建日期', 
+  `supplier_code` string COMMENT '供应商', 
+  `supplier_name` string COMMENT '供应商', 
+  `reconciliation_tag` string COMMENT '对帐日标识', 
+  `reconciliation_tag_name` string COMMENT '对帐日标识名称', 
+  `account_group` string COMMENT '供应商组代码', 
+  `account_group_name` string COMMENT '供应商组名称', 
+   pay_condition string comment '付款条件',
+   pay_condition_name string comment'付款条件名称',
+  `receive_date` string COMMENT '收货日期指批次收货日期', 
+  `receive_close_date` string COMMENT '入库单关单日期', 
+  `post_date` string COMMENT '单据过帐日期', 
+  `check_ticket_no` string COMMENT '勾票单号', 
+  `statement_no` string COMMENT '对帐单号', 
+  `payment_no` string COMMENT '实际付款单号', 
+  `statement_date` string COMMENT '对帐日期', 
+  `finance_statement_date` string COMMENT '财务对帐日期', 
+  `pay_create_date` string COMMENT '付款生成日期', 
+  `payment_date` string COMMENT '付款日期', 
+  `sign_date` string COMMENT '供应商签单日期', 
+  `audit_date` string COMMENT '票核日期', 
+  `invoice_sub_date` string COMMENT '发票录入日期', 
+  `review_date` string COMMENT '付款审核日期', 
+  `finance_days` string COMMENT '财务对帐天数', 
+  `invoice_sub_days` string COMMENT '发票录入天数', 
+  `audit_days` string COMMENT '票核天数', 
+  `pay_create_days` string COMMENT '付款生成日期天数', 
+  `review_days` string COMMENT '付款审核天数,以上计算天数：如果付款日期为空，则按当前日期进行计算（搜索下载日或T-1日）；如果被减日期也为空，则计算结果为空', 
+  `payment_status` int COMMENT '付款单单据状态', 
+  `payment_status_name` string COMMENT '付款单单据状态', 
+  `update_time` timestamp COMMENT '插入时间')
+COMMENT '采购订单对帐查询报表'
+PARTITIONED BY ( 
+  `sdt` string COMMENT 'order_create_date采购订单日期分区')
+  
+STORED AS parquet  
