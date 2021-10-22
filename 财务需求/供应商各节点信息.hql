@@ -1,32 +1,12 @@
 --供应商信息节点 ads_fr_r_d_po_reconciliation_report
-set  mapreduce.job.reduces = 100;
-set hive.exec.reducers.max=299;  -- reduce 个数，默认 299 不建议
--- set  hive.map.aggr = true;
--- set  hive.groupby.skewindata = false;
-set hive.exec.parallel.thread.number = 16;
-set  hive.exec.parallel = true;
-set  hive.exec.dynamic.partition = true;
-set hive.merge.size.per.task=128000000;  --合并后的文件大小 默认 128M
-set hive.merge.smallfiles.avgsize=6400000; --平均最小文件大小合并 默认 64M
---启动态分区
-set  hive.exec.dynamic.partition.mode = nonstrict;
---设置为非严格模式
-set  hive.exec.max.dynamic.partitions = 10000;
---在所有执行mr的节点上，最大一共可以创建多少个动态分区。
-set  hive.exec.max.dynamic.partitions.pernode = 100000;
---源数据中包含了一年的数据，即day字段有365个值，那么该参数就需要设置成大于365，如果使用默认值100，则会报错
-
---每个Map最大输入大小(这个值决定了合并后文件的数量)  
-set mapred.max.split.size=256000000;    
---一个节点上split的至少的大小(这个值决定了多个DataNode上的文件是否需要合并)  
-set mapred.min.split.size.per.node=64000000;  
---一个交换机下split的至少的大小(这个值决定了多个交换机上的文件是否需要合并)    
-set mapred.min.split.size.per.rack=64000000;  
+SET hive.exec.parallel=true;
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.exec.max.dynamic.partitions=1000;
+SET hive.exec.max.dynamic.partitions.pernode=2000;
+SET hive.optimize.sort.dynamic.partition=true;
 --执行Map前进行小文件合并  
-set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat; 
-
--- set mapreduce.map.java.opts=8g;
--- set parquet.block.size=268435456;
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;   
 
 set e_date='${enddate}';
 set s_date= trunc(date_sub(${hiveconf:e_date},120),'MM');
@@ -360,10 +340,10 @@ from csx_tmp.temp_pss_02
     where 1=1
 ;
 
---插入结果表
+--插入数据
 insert overwrite table csx_tmp.ads_fr_r_d_po_reconciliation_report partition(sdt)
 select *  from csx_tmp.temp_pss_03
-
+;
 --建表语句 ads_fr_r_d_po_reconciliation_report
 
 drop table csx_tmp.ads_fr_r_d_po_reconciliation_report;

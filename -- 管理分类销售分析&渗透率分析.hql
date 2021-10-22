@@ -1,26 +1,3 @@
--- 管理分类销售分析&渗透率分析
-set  mapreduce.job.reduces = 100;
--- set  hive.map.aggr = true;
--- set  hive.groupby.skewindata = false;
-set  hive.exec.parallel = true;
-set  hive.exec.dynamic.partition = true;
---启动态分区
-set  hive.exec.dynamic.partition.mode = nonstrict;
---设置为非严格模式
-set  hive.exec.max.dynamic.partitions = 10000;
---在所有执行mr的节点上，最大一共可以创建多少个动态分区。
-set  hive.exec.max.dynamic.partitions.pernode = 100000;
---源数据中包含了一年的数据，即day字段有365个值，那么该参数就需要设置成大于365，如果使用默认值100，则会报错
-
---每个Map最大输入大小(这个值决定了合并后文件的数量)  
-set mapred.max.split.size=256000000;    
---一个节点上split的至少的大小(这个值决定了多个DataNode上的文件是否需要合并)  
-set mapred.min.split.size.per.node=100000000;  
---一个交换机下split的至少的大小(这个值决定了多个交换机上的文件是否需要合并)    
-set mapred.min.split.size.per.rack=100000000;  
---执行Map前进行小文件合并  
-set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;   
-
 
 set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
@@ -47,6 +24,8 @@ select
     a.region_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
+    a.city_group_name,
     a.customer_no,
     business_type_code,
     classify_large_code,
@@ -68,6 +47,8 @@ group by
     a.region_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
+    a.city_group_name,
     business_type_code ,
     a.customer_no,
     classify_large_code,
@@ -91,6 +72,8 @@ select
     a.region_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
+    a.city_group_name,
     a.customer_no,
     business_type_code,
     classify_large_code,
@@ -103,9 +86,7 @@ select
     sum(a.profit)as last_profit
 from csx_dw.dws_sale_r_d_detail a 
 where sdt>=${hiveconf:last_sdt}
-    and sdt<=${hiveconf:last_edt}
-    -- and classify_middle_code='B0304'
-    -- and business_type_code !='4'
+    and sdt<=${hiveconf:last_edt} 
     and a.channel_code   in ('1','7','9')
 group by 
     case when channel_code in ('1','9','7') then 'B端' end,
@@ -113,6 +94,8 @@ group by
     a.region_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
+    a.city_group_name,
     a.customer_no,
     business_type_code,
     classify_large_code,
@@ -133,6 +116,8 @@ select
     a.region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no,
     business_type_code,
     classify_large_code,
@@ -142,23 +127,17 @@ select
     classify_small_code,
     classify_small_name,
     sum(sales_value) as sales_value,
-    sum(profit) as profit ,
-    -- sum(frozen_sales) as frozen_sales,
-    -- sum(frozen_profit) as frozen_profit,
-    -- sum(frozen_daily_sales) as frozen_daily_sales,
-    -- sum(frozen_daily_profit) as frozen_daily_profit ,
+    sum(profit) as profit , 
     sum(last_sales_value) as last_sales_value,
-    sum(last_profit) as last_profit
-    -- sum(last_frozen_sales) as last_frozen_sales,
-    -- sum(last_frozen_profit) as last_frozen_profit,
-    -- sum(last_frozen_daily_sales) as last_frozen_daily_sales,
-    -- sum(last_frozen_daily_profit) as last_frozen_daily_profit
+    sum(last_profit) as last_profit 
 from
 (select channel_name,
     a.region_code,
     a.region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no,
     a.business_type_code,
     classify_large_code,
@@ -168,17 +147,9 @@ from
     a.classify_small_code,
     a.classify_small_name,
     sales_value,
-    profit,
-    -- frozen_sales,
-    -- frozen_profit,
-    -- frozen_daily_sales,
-    -- frozen_daily_profit,
+    profit, 
     0 as last_sales_value,
-    0 as last_profit
-    -- 0 as last_frozen_sales,
-    -- 0 as last_frozen_profit,
-    -- 0 as last_frozen_daily_sales,
-    -- 0 as last_frozen_daily_profit
+    0 as last_profit 
 from csx_tmp.tmp_dp_sale a
 union all
 select channel_name,
@@ -186,6 +157,8 @@ select channel_name,
     a.region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no,
     a.business_type_code,
     classify_large_code,
@@ -195,17 +168,9 @@ select channel_name,
     a.classify_small_code,
     a.classify_small_name,
     0 as sales_value,
-    0 as profit,
-    -- 0 as frozen_sales,
-    -- 0 as frozen_profit,
-    -- 0 as frozen_daily_sales,
-    -- 0 as frozen_daily_profit,
+    0 as profit, 
     last_sales_value  ,
-    last_profit
-    -- last_frozen_sales,
-    -- last_frozen_profit,
-    -- last_frozen_daily_sales,
-    -- last_frozen_daily_profit
+    last_profit 
 from csx_tmp.tmp_dp_sale_01 a
 ) a
 group by 
@@ -214,6 +179,8 @@ group by
     a.region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no,
     business_type_code,
     classify_large_code,
@@ -236,6 +203,8 @@ select
     region_name,
     province_code,
     province_name,
+    city_group_code,
+    city_group_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -248,6 +217,8 @@ select
     sum(last_profit) as last_profit,
     sum(case when business_type_code='1' then sales_value end ) as daily_sales_value,
     sum(case when business_type_code='1' then last_sales_value end ) as last_daily_sales_value,
+    sum(case when business_type_code='1' then profit end ) as daily_profit,             --日配毛利额
+    sum(case when business_type_code='1' then last_profit end ) as last_daily_profit,   --环期日配毛利额
     count(distinct case when sales_value>0 and business_type_code='1' then customer_no end ) as daily_cust_number, --日配成交客户数
     count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_daily_cust_number,  --环比日配冻品成交客户数
     grouping__id
@@ -259,24 +230,55 @@ group by
     region_name,
     province_code,
     province_name,
+    city_group_code,
+    city_group_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name,
-    a.classify_small_code,
-    a.classify_small_name
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
 grouping sets
 ((channel_name,
-    region_code,
-    region_name,
-    province_code,
-    province_name,
-    classify_large_code,
-    classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name,
-    a.classify_small_code,
-    a.classify_small_name),
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name),     --明细
+    (channel_name,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name),   --城市中类合计
+    (channel_name,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name),   --城市大类合计
+    (channel_name,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name),      --城市组合计明细
     (channel_name,
     region_code,
     region_name,
@@ -284,8 +286,19 @@ grouping sets
     province_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name),
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name), 
+    (channel_name,
+    region_code,
+    region_name,
+    province_code,
+    province_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name),
     (channel_name,
     region_code,
     region_name,
@@ -303,17 +316,17 @@ grouping sets
     region_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name,
-    a.classify_small_code,
-    a.classify_small_name),
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name),
      (channel_name,
     region_code,
     region_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name),
+    classify_middle_code,
+    classify_middle_name),
      (channel_name,
     region_code,
     region_name,
@@ -325,15 +338,15 @@ grouping sets
     (channel_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name,
-    a.classify_small_code,
-    a.classify_small_name),
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name),
     (channel_name,
     classify_large_code,
     classify_large_name,
-    a.classify_middle_code,
-    a.classify_middle_name),
+    classify_middle_code,
+    classify_middle_name),
     (channel_name,
     classify_large_code,
     classify_large_name ),
@@ -351,6 +364,8 @@ select
     region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     count(distinct case when daily_sales_value>0 then customer_no end) as sales_cust_number,
     count(distinct case when last_daily_sales_value>0 then customer_no end ) as last_sales_cust_number,
     sum(daily_sales_value) as daily_sales_value,
@@ -364,10 +379,12 @@ select
     region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no,
     sum(sales_value) as daily_sales_value,
     sum(last_sales_value) as last_daily_sales_value
-from csx_tmp.temp_sale_all 
+from csx_tmp.temp_sale_all a
 where business_type_code='1'
 group by 
     channel_name,
@@ -375,16 +392,28 @@ group by
     region_name,
     province_code,
     province_name,
+    a.city_group_code,
+    a.city_group_name,
     customer_no
 ) a
 group by 
     channel_name,
     region_code,
     region_name,
+    a.city_group_code,
+    a.city_group_name,
     province_code,
     province_name
 grouping sets
-    ((channel_name,
+    (
+    (channel_name,
+     region_code,
+    region_name,
+    province_code,
+    province_name,
+    a.city_group_code,
+    a.city_group_name),
+    (channel_name,
      region_code,
     region_name,
     province_code,
@@ -404,6 +433,8 @@ select
     region_name,
     province_code,
     province_name,
+    city_group_code,
+    city_group_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -424,6 +455,8 @@ group by province_code,
     province_name,
     region_code,
     region_name,
+    city_group_code,
+    city_group_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -431,7 +464,46 @@ group by province_code,
     classify_small_code,
     classify_small_name
 grouping sets
+    ((
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        classify_small_name),     --明细
+        (
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name),   --城市中类合计
     (
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        classify_large_code,
+        classify_large_name),   --城市中类合计
+        (
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name),      --城市组合计明细
     (region_code,
     region_name,
     province_code,
@@ -506,6 +578,7 @@ drop table if exists csx_tmp.temp_sale_02;
 create temporary table csx_tmp.temp_sale_02 as
 select zone_id as sales_region_code,
     dist_code,
+    city_group_code,
     classify_large_code,
     classify_middle_code,
     classify_small_code,
@@ -517,6 +590,8 @@ from csx_dw.dws_wms_r_d_accounting_stock_m a
 (select 
     sales_province_code as dist_code,
     sales_province_name,
+    city_group_code,
+    city_group_name,
     purchase_org,
     case when (purchase_org ='P620' and purpose!='07') or shop_id ='W0J8' then '9' else  sales_region_code end zone_id,
     case when (purchase_org ='P620' and purpose!='07') or shop_id ='W0J8' then '平台' else  sales_region_name end sales_region_name,
@@ -551,16 +626,54 @@ where sdt = ${hiveconf:e_dt}
     and a.sys='new'
 group by zone_id,
     dist_code,
+    city_group_code,
     classify_large_code,
     classify_middle_code,
     classify_small_code 
 grouping sets (
+    (
+            zone_id,
+            dist_code,
+            city_group_code,
+            classify_large_code,
+            classify_middle_code,
+            classify_small_code
+        ),
+        (
+            zone_id,
+            dist_code,
+            city_group_code,
+            classify_large_code,
+            classify_middle_code
+        ),
+    (
+            zone_id,
+            dist_code,
+            city_group_code,
+            classify_large_code
+        ),
+    (
+            zone_id,
+            dist_code,
+            city_group_code
+        ),
         (
             zone_id,
             dist_code,
             classify_large_code,
             classify_middle_code,
             classify_small_code
+        ),
+         (
+            zone_id,
+            dist_code,
+            classify_large_code,
+            classify_middle_code
+        ),
+         (
+            zone_id,
+            dist_code,
+            classify_large_code
         ),
         (zone_id, 
         dist_code),
@@ -570,11 +683,27 @@ grouping sets (
             classify_middle_code,
             classify_small_code
         ),
+         (
+            zone_id,
+            classify_large_code,
+            classify_middle_code
+        ),
+         (
+            zone_id,
+            classify_large_code
+        ),
         (zone_id),
         (
             classify_large_code,
             classify_middle_code,
             classify_small_code
+        ),
+          (
+            classify_large_code,
+            classify_middle_code
+        ),
+          (
+            classify_large_code
         ),
     ()
     );
@@ -589,6 +718,8 @@ select a.channel_name,
     a.region_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
+    a.city_group_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -616,17 +747,29 @@ select a.channel_name,
     a.daily_sales_value/b.daily_sales_value as daily_sales_ratio,   --日配业务销售额/省区日配占比
     a.last_daily_sales_value/b.last_daily_sales_value as last_daily_sales_ratio,    --日配业务销售额/省区日配占比
     a.daily_sales_value,
+    a.daily_profit,
     a.last_daily_sales_value,
+    a.last_daily_profit,
     b.daily_sales_value as prov_daily_sales_value,
     b.last_daily_sales_value as last_prov_daily_sales_value,
     a.grouping__id
 from csx_tmp.temp_sale_all_01 a 
 left join 
-(select * from csx_tmp.temp_sale_cust ) b on coalesce(a.province_code,'')=coalesce(b.province_code ,'') and coalesce(a.region_code,'')=coalesce(b.region_code ,'')
+(select * from csx_tmp.temp_sale_cust ) b on coalesce(a.province_code,'')=coalesce(b.province_code ,'')
+    and coalesce(a.region_code,'')=coalesce(b.region_code ,'')
+    and coalesce(a.city_group_code,'')=coalesce(b.city_group_code ,'')
+  --  and coalesce(a.channel_name,'')=coalesce(b.channel_name ,'')
 left join 
-(select region_code,province_code,channel_name,sales_value as all_sales_value,profit as all_profit 
+(select region_code,province_code,
+    city_group_code,
+    channel_name,
+    sales_value as all_sales_value,
+    profit as all_profit 
     from csx_tmp.temp_sale_all_01
-    where grouping__id in ('0','7','31'))c on coalesce(a.province_code,'')=coalesce(c.province_code,'') and  coalesce(a.region_code,'')=coalesce(c.region_code ,'')
+    where grouping__id in ('0','7','31'))c on coalesce(a.province_code,'')=coalesce(c.province_code,'') 
+    and  coalesce(a.region_code,'')=coalesce(c.region_code ,'')
+    and coalesce(a.city_group_code,'')=coalesce(c.city_group_code ,'')
+    -- and  coalesce(a.channel_name,'')=coalesce(c.channel_name ,'')
 where 1=1 
 -- or a.grouping__id in ('0','7','31') )
 ;
@@ -634,9 +777,11 @@ where 1=1
 --	select * from csx_tmp.temp_all_sale;
 -- set hive.exec.dynamic.partition.mode=nonstrict;
 
+--select * from csx_tmp.temp_sale_all_01 where region_code='1';
 
 
 -- insert overwrite table csx_tmp.ads_sale_r_d_frozen_fr partition(months)
+drop table  csx_tmp.temp_report_sale_r_d_class_fr;
 create table csx_tmp.temp_report_sale_r_d_class_fr as 
 select
     case when a.grouping__id = '0' then '0'
@@ -652,16 +797,22 @@ select
     coalesce(a.region_name,'全国')as region_name,
     coalesce(a.province_code,'00') as  province_code,
     coalesce(a.province_name,'小计') as province_name,
+    coalesce(a.city_group_code,'00')city_group_code,
+    coalesce(a.city_group_name,'小计')city_group_name,
     coalesce(a.classify_large_code,'00') as  classify_large_code,
     coalesce(a.classify_large_name,'小计') as  classify_large_name,
-    coalesce(a.classify_middle_code,'') as  classify_middle_code,
-    coalesce(a.classify_middle_name,'') as  classify_middle_name,
-    coalesce(a.classify_small_code,'') as classify_small_code,
-    coalesce(a.classify_small_name,'') as classify_small_name,
+    coalesce(a.classify_middle_code,'00') as  classify_middle_code,
+    coalesce(a.classify_middle_name,'小计') as  classify_middle_name,
+    coalesce(a.classify_small_code,'00') as classify_small_code,
+    coalesce(a.classify_small_name,'小计') as classify_small_name,
     sales_value,                                        --本期销售额
     profit ,                                            --本期毛利额
     last_sales_value,                                   --环比销售额
     last_profit,                                        --环比毛利额
+    a.daily_sales_value,
+    a.daily_profit,
+    a.last_daily_sales_value,
+    a.last_daily_profit,
     daily_cust_number,                                  --日配成交客户数
     last_daily_cust_number,                             --环比日配成交客户数
     sales_cust_number,                                --B端本期客户数
@@ -687,15 +838,26 @@ select
     substr(${hiveconf:e_dt} ,1,6) 
 from csx_tmp.temp_all_sale  a
 left join csx_tmp.temp_sale_30day b on coalesce(a.province_code,'')= coalesce(b.province_code,'') 
-and coalesce(a.classify_small_code,'')=coalesce(b.classify_small_code,'') and  coalesce(a.region_code,'')=coalesce(b.region_code ,'')
+        and coalesce(a.classify_small_code,'')=coalesce(b.classify_small_code,'') 
+        and  coalesce(a.region_code,'')=coalesce(b.region_code ,'')
+        and coalesce(a.classify_middle_code,'')=coalesce(b.classify_middle_code,'') 
+        and coalesce(a.classify_large_code,'')=coalesce(b.classify_large_code,'') 
+        and coalesce(a.city_group_code,'')=coalesce(b.city_group_code ,'')
 left join
-(select sales_region_code,dist_code,classify_large_code,classify_middle_code,classify_small_code,
+(select sales_region_code,
+    dist_code,
+    city_group_code,
+    classify_large_code,
+    classify_middle_code,
+    classify_small_code,
     final_qty,
     final_amt
 from csx_tmp.temp_sale_02  ) d on coalesce(a.province_code,'')=coalesce(dist_code ,'')
-and coalesce(a.classify_small_code,'')=coalesce(d.classify_small_code,'')
-and  coalesce(a.region_code,'')=coalesce(d.sales_region_code,'')
-
+and coalesce(a.classify_small_code,'')=coalesce(d.classify_small_code,'') 
+and  coalesce(a.region_code,'')=coalesce(d.sales_region_code ,'')
+and coalesce(a.classify_middle_code,'')=coalesce(d.classify_middle_code,'') 
+and coalesce(a.classify_large_code,'')=coalesce(d.classify_large_code,'') 
+and coalesce(a.city_group_code,'')=coalesce(d.city_group_code ,'')
 ;
 
-select * from  csx_tmp.temp_report_sale_r_d_class_fr;
+select * from  csx_tmp.temp_report_sale_r_d_class_fr where region_code='1';
