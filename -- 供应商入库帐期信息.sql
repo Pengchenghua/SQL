@@ -92,7 +92,6 @@ WHERE MON BETWEEN '202101' AND '202109'
  where sdt='20211019') d on a.supplier_code=d.supplier_code  and a.purchase_org=d.purchase_org
 ;
 
---供应商信息 &冻品
 -- 供应商入库帐期信息
 
 SELECT 
