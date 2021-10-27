@@ -1,3 +1,14 @@
+--管理品类销售分析&渗透率分析 20211025
+SET hive.exec.parallel=true;
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.exec.max.dynamic.partitions=1000;
+SET hive.exec.max.dynamic.partitions.pernode=2000;
+SET hive.optimize.sort.dynamic.partition=true;
+--执行Map前进行小文件合并  
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;   
+ 
+
 
 set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
@@ -366,8 +377,8 @@ select
     province_name,
     a.city_group_code,
     a.city_group_name,
-    count(distinct case when daily_sales_value>0 then customer_no end) as sales_cust_number,
-    count(distinct case when last_daily_sales_value>0 then customer_no end ) as last_sales_cust_number,
+    count(distinct case when daily_sales_value>0 then customer_no end) as b_daily_cust_number,
+    count(distinct case when last_daily_sales_value>0 then customer_no end ) as last_b_daily_cust_number,
     sum(daily_sales_value) as daily_sales_value,
     sum(last_daily_sales_value) as last_daily_sales_value,
     grouping__id
@@ -443,7 +454,7 @@ select
     classify_small_name,
     sum(a.sales_qty  ) as sales_qty_30day,
     sum(a.sales_value ) as sales_value_30day,
-    sum(a.profit) as  profit_day_30day,
+    sum(a.profit) as  profit_30day,
     grouping__id
 from csx_dw.dws_sale_r_d_detail a 
 where sdt>${hiveconf:s_dt_30} 
@@ -732,8 +743,8 @@ select a.channel_name,
     last_profit,                                        --环比毛利额
     daily_cust_number,                                  --日配成交客户数
     last_daily_cust_number,                             --环比日配成交客户数
-    b.sales_cust_number,                                --B端本期客户数
-    b.last_sales_cust_number,                           --B端环期客户数
+    b.b_daily_cust_number,                                --B端本期客户数
+    b.last_b_daily_cust_number,                           --B端环期客户数
     c.all_sales_value,                                  --省区销售额
     all_profit,                                         --省区毛利额
     all_profit/all_sales_value as all_profit_rate,      --省区毛利率
@@ -741,9 +752,9 @@ select a.channel_name,
     coalesce((sales_value-last_sales_value)/last_sales_value,0) as ring_sales_ratio , --销售环比增长率
     profit/sales_value as frozen_profit_rate,           -- 定价毛利率
     profit/sales_value-last_profit/last_sales_value as  diff_profit_rate,     --毛利率差
-    daily_cust_number/sales_cust_number as daily_cust_penetration_rate ,   ---日配业务渗透率
-    last_daily_cust_number/last_sales_cust_number as last_daily_cust_penetration_rate ,   ---环期日配业务渗透率
-    coalesce(daily_cust_number/sales_cust_number-last_daily_cust_number/last_sales_cust_number,0) as diff_daily_cust_penetration_rate ,   --- 日配业务渗透率环比
+    daily_cust_number/b_daily_cust_number as daily_cust_penetration_rate ,   ---日配业务渗透率
+    last_daily_cust_number/last_b_daily_cust_number as last_daily_cust_penetration_rate ,   ---环期日配业务渗透率
+    coalesce(daily_cust_number/b_daily_cust_number-last_daily_cust_number/last_b_daily_cust_number,0) as diff_daily_cust_penetration_rate ,   --- 日配业务渗透率环比
     a.daily_sales_value/b.daily_sales_value as daily_sales_ratio,   --日配业务销售额/省区日配占比
     a.last_daily_sales_value/b.last_daily_sales_value as last_daily_sales_ratio,    --日配业务销售额/省区日配占比
     a.daily_sales_value,
@@ -773,16 +784,8 @@ left join
 where 1=1 
 -- or a.grouping__id in ('0','7','31') )
 ;
-
---	select * from csx_tmp.temp_all_sale;
--- set hive.exec.dynamic.partition.mode=nonstrict;
-
---select * from csx_tmp.temp_sale_all_01 where region_code='1';
-
-
--- insert overwrite table csx_tmp.ads_sale_r_d_frozen_fr partition(months)
-drop table  csx_tmp.temp_report_sale_r_d_class_fr;
-create table csx_tmp.temp_report_sale_r_d_class_fr as 
+ 
+insert overwrite table csx_tmp.report_sale_r_d_classify_ratio_fr partition(months) 
 select
     case when a.grouping__id = '0' then '0'
         when a.grouping__id = '2017' then '1' 
@@ -807,32 +810,41 @@ select
     coalesce(a.classify_small_name,'小计') as classify_small_name,
     sales_value,                                        --本期销售额
     profit ,                                            --本期毛利额
-    last_sales_value,                                   --环比销售额
-    last_profit,                                        --环比毛利额
+    profit/abs(sales_value) as profit_rate,           -- 定价毛利率
     a.daily_sales_value,
     a.daily_profit,
+    a.daily_profit/abs(a.daily_sales_value ) as daily_profit_rate,  --日配毛利率
+    last_sales_value,                                   --环比销售额
+    last_profit,                                       --环比毛利额
+    last_profit/abs(last_sales_value) as last_profit_rate ,  --环比毛利率
     a.last_daily_sales_value,
     a.last_daily_profit,
-    daily_cust_number,                                  --日配成交客户数
-    last_daily_cust_number,                             --环比日配成交客户数
-    sales_cust_number,                                --B端本期客户数
-    last_sales_cust_number,                           --B端环期客户数
+    a.last_daily_profit/abs(a.last_daily_sales_value) as last_daily_profit_rate,    --环比日配毛利率
+    coalesce((sales_value-last_sales_value)/last_sales_value,0) as ring_B_classify_sales_rate , --B端销售额环比增长率
+    coalesce((daily_sales_value-last_daily_sales_value)/last_daily_sales_value,0) as ring_daily_sales_rate , --B端销售额环比增长率
+    profit/sales_value-last_profit/last_sales_value as  diff_profit_rate,     --B端销售额环比增长率
+    a.daily_profit/abs(a.daily_sales_value )-a.last_daily_profit/abs(a.last_daily_sales_value) as diff_daily_profit_rate ,-- 日配销售额环比增长率
     all_sales_value,                                  --省区销售额
     all_profit,                                         --省区毛利额
     all_profit/all_sales_value as all_profit_rate,      --省区毛利率
     a.sales_value/all_sales_value as class_sales_ratio, --品类销售/省区销售占比
-    coalesce((sales_value-last_sales_value)/last_sales_value,0) as ring_class_sales_ratio , --销售环比增长率
-    profit/abs(sales_value) as profit_rate,           -- 定价毛利率
-    profit/sales_value-last_profit/last_sales_value as  diff_profit_rate,     --毛利率差
-    daily_cust_number/sales_cust_number as daily_cust_penetration_rate ,   ---日配业务渗透率
-    last_daily_cust_number/last_sales_cust_number as last_daily_cust_penetration_rate ,   ---环期日配业务渗透率
-    coalesce(daily_cust_number/sales_cust_number-last_daily_cust_number/last_sales_cust_number,0) as diff_daily_cust_penetration_rate ,   --- 日配业务渗透率环比
-    daily_sales_value/prov_daily_sales_value as daily_sales_ratio,   --日配业务销售额/省区日配占比
-    last_daily_sales_value/last_prov_daily_sales_value as last_daily_sales_ratio,    --环期日配业务销售额/省区日配占比
+    prov_daily_sales_value,
+    last_prov_daily_sales_value,
     b.sales_qty_30day,  --滚动30天销量
-    b.sales_value_30day ,      --滚动30天销售额    
+    b.sales_value_30day ,      --滚动30天销售额
+    b.profit_30day,
     final_qty,      --期末库存量
     final_amt ,     --期末库存额
+    daily_cust_number,                                  --日配成交客户数
+    last_daily_cust_number,                             --环比日配成交客户数
+    b_daily_cust_number,                                --B端本期客户数
+    last_b_daily_cust_number,                           --B端环期客户数
+    IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number) as daily_cust_penetration_rate ,   ---日配业务渗透率
+    IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number) as last_daily_cust_penetration_rate ,   ---环期日配业务渗透率
+    coalesce(IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number)- IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number),0) as diff_daily_cust_penetration_rate ,   --- 日配业务渗透率环比
+    daily_sales_value/prov_daily_sales_value as daily_sales_ratio,   --日配业务销售额/省区日配占比
+    last_daily_sales_value/last_prov_daily_sales_value as last_daily_sales_ratio ,   --环期日配业务销售额/省区日配占比
+     daily_sales_value/prov_daily_sales_value-last_daily_sales_value/last_prov_daily_sales_value as  diff_daily_sales_ratio ,
     a.grouping__id,
     current_timestamp(),
     substr(${hiveconf:e_dt} ,1,6) 
@@ -860,4 +872,64 @@ and coalesce(a.classify_large_code,'')=coalesce(d.classify_large_code,'')
 and coalesce(a.city_group_code,'')=coalesce(d.city_group_code ,'')
 ;
 
-select * from  csx_tmp.temp_report_sale_r_d_class_fr where region_code='1';
+drop table csx_tmp.REPORT_SALE_R_D_CLASSIFY_RATIO_FR;
+CREATE TABLE `csx_tmp.report_sale_r_d_classify_ratio_fr`(
+  `level_id` string, 
+  `years` string comment '年份', 
+  `smonth` string comment '月份', 
+  `channel_name` string comment'渠道', 
+  `region_code` string comment'大区', 
+  `region_name` string comment'大区名称', 
+  `province_code` string comment '省区', 
+  `province_name` string comment '省区', 
+  `city_group_code` string comment '城市组', 
+  `city_group_name` string comment '城市组', 
+  `classify_large_code` string comment '管理一级分类', 
+  `classify_large_name` string comment '管理一级分类', 
+  `classify_middle_code` string comment '管理二级分类', 
+  `classify_middle_name` string comment '管理二级分类', 
+  `classify_small_code` string comment '管理三级分类', 
+  `classify_small_name` string comment '管理三级分类', 
+  `sales_value` decimal(38,6) comment '销售额', 
+  `profit` decimal(38,6) comment '毛利额', 
+  `profit_rate` decimal(38,6) comment '毛利率', 
+  `daily_sales_value` decimal(38,6) comment '日配销售额', 
+  `daily_profit` decimal(38,6) comment '日配毛利额', 
+  `daily_profit_rate` decimal(38,6) comment '日配毛利率', 
+  `last_sales_value` decimal(38,6) comment '环比日配销售额', 
+  `last_profit` decimal(38,6) comment '环比日配毛利额', 
+  `last_profit_rate` decimal(38,6) comment '环比毛利率', 
+  `last_daily_sales_value` decimal(38,6) comment '环期日配销售额', 
+  `last_daily_profit` decimal(38,6) comment '毛利额', 
+  `last_daily_profit_rate` decimal(38,6)comment'毛利率', 
+  `ring_B_sales_rate` decimal(38,6) comment 'B端销售额环比增长率', 
+  `ring_daily_sales_rate` decimal(38,6) comment '日配销售额环比增长率', 
+  `diff_profit_rate` decimal(38,6)comment '定价毛利率差', 
+  `diff_daily_profit_rate` decimal(38,6)comment'日配毛利率差', 
+  `all_sales_value` decimal(38,6) comment'B端销售额', 
+  `all_profit` decimal(38,6) comment 'B端毛利额', 
+  `all_profit_rate` decimal(38,6) comment 'B端毛利率', 
+  `classify_sales_ratio` decimal(38,6) comment'管理类别销售占比', 
+  `prov_daily_sales_value` decimal(38,6) comment '省区销售额', 
+  `last_prov_daily_sales_value` decimal(38,6) comment'环期省区销售额', 
+  `sales_qty_30day` decimal(30,6) comment '近30天销售量', 
+  `sales_value_30day` decimal(30,6)comment'近30天销售额', 
+  `profit_30day` decimal(30,6) comment '近30天毛利额', 
+  `final_qty` decimal(30,6) comment '期末库存量', 
+  `final_amt` decimal(30,6) comment '期末库存额', 
+  `daily_cust_number` bigint comment '日配成交客户数', 
+  `last_daily_cust_number` bigint comment '环期日配成交客户数', 
+  `b_daily_cust_number` bigint comment 'B端日配客户', 
+  `last_b_daily_cust_number` decimal(30,6) comment '环期B端日配客户', 
+  `daily_cust_penetration_rate` decimal(30,6) comment '日配渗透率', 
+  `last_daily_cust_penetration_rate` decimal(30,6) comment '环期日配渗透率', 
+  `diff_daily_cust_penetration_rate` decimal(30,6) comment '日配渗透率差', 
+  `daily_sales_ratio` decimal(38,6) comment '日配销售占比', 
+  `last_daily_sales_ratio` decimal(38,6) comment '环比销售占比',
+  `diff_daily_ratio_rate` decimal(30,6) comment '日配销售占比差', 
+  `grouping__id` string, 
+  `update_time` timestamp
+)comment 'B端管理品类销售分析&日配渗透率分析'
+partitioned by (months string comment '销售月分区')
+STORED AS parquet 
+  

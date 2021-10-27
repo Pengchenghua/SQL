@@ -753,7 +753,7 @@ show create table csx_tmp.report_sale_r_d_frozen_industry_new_fr;
 
 
 
-
+--冻品管理分类销售分析&渗透率分析
 CREATE TABLE `csx_tmp.report_sale_r_d_frozen_classify_ratio_fr`(
   `level_id` int COMMENT '分组', 
   `asc_id` int COMMENT '排序', 

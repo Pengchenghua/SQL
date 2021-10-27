@@ -333,7 +333,8 @@ grouping sets
     classify_middle_code,
     classify_middle_name,
     classify_small_code,
-    classify_small_name), ());
+    classify_small_name), 
+    ());
 
 
 -- 统计期末库存

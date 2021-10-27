@@ -1,3 +1,4 @@
+--融资数据需求 谢艳艳
 select distinct send_location_code,send_location_name,supplier_code,
 supplier_name from csx_dw.dws_wms_r_d_entry_detail where business_type ='ZC01' AND SYS='old';
 
@@ -27,6 +28,41 @@ WHERE (business_type in ('ZN01','ZN02','ZC01')
        OR sdt='19990101')
   AND receive_status IN (1,2)
   AND purpose IN ('01','02','03','08','07')
+  and supplier_code not in
+('20015439','20019761','20021783','20024437','20026794','75000002',
+'75000016',
+'75000022',
+'75000031',
+'75000047',
+'75000052',
+'75000079',
+'75000082',
+'75000086',
+'75000087',
+'75000089',
+'75000097',
+'75000104',
+'75000105',
+'75000124',
+'75000143',
+'75000157',
+'75000174',
+'75000182',
+'75000192',
+'75000199',
+'75000203',
+'75000207',
+'75000217',
+'75000223',
+'75000226',
+'75000247',
+'75000251',
+'G2115',
+'G2116',
+'G2126',
+'G2127',
+'G3506')
+
 GROUP BY CASE
              WHEN sdt='19990101' THEN substr(regexp_replace(to_date(create_time),'-',''),1,6)
              ELSE substr(sdt,1,6)
@@ -82,7 +118,7 @@ select mon,supplier_code,supplier_name,amt,sku,row_number()over (partition by mo
 (select mon,supplier_code,supplier_name,sum(amt) amt,count(distinct goods_code) as sku from csx_tmp.supplier_entry_amt  
 group by  mon,supplier_code,supplier_name
 ) a 
-) a where aa <11 or aa<31
+) a where   aa<31
  
  ;
 
@@ -102,7 +138,7 @@ select mon,supplier_code,supplier_name,amt,sku,row_number()over (partition by mo
     where business_type not in ('ZC01','02')
 group by  mon,supplier_code,supplier_name
 ) a 
-) a where aa <11 or aa<31
+) a where   aa<31
  
  ;
  
@@ -144,6 +180,7 @@ where 1=1
 group by  mon,a.supplier_code,a.supplier_name,dic_value,industry_name
 ;
 
+-- 不含云超配送20211027
 select mon,a.supplier_code,a.supplier_name,industry_name,dic_value,self_produce_self_sale, sum(amt) amt,count(distinct goods_code) as sku from csx_tmp.supplier_entry_amt  a 
 left join 
 (select vendor_id,supplier_type,dic_value,industry_name,self_produce_self_sale from csx_dw.dws_basic_w_a_csx_supplier_m a 
@@ -153,6 +190,8 @@ left join
     (select bloc_code,self_produce_self_sale from csx_ods.source_master_w_a_md_supplier_base_info where sdt = '20210728') c on a.vendor_id=c.bloc_code
     where sdt='current') b on a.supplier_code=b.vendor_id
 where 1=1
+and  business_type not in ('ZC01','02')
+and a.mon between '202106' and '202110'
 group by  mon,a.supplier_code,a.supplier_name,dic_value,industry_name,self_produce_self_sale
 ;
 
@@ -293,3 +332,4 @@ GROUP BY CASE
          END,
          case when division_code  in ('10','11') then '11' else '12' end 
 ;
+
