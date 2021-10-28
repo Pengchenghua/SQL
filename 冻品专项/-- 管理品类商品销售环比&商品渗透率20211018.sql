@@ -1,43 +1,4 @@
 -- 商品销售环比&商品渗透率20211018
-set  mapreduce.job.reduces = 100;
-set hive.exec.reducers.max=299;  -- reduce 个数，默认 299 不建议
--- set  hive.map.aggr = true;
--- set  hive.groupby.skewindata = false;
-set hive.exec.parallel.thread.number = 16;
-set  hive.exec.parallel = true;
-set  hive.exec.dynamic.partition = true;
-set hive.merge.size.per.task=128000000;  --合并后的文件大小 默认 128M
-set hive.merge.smallfiles.avgsize=6400000; --平均最小文件大小合并 默认 64M
---启动态分区
-set  hive.exec.dynamic.partition.mode = nonstrict;
---设置为非严格模式
-set  hive.exec.max.dynamic.partitions = 10000;
---在所有执行mr的节点上，最大一共可以创建多少个动态分区。
-set  hive.exec.max.dynamic.partitions.pernode = 100000;
---源数据中包含了一年的数据，即day字段有365个值，那么该参数就需要设置成大于365，如果使用默认值100，则会报错
-
---每个Map最大输入大小(这个值决定了合并后文件的数量)  
-set mapred.max.split.size=256000000;    
---一个节点上split的至少的大小(这个值决定了多个DataNode上的文件是否需要合并)  
-set mapred.min.split.size.per.node=64000000;  
---一个交换机下split的至少的大小(这个值决定了多个交换机上的文件是否需要合并)    
-set mapred.min.split.size.per.rack=64000000;  
---执行Map前进行小文件合并  
-set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;   
-
-
-set edt='${enddate}';
-set e_dt =regexp_replace(${hiveconf:edt},'-','');
-set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
-set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
---上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
-set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
-set s_dt_30 =regexp_replace(date_sub(${hiveconf:edt},30),'-','');
--- set parquet.compression=snappy;
--- set hive.exec.dynamic.partition=true; 
--- set hive.exec.dynamic.partition.mode=nonstrict;
--- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
--- 本期数据 (不含合伙人 purpose!='06')
 
 -- B端自营不含城市服务商 channel_code in ('1','9','7') and business_type_code !='4'
 set  mapreduce.job.reduces = 100;
@@ -518,8 +479,11 @@ where 1=1
 
 
 
-
--- insert overwrite table csx_tmp.report_sale_r_d_frozen_goods_fr partition(months)
+--插入数据
+-- set hive.exec.dynamic.partition.mode=nonstrict;
+insert overwrite table csx_tmp.report_scm_r_d_goods_sale_B_fr partition(months)
+-- drop table  csx_tmp.temp_report_scm_r_d_goods_sale_fr;
+-- create table csx_tmp.temp_report_scm_r_d_goods_sale_fr as 
 select
     case when a.grouping__id = '0' then '0'
      when a.grouping__id = '8161' then '1' 
@@ -534,6 +498,8 @@ select
     coalesce(a.region_name,'全国')as region_name,
     coalesce(a.province_code,'00') as  province_code,
     coalesce(a.province_name,'小计') as province_name,
+    coalesce(spu_goods_code,'') as spu_goods_code,
+    coalesce(spu_goods_name,'')as spu_goods_name,
     coalesce(a.goods_code,'') as goods_code,
     coalesce(goods_name,'')as goods_name,
     coalesce(unit_name,'')as unit_name,
@@ -558,10 +524,10 @@ select
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                    --环期B端毛利额
     coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端成交客户
-    coalesce(class_sales_qty,  0) as class_sales_qty,                                 --冻品销量
-    coalesce(class_sales_value, 0) as class_sales_value,                                     --冻品销售额
-    coalesce(goods_sales/class_sales_value,0) as goods_sales_ratio,    -- 商品销售/冻品销售占比
-    coalesce(goods_sales_qty/class_sales_qty,0) as goods_sales_qty_ratio,    -- 商品销售量/冻品销售量占比
+    coalesce(classify_sales_qty,  0) as classify_sales_qty,                                 --冻品销量
+    coalesce(classify_sales_value, 0) as classify_sales_value,                                     --冻品销售额
+    coalesce(goods_sales/classify_sales_value,0) as goods_sales_ratio,    -- 商品销售/冻品销售占比
+    coalesce(goods_sales_qty/classify_sales_qty,0) as goods_sales_qty_ratio,    -- 商品销售量/冻品销售量占比
     case when coalesce(last_goods_sales,0)=0 and coalesce (goods_sales,0)>0  then 1 
         else coalesce((goods_sales-coalesce(last_goods_sales,0))/last_goods_sales,0) 
     end as goods_ring_sales_rate , --销售环比增长率
@@ -585,13 +551,89 @@ select
     substr(${hiveconf:e_dt},1,6)
 from csx_tmp.temp_all_sale  a
 left join csx_tmp.temp_sale_30day b on coalesce(a.province_code,'')= coalesce(b.province_code,'')  and coalesce(a.goods_code,'')=coalesce(b.goods_code,'')
-and coalesce(a.joint_purchase_flag,'')=coalesce(b.joint_purchase_flag,'')
-and coalesce(a.classify_small_code,'')=coalesce(b.classify_small_code,'') and  coalesce(a.region_code,'')=coalesce(b.region_code ,'')
+    and coalesce(a.joint_purchase_flag,'')=coalesce(b.joint_purchase_flag,'')
+    and coalesce(a.classify_small_code,'')=coalesce(b.classify_small_code,'') and  coalesce(a.region_code,'')=coalesce(b.region_code ,'')
 left join csx_tmp.temp_sale_02 d on coalesce(a.province_code,'')=coalesce(dist_code ,'')
-and coalesce(a.goods_code,'')=coalesce(d.goods_code,'') 
-and coalesce(a.joint_purchase_flag,'')=coalesce(d.joint_purchase_flag,'')
-and coalesce(a.classify_small_code,'')=coalesce(d.classify_small_code,'')
-and  coalesce(a.region_code,'')=coalesce(d.sales_region_code,'')
-left join (select goods_id,goods_name,unit_name from  csx_dw.dws_basic_w_a_csx_product_m where sdt='current') m on a.goods_code=m.goods_id
+    and coalesce(a.goods_code,'')=coalesce(d.goods_code,'') 
+    and coalesce(a.joint_purchase_flag,'')=coalesce(d.joint_purchase_flag,'')
+    and coalesce(a.classify_small_code,'')=coalesce(d.classify_small_code,'')
+    and  coalesce(a.region_code,'')=coalesce(d.sales_region_code,'')
+left join 
+(SELECT goods_id,
+       goods_name,
+       unit_name,
+       spu_goods_code,
+       spu_goods_name
+ FROM csx_dw.dws_basic_w_a_csx_product_m
+  WHERE sdt='current') m on a.goods_code=m.goods_id
+
 ;
-select * from csx_tmp.temp_class_goods_sale;
+
+
+
+
+
+--创建表结构
+
+drop table csx_tmp.report_scm_r_d_goods_sale_B_fr;
+CREATE TABLE `csx_tmp.report_scm_r_d_goods_sale_B_fr`(
+  `level_id` string COMMENT '层级0 全国,1 全国商品,2大区,3大区商品,4 省区,5省区商品', 
+  `years` string COMMENT '销售年', 
+  `smonth` string COMMENT '销售月', 
+  `channel_name` string COMMENT '渠道', 
+  `region_code` string COMMENT '大区编码', 
+  `region_name` string COMMENT '大区名称', 
+  `province_code` string COMMENT '省区编码', 
+  `province_name` string COMMENT '省区名称',
+   spu_goods_code string comment 'SPU',
+   spu_goods_name string comment 'SPU商品名称',
+  `goods_code` string COMMENT '商品编码', 
+  `goods_name` string COMMENT '商品名称', 
+  `unit_name` string COMMENT '单位', 
+  `joint_purchase_flag` string COMMENT '是否联采 0 否 1是', 
+  `classify_large_code` string COMMENT '管理一级分类', 
+  `classify_large_name` string COMMENT '管理一级分类名称', 
+  `classify_middle_code` string COMMENT '管理二级分类', 
+  `classify_middle_name` string COMMENT '管理二级分类', 
+  `classify_small_code` string COMMENT '管理三级分类', 
+  `classify_small_name` string COMMENT '管理三级分类', 
+  `goods_sales_qty` decimal(38,6) COMMENT '商品销售量', 
+  `goods_sales` decimal(38,6) COMMENT '商品销售额', 
+  `goods_profit` decimal(38,6) COMMENT '商品毛利额', 
+  `last_goods_sales_qty` decimal(38,6) COMMENT '环期商品销量', 
+  `last_goods_sales` decimal(38,6) COMMENT '环期商品销售额', 
+  `last_goods_profit` decimal(38,6) COMMENT '环期商品毛利额', 
+  `goods_cust_number` bigint COMMENT '商品成交客户数', 
+  `last_goods_cust_number` bigint COMMENT '商品成交客户数环期', 
+  `b_sales_value` decimal(38,6) COMMENT 'B端总销售额（剔除城市服务商）', 
+  `b_profit` decimal(38,6) COMMENT 'B端总毛利额（剔除城市服务商）', 
+  `b_cust_number` bigint COMMENT 'B端成交客户数（剔除城市服务商）', 
+  `last_b_sales_value` decimal(38,6) COMMENT '环期B端总销售额（剔除城市服务商）', 
+  `last_b_profit` decimal(38,6) COMMENT '环期B端总毛利额（剔除城市服务商）', 
+  `last_b_cust_number` bigint COMMENT '环期B端成交客户数（剔除城市服务商）', 
+  `classify_sales_qty` decimal(38,6) COMMENT '冻品总销售量', 
+  `classify_sales_value` decimal(38,6) COMMENT '冻品总销售额', 
+  `goods_sales_ratio` decimal(38,6) COMMENT '商品销售额占比=商品销售额/冻品销售额', 
+  `goods_sales_qty_ratio` decimal(38,6) COMMENT '商品销售量占比=商品销售额/冻品销售额', 
+  `goods_ring_sales_rate` decimal(38,6) COMMENT '商品销售额环比增长率', 
+  `goods_ring_sales_qty_rate` decimal(38,6) COMMENT '商品销量环比增长率', 
+  `goods_profit_rate` decimal(38,6) COMMENT '商品毛利率', 
+  `goods_diff_profit_rate` decimal(38,6) COMMENT '商品环比毛利率差', 
+  `cust_penetration_rate` decimal(38,6) COMMENT '商品客户渗透率', 
+  `last_cust_penetration_rate` decimal(38,6) COMMENT '环期客户渗透率', 
+  `diff_cust_penetration_rate` decimal(38,6) COMMENT '环期渗透率差', 
+  `b_sales_ratio` decimal(38,6) COMMENT '商品销售占比=商品销售额/B端销售额', 
+  `last_b_sales_ratio` decimal(38,6) COMMENT '环期商品销售占比=商品销售额/B端销售额', 
+  `b_diff_sale_ratio` decimal(38,6) COMMENT '商品占省区占比环比差', 
+  `goods_sales_qty_30day` decimal(30,6) COMMENT '商品30天销售量', 
+  `goods_sales_30day` decimal(30,6) COMMENT '商品30天销售额', 
+  `final_qty` decimal(38,6) COMMENT '', 
+  `final_amt` decimal(38,6) COMMENT '', 
+  `grouping__id` string, 
+  `update_time` timestamp COMMENT '更新日期')
+COMMENT 'B端自营商品销售环比与渗透率'
+PARTITIONED BY ( 
+  `months` string COMMENT '月分区')
+STORED AS parquet 
+ 
+;
