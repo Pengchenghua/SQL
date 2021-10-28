@@ -685,7 +685,7 @@ select
     goods_sales_30day/10000 as goods_sales_30day,      --滚动30天销售额    
     final_qty,      --期末库存量
     final_amt/10000 as final_amt     --期末库存额
-from csx_tmp.report_scm_r_d_goods_sale_B_fr a
+from csx_tmp.report_scm_r_d_goods_sale_b_fr a
 
 where months<= '${emon}' and months>='${smon}'
 ${if(len(regionid)==0,"and region_code='00' " ,"and  region_code in ('"+regionid+"') ")} 
