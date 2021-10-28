@@ -637,3 +637,69 @@ PARTITIONED BY (
 STORED AS parquet 
  
 ;
+
+
+--帆软数据集 
+select
+    level_id,  --分组：0 全国，1 省区 2省区管理分类
+    years,
+    smonth,
+    channel_name,
+    region_code,
+    region_name,
+    province_code,
+    province_name,
+    goods_code,
+    goods_name,
+    spu_goods_code,
+    spu_goods_name ,
+    unit_name,
+    if(joint_purchase_flag='1','是','否') as joint_purchase_flag,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    goods_sales_qty  as  goods_sales_qty,
+    goods_sales/10000 as goods_sales,
+    goods_profit/10000 as goods_profit,
+    goods_profit_rate,
+    goods_sales_ratio,      --销售额占比
+    goods_sales_qty_ratio,  --销售量占比
+    goods_ring_sales_rate,   --环比增长率
+    goods_ring_sales_qty_rate,
+    last_goods_sales_qty,
+    last_goods_sales/10000 as last_goods_sales,
+    last_goods_profit/10000 as last_goods_profit,
+    goods_cust_number,                                  --成交客户数
+    last_goods_cust_number, 
+    goods_diff_profit_rate,     --冻品毛利率差
+    cust_penetration_rate ,   -- 客户渗透率
+    last_cust_penetration_rate ,   -- 环期客户渗透率
+    diff_cust_penetration_rate ,   -- 渗透率环比
+    b_sales_ratio,
+    last_b_sales_ratio,
+    b_diff_sale_ratio,
+    goods_sales_qty_30day/30 as avg_goods_sales_qty,  --滚动30天销量
+    goods_sales_30day/10000 as goods_sales_30day,      --滚动30天销售额    
+    final_qty,      --期末库存量
+    final_amt/10000 as final_amt     --期末库存额
+from csx_tmp.report_scm_r_d_goods_sale_B_fr a
+
+where months<= '${emon}' and months>='${smon}'
+${if(len(regionid)==0,"and region_code='00' " ,"and  region_code in ('"+regionid+"') ")} 
+${if(len(dist)==0,"and region_code in ('"+regionid+"') " ,"and  province_code in ('"+dist+"')  ")} 
+${if( or(len(joinid)==5,len(joinid)==0),"","and joint_purchase_flag in ('"+joinid+"') " )} 
+${if(len(tree01)==0,"" ,"and classify_small_code in ("+"'"+replace(tree01,",","','")+"'"+")")} 
+${if(sub=true,"and classify_large_name =''","")} 
+order by   --分组：0 全国，1 省区 2省区管理分类
+    SMONTH DESC,
+    region_code,
+    region_name,
+    province_code,
+    classify_small_code,
+    level_id,
+    goods_sales desc
+    
+    
