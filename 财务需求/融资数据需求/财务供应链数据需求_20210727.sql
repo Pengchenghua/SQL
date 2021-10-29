@@ -275,6 +275,16 @@ group by  substr(sdt,1,6),goods_code,goods_name
 
 
 
+select substr(sdt,1,6),
+sum(excluding_tax_profit)/sum(excluding_tax_sales) as profit_rate ,
+sum(excluding_tax_profit),
+sum(excluding_tax_sales)/10000 sales
+from csx_dw.dws_sale_r_d_detail 
+where goods_code in ('1168187','1216354','1168186','1186702','1168188','762651','1216633','1216634','1194209','1194210','1201070','1201071','1201072','1201073','1201074')
+and business_type_code !='4'
+group by  substr(sdt,1,6)
+;
+
 
 --部类入库
 SELECT CASE
