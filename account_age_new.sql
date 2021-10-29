@@ -379,10 +379,8 @@ set hive.exec.parallel              =true;
 set hive.exec.parallel              =true;
 set hive.exec.dynamic.partition     =true;
 set hive.exec.dynamic.partition.mode=nonstrict;
-insert overwrite table csx_dw.account_age_dtl_fct partition
-	(sdt
-	)
-select
+insert overwrite table csx_dw.account_age_dtl_fct partition	(sdt)	
+	select
 	c.sflag         ,
 	a.hkont         ,
 	d.account_name  ,
