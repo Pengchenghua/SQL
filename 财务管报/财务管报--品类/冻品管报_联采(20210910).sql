@@ -278,7 +278,8 @@ from  csx_tmp.temp_fina_sale_00 a
 	credential_no,
 	a.source_order_type_code
   from csx_dw.dws_wms_r_d_batch_detail a
-  where move_type in ('107A','108A') --107A 销售出库 108A 退货入库
+  where move_type in ('107A','108A') 
+  --   107A 销售出库 108A 退货入库
   --   and source_order_no like 'WO%'
    and source_order_type_code in ('KN')
 ) b 
