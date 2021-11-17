@@ -82,7 +82,7 @@ from (
             unit,
             order_code
         union all
-        select regexp_replace(to_date(send_time),'-','') as sdt,
+        select  sdt,
             shipped_location_code as dc_code,
             order_no as order_code,
             supplier_code,
@@ -93,14 +93,14 @@ from (
             sum(coalesce(shipped_qty, 0)) as return_qty,
             sum(price*shipped_qty) as return_amt
         from csx_dw.dws_wms_r_d_ship_detail
-        where regexp_replace(to_date(send_time),'-','') >= ${hiveconf:sdt}
-            and regexp_replace(to_date(send_time),'-','') <=  ${hiveconf:e_dt}
+        where sdt >= ${hiveconf:sdt}
+            and sdt <=  ${hiveconf:e_dt}
             and status in (6, 7, 8)
             and (
                 order_type_code like 'P%'
                 or order_type_code like 'RP%'
             )
-        group by  regexp_replace(to_date(send_time),'-','') ,
+        group by  sdt ,
             shipped_location_code,
             supplier_code,
             goods_code,
