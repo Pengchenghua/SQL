@@ -1,0 +1,117 @@
+--供应链平台绩效管理数据达成【20211123】
+--迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4'),2、自营大客户渠道 business_type_code not in('4','9')
+set edt='${enddate}';
+set e_dt =regexp_replace(${hiveconf:edt},'-','');
+set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
+set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
+
+--上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
+set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
+set parquet.compression=snappy;
+set hive.exec.dynamic.partition=true; 
+set hive.exec.dynamic.partition.mode=nonstrict;
+-- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
+
+-- 大客户销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
+create temporary table csx_tmp.temp_pch_sale as 
+select classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    business_type_code,
+    business_type_name,
+    sum(sales_value)sales_value,
+    sum(profit) profit
+from csx_dw.dws_sale_r_d_detail
+where sdt>='20211101'
+    and channel_code in ('1')
+    and business_type_code!='4'
+group by  classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    business_type_code,
+    business_type_name;
+    
+--商品入库全国采购占比=全国类型供应商（全国基地/产地、自有品牌、全国集采）品类入库金额/品类总入库金额
+-- 指标说明：按品类采购负责的管理二级/三级分类 是否集采：是
+drop table  csx_tmp.temp_pch_sale_01 ;
+create temporary table csx_tmp.temp_pch_sale_01 as 
+select supplier_code,
+    joint_purchase,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(price*receive_qty) as amt
+from csx_dw.dws_wms_r_d_entry_batch as a
+left join 
+(select vendor_id,joint_purchase from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') b on a.supplier_code=b.vendor_id
+where sdt>='20211101' and sdt<='20211123'
+    and business_type_name like '供应商配送'
+    and a.receive_location_code in ('WA93','W0A2','W080','W0K7','W0L4','W0AW','W0J8','W048','WB04','W0A3','WB11',
+        'W0A8','WB03','W053','W0F4','W0G9','W0K6','W0AH','W0AJ','W0J2','W0F7','W0G6','WA96','W0K1','W0AU','W0L3',
+        'W0BK','W0AL','W0S9','W0Q2','W0Q9','W0Q8','W0BS','W0BH','W0BR','W0R9','WB00','W0R8','W088','W0BZ','W0A5',
+        'W0P8','WA94','W0AS','W0AR','WA99','W0N1','W079','W0A6','W0BD','W0N0','WB01','W0P3','W0W7','W0X1','W0X2',
+        'W0Z8','W0Z9','W0AZ','W039','W0A7')
+    and receive_status='2'
+group by  supplier_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    joint_purchase;
+
+
+-- 计算大客户&日配销售业务
+select   classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(sales_value) sales_value,
+    sum(profit) profit,
+    sum(case when business_type_code='1' then sales_value end ) as daliy_sales_value,
+    sum(case when business_type_code='1' then profit end ) as  daliy_profit
+from  csx_tmp.temp_pch_sale
+group by 
+ classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+;
+
+--计算集采占比
+select 
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name,
+    sum(amt)amt,
+    sum(case when joint_purchase=1 then amt end ) join_entry_amt
+from csx_tmp.temp_pch_sale_01 as a
+group by 
+classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name
+
+
+;
+show create table csx_dw.dws_wms_r_d_entry_batch ;
+show create table csx_dw.dws_basic_w_a_csx_supplier_m ;
