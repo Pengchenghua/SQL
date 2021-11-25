@@ -1,14 +1,14 @@
-set hive.exec.dynamic.partition=true;
-set hive.exec.dynamic.partition.mode=nonstrict;
---set mapreduce.job.queuename=caishixian;
-set hive.support.quoted.identifiers=none;
-set hive.exec.max.dynamic.partitions=20000;
-set hive.exec.max.dynamic.partitions.pernode =20000;
-
- set hive.exec.dynamic.partition.mode=nonstrict;
+--ads_supply_order_flow 采购订单流【20211124】
+SET hive.exec.parallel=true;
+SET hive.exec.dynamic.partition=true;
+SET hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.exec.max.dynamic.partitions=1000;
+SET hive.exec.max.dynamic.partitions.pernode=2000;
+SET hive.optimize.sort.dynamic.partition=true;
  
- set sdate=regexp_replace(to_date(date_sub(current_timestamp(),60)),'-','' );
- set edate=regexp_replace(to_date(date_sub(current_timestamp(),0)),'-','' );
+
+ set sdate='20210101';
+ set edate='20210501';
  
  drop table if exists csx_tmp.temp_scm_header ;
  create temporary table csx_tmp.temp_scm_header as 
@@ -85,6 +85,11 @@ set hive.exec.max.dynamic.partitions.pernode =20000;
    tax_code               ,
    tax_rate               ,
    timeout_cancel_flag,
+   pick_gather_flag ,		  -- 是否已拣代收0 不是已检代收 1 是
+   urgency_flag	,		  --是否是紧急补货(0 否 1 是)
+   has_change		,		  --有变更 0 无变更 1有变更
+   entrust_outside	,		  --委外标识 0 非委外 1 委外
+   performance_order_code,    --履约单号
    if(a.price_include_tax=0,price2_include_tax,price_include_tax) as order_price ,
    if(price_free_tax=0,price2_free_tax,price_free_tax) as no_tax_price,             --未税单价金额
    a.order_qty ,
@@ -246,11 +251,11 @@ WHERE (( sdt>=${hiveconf:sdate}
    last_delivery_date   ,                                                                   --预计到货日期
    return_reason_code   ,                                                                   --退货原因编码
    return_reason_name   ,                                                                   --退货原因名称
-   0 pick_gather_flag ,		  -- 是否已拣代收0 不是已检代收 1 是
-   0 urgency_flag	,		  --是否是紧急补货(0 否 1 是)
-   0 has_change		,		  --有变更 0 无变更 1有变更
-   0 entrust_outside	,		  --委外标识 0 非委外 1 委外
-   '' performance_order_code,    --履约单号
+   pick_gather_flag ,		  -- 是否已拣代收0 不是已检代收 1 是
+   urgency_flag	,		  --是否是紧急补货(0 否 1 是)
+   has_change		,		  --有变更 0 无变更 1有变更
+   entrust_outside	,		  --委外标识 0 非委外 1 委外
+   performance_order_code,    --履约单号
    create_by            ,                                                                   --创建者
    create_time          ,                                                                   -- 创建时间
    update_time          ,                                                                   -- 更新时间
@@ -270,11 +275,13 @@ WHERE (( sdt>=${hiveconf:sdate}
  from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') d on a.supplier_code=d.vendor_id
    ;
    
-   
-   select * from  csx_tmp.ads_supply_order_flow;
+ 
+ --插入DW库
+ insert overwrite table csx_dw.ads_supply_order_flow partition    (sdt)  
+ select * from  csx_tmp.ads_supply_order_flow;
 
 
-
+-- csx_tmp.ads_supply_order_flow 这个表数据同步csx_dw.ads_supply_order_flow
 
 CREATE TABLE `csx_dw.ads_supply_order_flow`(
    order_type string COMMENT '订单类型(0-普通供应商订单 1-囤货订单 2-日采订单 3-计划订单)',
@@ -357,7 +364,7 @@ CREATE TABLE `csx_dw.ads_supply_order_flow`(
   `addition_order_flag` int COMMENT '是否加配单(0-否、1-是)', 
    timeout_cancel_flag int COMMENT '是否超时取消(0-否、1-是)', 
    joint_purchase_flag int comment '是否地采',  
-   joint_purchase int comment '供应商是否集采',       
+   joint_supplier_flag int comment '供应商是否集采',       
   `system_status` int COMMENT '系统状态(1-订单已提交、2-已同步WMS、3-WMS已回传、4-修改已提交、5-修改已同步WMS、6-修改成功、7-修改失败)', 
   `last_delivery_date` string COMMENT '预计到货日期', 
   `return_reason_code` string COMMENT '退货原因编码', 
