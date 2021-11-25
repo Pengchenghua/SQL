@@ -259,7 +259,7 @@ SELECT substr(regexp_replace(${hiveconf:edate},'-',''),1,4) AS years,
        period_inv_qty,
        period_inv_amt,
        -- period_inv_qty_30day,
- -- period_inv_amt_30day,
+       -- period_inv_amt_30day,
 
        final_qty,
        final_amt,
