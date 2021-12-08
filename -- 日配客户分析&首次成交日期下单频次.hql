@@ -19,6 +19,7 @@ with temp as
 from csx_dw.dws_sale_r_d_detail 
 where sdt>='20210801' and sdt<='20211031'
 and business_type_code='1' 
+and channel_code='1'
 and dc_code not in ('W0Z7','W0K4')
 group by sdt,
     region_code,

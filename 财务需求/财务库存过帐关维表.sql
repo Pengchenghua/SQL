@@ -1,5 +1,5 @@
---财务库存过帐数据关联维表
-csx_tmp.temp_inv_cost_04 ;-- 操作记录
+--财务库存过帐数据关联维表【20211207】
+csx_tmp.temp_inv_sale_01 ;-- 操作记录
 csx_tmp.temp_inv_cost_05; --结存库存
 
 
