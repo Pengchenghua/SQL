@@ -1,5 +1,6 @@
 --采购退货监控【内控需求】
 set edate='${enddate}';
+set sdate= date_sub(${hiveconf:edate},60) ;
 -- 1.0月入库额
 drop table  csx_tmp.temp_entry_01 ;
 CREATE temporary table csx_tmp.temp_entry_01 as 
@@ -49,8 +50,9 @@ from csx_dw.dws_basic_w_a_csx_shop_m
     and  table_type=1 ) b on a.receive_location_code=b.shop_id
 WHERE order_type_code LIKE 'P%'
   AND business_type='01'
-  and sdt>='20210901'
-   and b.purpose!='06'
+  and sdt>=regexp_replace(${hiveconf:sdate},'-','')
+  and sdt<=regexp_replace(${hiveconf:edate},'-','')
+   and b.purpose in ('01','03','07','08','02')
   and a.receive_status='2'
   GROUP BY sales_region_code,
     sales_region_name,
@@ -111,8 +113,9 @@ from csx_dw.dws_basic_w_a_csx_shop_m
 WHERE a.order_type_code LIKE 'P%'
   AND a.business_type_code='05'
   and return_flag='Y'
-  and sdt>='20210901'
-  and b.purpose!='06'
+  and sdt>=regexp_replace(${hiveconf:sdate},'-','')
+  and sdt<=regexp_replace(${hiveconf:edate},'-','')
+  and b.purpose  in ('01','03','07','08','02')
   and a.status in ('6','8')
   GROUP BY sales_region_code,
     sales_region_name,
@@ -177,8 +180,10 @@ LEFT JOIN
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
     and  table_type=1 ) b on a.target_location_code=b.shop_id
-where (sdt>='20210901' or sdt='19990101') and header_status in ('4','5')
+where ( ( sdt>=regexp_replace(${hiveconf:sdate},'-','')
+  and sdt<=regexp_replace(${hiveconf:edate},'-','')) or sdt='19990101') and header_status in ('4','5')
 and super_class ='1'
+and a.target_location_code in  ('01','03','07','08','02')
 AND a.source_type in ('1','9','10')  --采购导入 9 工厂采购  10 智能补货
 group by  sdt,
     regexp_replace(to_date(a.create_time),'-',''),
@@ -305,8 +310,6 @@ GROUP BY  sdt,
 
 
 
- 
- 
 
 drop table csx_tmp.ads_inter_r_d_purchase_return_monitor;
 CREATE TABLE `csx_tmp.ads_inter_r_d_purchase_return_monitor`(
