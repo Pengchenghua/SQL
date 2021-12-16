@@ -249,7 +249,8 @@ from csx_dw.dws_basic_w_a_csx_shop_m
         count(distinct case when certificate_status=5 then product_code end) as overdue,
         count(distinct case when certificate_status=6 then product_code end) as timeout
  from csx_tmp.temp_goods_05 
- where filing_valid in ('1','2')
+ where 1=1
+ -- filing_valid in ('1','2')
  group by  province_code,
         province_name ;
         

@@ -177,7 +177,7 @@ left join
 left join
 -- 对帐标志
  (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=${hiveconf:edate} and dic_type='CONCILIATIONNFLAG') f on a.reconciliation_tag=f.dic_key
--- 帐期
+-- 帐户组
 left join
 (select dic_type,dic_key,dic_value from csx_ods.source_basic_w_a_md_dic where sdt=${hiveconf:edate} and dic_type='ZTERM') j on a.account_group=j.dic_key
 where sdt=${hiveconf:edate};
