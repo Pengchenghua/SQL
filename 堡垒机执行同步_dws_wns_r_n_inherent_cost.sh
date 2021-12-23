@@ -72,8 +72,8 @@ password="slH25^672da"
 months="current"
  sqoop import \
  --connect jdbc:mysql://10.0.74.77:7477/data_analysis_prd?tinyInt1isBit=false \
- --username "$username" \
- --password "$password" \
+ --username dataanprd_all \
+ --password slH25^672da \
  --fields-terminated-by '\001' \
  --target-dir hdfs://nameservice1/user/hive/warehouse/csx_tmp.db/${table_name}/sdt=${months} \
  --delete-target-dir \

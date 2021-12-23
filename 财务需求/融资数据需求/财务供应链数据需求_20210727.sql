@@ -22,7 +22,7 @@ SELECT CASE
        a.business_type_name,
        sum(receive_qty*price) AS amt
 FROM csx_dw.dws_wms_r_d_entry_detail a
-WHERE (business_type in ('ZN01','ZN02','ZC01')
+WHERE (business_type in ('ZN01','ZN02')
        OR order_type_code LIKE 'P%')
   AND (sdt>='20200101'
        OR sdt='19990101')
@@ -114,8 +114,14 @@ GROUP BY CASE
 -- TOP10/TOP30 供应商入库额含永辉供应商
 select mon,supplier_code,supplier_name,amt,sku,aa from (
 select mon,supplier_code,supplier_name,amt,sku,row_number()over (partition by mon order by amt desc) as aa  from 
-(select mon,supplier_code,supplier_name,sum(amt) amt,count(distinct goods_code) as sku from csx_tmp.supplier_entry_amt  
-group by  mon,supplier_code,supplier_name
+(select mon,supplier_code,
+    supplier_name,
+    sum(amt) amt,
+    count(distinct goods_code) as sku 
+from csx_tmp.supplier_entry_amt  
+group by  mon,
+    supplier_code,
+    supplier_name
 ) a 
 ) a where   aa<31
  
