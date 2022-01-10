@@ -1,6 +1,6 @@
 --- 财务采购商品入库明细 20211009
-set s_date='20210901';
-set e_date='20210930';
+set s_date='20211201';
+set e_date='20211231';
 
 drop table csx_tmp.temp_entry_00 ;
 create table csx_tmp.temp_entry_00 as
@@ -107,8 +107,10 @@ join
 
 
 drop table  csx_tmp.temp_cg_01;
-create temporary table csx_tmp.temp_cg_01 as 
+create  table csx_tmp.temp_cg_01 as 
 select substr(receive_sdt,1,6) mon,
+     purchase_org,
+    purchase_org_name,
     -- sales_region_code,
     -- sales_region_name ,
     j.order_code,
@@ -116,16 +118,16 @@ select substr(receive_sdt,1,6) mon,
     sales_province_name,
     source_type_name,
     CASE
-			WHEN j.super_class='1'
-				THEN '供应商订单'
-			WHEN super_class='2'
-				THEN '供应商退货订单'
-			WHEN super_class='3'
-				THEN '配送订单'
-			WHEN super_class='4'
-				THEN '返配订单'
-				ELSE super_class
-		END super_class_name  ,
+            WHEN j.super_class='1'
+                THEN '供应商订单'
+            WHEN super_class='2'
+                THEN '供应商退货订单'
+            WHEN super_class='3'
+                THEN '配送订单'
+            WHEN super_class='4'
+                THEN '返配订单'
+                ELSE super_class
+        END super_class_name  ,
     dc_code,
     shop_name,
     goods_code,
@@ -159,10 +161,13 @@ select substr(receive_sdt,1,6) mon,
     yh_reuse_tag,
     case when purpose ='07' then '20' when yh_reuse_tag='是' then '21' when  division_code in ('11','10') then '11' when  division_code in ('12','13','14','15') then '12' end supplier_type_code ,
     case when purpose ='07' then 'BBC' when yh_reuse_tag='是' then '复用供应商' when  division_code in ('11','10') then '生鲜' when  division_code in ('12','13','14','15') then '食百' end  supplier_type_name,
-    purpose
+    purpose,
+    purpose_name
 from 
 (select sales_province_code,
     sales_province_name,
+     purchase_org,
+    purchase_org_name,
     sales_region_code,
     sales_region_name,
     company_code,
@@ -171,6 +176,7 @@ from
     province_code,
     province_name,
     purpose,
+    purpose_name,
     b.order_code,
     super_class,
     source_type,
@@ -226,6 +232,8 @@ join
  join 
 (select sales_province_code,
     sales_province_name,
+    purchase_org,
+    purchase_org_name,
     case when (purchase_org ='P620' and purpose!='07') or shop_id='W0J8' then '9' else  sales_region_code end sales_region_code,
     case when (purchase_org ='P620' and purpose!='07') or shop_id='W0J8' then '平台' else  sales_region_name end sales_region_name,
     shop_id,
@@ -246,7 +254,8 @@ join
        WHEN province_name LIKE '%江苏%' and city_name='南京市' then '南京市'
         when province_name LIKE '%江苏%' and city_name !='南京市' then '昆山市' 
     else  province_name  end province_name,
-    purpose
+    purpose,
+    purpose_name
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
     and  table_type=1) d on a.dc_code=d.shop_id
@@ -270,3 +279,5 @@ from csx_dw.dws_basic_w_a_csx_shop_m
 select *  from  csx_tmp.temp_cg_01 where (purpose!='06' and source_type_name not like '%合伙%' and source_type_name not like '%联营%');
 
 select * from  csx_tmp.temp_cg_01 where purpose='06' or source_type_name  like '%合伙%' or source_type_name  like '%联营%';
+
+-- INVALIDATE METADATA  csx_tmp.temp_cg_01;

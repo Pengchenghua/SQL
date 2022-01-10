@@ -14,11 +14,21 @@ join
 (
 select DISTINCT  regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','') sdt
 from csx_dw.dws_basic_w_a_date  
-where calday >='20210701'  and calday <'20211001'
+where calday >='20211101'  and calday <'20220101'
 ) b on a.sdt=b.sdt
 join 
 (select shop_id,province_code,province_name from csx_dw.dws_basic_w_a_csx_shop_m
 where sdt='current' 
+and purpose IN ('01',
+                  '02',
+                  '03',
+                  '08',
+                  '07',
+                --  '06', -- 合伙人仓
+                  '05' --彩食鲜小店
+                --  '04' --寄售小店
+                  )
+and shop_id not in('W0G1','W0H4','W0H1','W0S1','W0AQ')
 and shop_id in  ('9905','9906','9910','9951','9952','9955','9957','9958','9961','9963',
     '9964','9966','9967','9968','9969','9973','9975','9976','9978','9981','9983','9991',
     '9992','9993','9994','9995','9996','99A0','99A1','99A2','99A3','99A4','99A5','99A6',

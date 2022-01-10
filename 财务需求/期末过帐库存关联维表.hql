@@ -7,7 +7,7 @@ LOAD data inpath '/tmp/pengchenghua/库存余额3.csv' OVERWRITE INTO TABLE csx_
 LOAD data inpath '/tmp/pengchenghua/库存余额4.csv' OVERWRITE INTO TABLE csx_tmp.temp_inv_cost_05 ; 
 select * from  csx_tmp.temp_inv_cost_05;
 
--- 出现表大分两批导入
+-- 出现表大分两批导入销售
 -- 操作日志表导入，20210901
 LOAD data inpath '/tmp/pengchenghua/明细01.csv'  INTO TABLE csx_tmp.temp_inv_sale_01 ; 
 LOAD data inpath '/tmp/pengchenghua/明细0.csv'  INTO TABLE csx_tmp.temp_inv_sale_01 ; 
@@ -31,8 +31,8 @@ show  create table csx_tmp.temp_inv_cost_05;
 
 
 
-csx_tmp.temp_inv_cost_04 ;-- 操作记录
-csx_tmp.temp_inv_cost_05; --结存库存
+-- csx_tmp.temp_inv_cost_04 ;-- 操作记录
+-- csx_tmp.temp_inv_cost_05; --结存库存
 
 
 --计算期末库存额，库存余额-期间操作日志

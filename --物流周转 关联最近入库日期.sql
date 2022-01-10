@@ -80,7 +80,9 @@ where a.sdt='20210921'
 ;
 
 set hive.support.quoted.identifiers=none;
-select `(dc_uses)?+.+`, coalesce(datediff(date_sub(CURRENT_DATE,1),from_unixtime(unix_timestamp(entry_max_sdt,'yyyyMMdd'),'yyyy-MM-dd')),9999) as entry_date,dc_uses
+select `(dc_uses)?+.+`, 
+coalesce(datediff(date_sub(CURRENT_DATE,1),from_unixtime(unix_timestamp(entry_max_sdt,'yyyyMMdd'),'yyyy-MM-dd')),9999) as entry_date,
+dc_uses
 from csx_tmp.temp_turn_01 where division_code in ('12','13','14','15')
 ;
 
