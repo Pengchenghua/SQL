@@ -1,15 +1,14 @@
--- 供应链商品销售明细 2021年 
-SELECT  
+-- 供应链商品销售明细 2021年 SELECT  substr(SDT,1,6) AS MON,
        channel_code,
        channel_name,
-        region_code,
+       region_code,
        region_name,
        province_code,
        province_name,
        city_group_code,
        city_group_name,
-       case when dc_code in ('W0K4','W0Z7') then '20' ELSE  business_type_code end business_type_code,
-       case when dc_code in ('W0K4','W0Z7') then '联营仓' ELSE  business_type_name end  business_type_name,
+       case when dc_code in ('W0K4','W0Z7','WB26') then '20' ELSE  business_type_code end business_type_code,
+       case when dc_code in ('W0K4','W0Z7','WB26') then '联营仓' ELSE  business_type_name end  business_type_name,
        goods_code, 
        b.bar_code,
        b.goods_name,
@@ -42,8 +41,10 @@ FROM csx_dw.dws_basic_w_a_csx_product_m
 WHERE sdt='current'
     -- and classify_middle_code ='B0302'
 )b on a.goods_code=b.goods_id
-WHERE SDT>='20210101' 
-    AND SDT<='20211130'
+WHERE sdt like '2021%' 
+       and dc_code not in ('W0Z7','W0K4','WB26') 
+       and business_type_code='1'
+    and a.channel_code='1'
 GROUP BY   
        channel_code,
        channel_name,
@@ -55,8 +56,8 @@ GROUP BY
        province_name,
        city_group_code,
        city_group_name,
-       case when dc_code in ('W0K4','W0Z7') then '20' ELSE  business_type_code end ,
-       case when dc_code in ('W0K4','W0Z7') then '联营仓' ELSE  business_type_name end ,
+       case when dc_code in ('W0K4','W0Z7','WB26') then '20' ELSE  business_type_code end ,
+       case when dc_code in ('W0K4','W0Z7','WB26') then '联营仓' ELSE  business_type_name end ,
        goods_code, 
        b.bar_code,
        b.goods_name,
@@ -67,5 +68,6 @@ GROUP BY
        b.classify_middle_code,
        b.classify_middle_name,
        b.classify_small_code,
-       b.classify_small_name
+       b.classify_small_name,
+        substr(SDT,1,6)
        ;

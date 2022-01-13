@@ -1,6 +1,5 @@
 --供应链平台绩效管理数据达成【20211123】
---迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大客户渠道 business_type_code not in('4','9')
-set edt='${enddate}';
+--迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大客户渠道 business_type_code not in('4','9')set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
@@ -111,28 +110,30 @@ classify_large_code,
 
 
 
+
 insert overwrite table csx_tmp.report_scm_r_d_classify_performance_fr partition(sdt)
 select 
     sales_months,
-    classify_large_code,
-    classify_large_name,
-    classify_middle_code,
-    classify_middle_name,
-    '' classify_large_management,
-    '' classify_middle_management,
-    0 sales_target,
+    a.classify_large_code,
+    a.classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    classify_large_management,
+    classify_middle_management,
+    sum(b.sales_target)sales_target,
     sum(sales_value)sales_value,
     0 sales_completion_rate,
     sum(profit)profit,
     coalesce(sum(profit)/sum(sales_value),0) profit_rate,
-    0 daliy_sales_target,
+    sum(b.daliy_sales_target) daliy_sales_target,
     sum(daliy_sales_value)daliy_sales_value,
     0 daliy_sales_completion_rate,
     sum(daliy_profit)daliy_profit,
     coalesce(sum(daliy_profit)/sum(daliy_sales_value),0) daliy_profit_rate,
-    0 join_entry_target,
+    sum(b.join_entry_target)join_entry_target,
     sum(entry_amt)entry_amt,
     sum(join_entry_amt)join_entry_amt,
+    sum(join_entry_amt)/sum(entry_amt) join_entry_ratio,
     0 join_entry_completion_rate,
     current_timestamp(),
     ${hiveconf:e_dt}
@@ -167,13 +168,27 @@ select sales_months,
     join_entry_amt
 from  csx_tmp.temp_sale_02 a 
 ) a 
-group by classify_large_code,
-    classify_large_name,
-    classify_middle_code,
-    classify_middle_name,
-    sales_months
+left join 
+(SELECT classify_middle_code,
+        classify_large_code,
+        classify_large_management,
+        classify_middle_management,
+        daliy_sales_target,
+        join_entry_target,
+        sales_target
+FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` WHERE `sdt`='20220112') b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
+group by a.classify_large_code,
+    a.classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    sales_months,
+    classify_large_management,
+    classify_middle_management
     ;
-
+    
+    SELECT * from  csx_tmp.report_scm_r_d_classify_performance_fr where sdt='20211231';
+    
+    
 -- 供应链绩效 Performance report
 	DROP table csx_tmp.report_scm_r_d_classify_performance_fr;
 CREATE  TABLE `csx_tmp.report_scm_r_d_classify_performance_fr`(
@@ -184,25 +199,47 @@ CREATE  TABLE `csx_tmp.report_scm_r_d_classify_performance_fr`(
   `classify_middle_name` string comment '管理二级', 
    classify_large_management string comment '管理一级负责人',
    classify_middle_management string comment '管理二级负责人',
-   sales_target decimal(26,6) comment '销售目标额',
+   sales_target decimal(38,6) comment '销售目标额',
   `sales_value` decimal(38,6) comment '销售额',
    sales_completion_rate DECIMAL(26,6) comment '销售额完成率', 
   `profit` decimal(38,6) comment '毛利额',
   `profit_rate` decimal(38,6) comment '毛利率', 
-   daliy_sales_target decimal(26,6) comment '日配销售目标额',
+   daliy_sales_target decimal(38,6) comment '日配销售目标额',
   `daliy_sales_value` decimal(38,6) comment '日配销售额', 
-    daliy_sales_completion_rate DECIMAL(26,6) comment '日配销售额完成率', 
+    daliy_sales_completion_rate DECIMAL(38,6) comment '日配销售额完成率', 
   `daliy_profit` decimal(38,6) COMMENT '日配毛利额',
   `daliy_profit_rate` decimal(38,6) comment '日配毛利率', 
-   join_entry_target decimal(26,6) comment'集采入库额目标',
+   join_entry_target decimal(38,6) comment'集采入库额目标',
   `entry_amt` decimal(38,6) comment '入库额', 
   `join_entry_amt` decimal(38,6) comment '集采入库额',
-   join_entry_completion_rate DECIMAL(26,6) comment '集采入库达成率' ,
+  join_entry_completion_ratio DECIMAL(38,6) comment '集采入库占比' ,
+   join_entry_completion_rate DECIMAL(38,6) comment '集采入库达成率' ,
    update_time TIMESTAMP comment '数据更新时间'
   )comment'供应链管理品类绩效报表'
   partitioned by(sdt string comment'日期分区')
   STORED AS PARQUET
   ;
 
-
+-- 供应链管理品类绩效对应负责人
+  
+	DROP table csx_tmp.report_scm_r_d_classify_performance_person;
+CREATE  TABLE `csx_tmp.report_scm_r_d_classify_performance_person`(
+   sales_months string COMMENT '销售月份',
+  `classify_large_code` string comment '管理一级', 
+  `classify_large_name` string comment '管理一级', 
+  `classify_middle_code` string comment '管理二级', 
+  `classify_middle_name` string comment '管理二级', 
+   classify_large_management string comment '管理一级负责人',
+   classify_middle_management string comment '管理二级负责人',
+   sales_target decimal(38,6) comment '销售目标额',
+   daliy_sales_target decimal(38,6) comment '日配销售目标额',
+   join_entry_target decimal(38,6) comment'集采入库额目标',
+   update_time TIMESTAMP comment '数据更新时间'
+  )comment'供应链管理品类绩效对应负责人'
+  partitioned by(sdt string comment'日期分区')
+  ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t'
+  LINES TERMINATED BY '\n'
+  STORED AS TEXTFILE
+  
+  ;
   -- INVALIDATE METADATA csx_tmp.report_scm_r_d_classify_performance_fr;
