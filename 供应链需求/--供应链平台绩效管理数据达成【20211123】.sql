@@ -176,7 +176,8 @@ left join
         daliy_sales_target,
         join_entry_target,
         sales_target
-FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` WHERE `sdt`='20220112') b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
+FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` 
+    WHERE `sdt`=substr('${hiveconf:e_dt}',1,6) ) b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
 group by a.classify_large_code,
     a.classify_large_name,
     a.classify_middle_code,
