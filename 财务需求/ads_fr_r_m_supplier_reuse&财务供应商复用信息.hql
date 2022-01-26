@@ -14,23 +14,32 @@ SET edate  = regexp_replace('${enddate}','-','');
 set w_edt=regexp_replace(date_sub(current_date,1),'-',''); --维度最新日期
 set l_sdt= regexp_replace(add_months(from_unixtime(unix_timestamp(${hiveconf:edate},'yyyyMMdd'),'yyyy-MM-dd'),-12),'-',''); --倒推12个月
 
+SET edate  = regexp_replace('${enddate}','-','');
+set w_edt=regexp_replace(date_sub(current_date,1),'-',''); --维度最新日期
+set l_sdt= regexp_replace(add_months(from_unixtime(unix_timestamp(${hiveconf:edate},'yyyyMMdd'),'yyyy-MM-dd'),-12),'-',''); --倒推12个月
+
 -- set tez.queue.name=caishixian;
+-- 入库关联采购组织
 drop table csx_tmp.temp_supplier_list;
 create temporary table csx_tmp.temp_supplier_list
 as 
 select company_code,
-    supplier_code 
+    supplier_code ,
+    purchase_org
 from csx_dw.dws_wms_r_d_entry_detail a 
 join 
 (select shop_id,
     company_code,
-    company_name 
+    company_name ,
+    purchase_org
 from csx_dw.dws_basic_w_a_csx_shop_m 
 where sdt='current') b on a.receive_location_code=b.shop_id  --收货DC关联
 where sdt>=${hiveconf:l_sdt} 
     and sdt<=${hiveconf:edate}
     and a.order_type_code like 'P%'
-group by supplier_code,company_code
+group by supplier_code,
+    company_code,
+    purchase_org
 ;
 -- select * from csx_tmp.temp_supplier_list where supplier_code='20033782';
 
@@ -40,13 +49,15 @@ drop table csx_tmp.temp_supplier_list_01;
 create temporary table csx_tmp.temp_supplier_list_01
 as 
 select  supplier_code,
+    purchase_org,
     company_code ,
     pay_condition,
     dic_value
 from 
 (select  supplier_code,
         company_code ,
-        pay_condition
+        pay_condition,
+        a.purchase_org
     from csx_ods.source_basic_w_a_md_purchasing_info a 
  join 
 (select shop_id ,
@@ -55,9 +66,6 @@ from
 from csx_dw.dws_basic_w_a_csx_shop_m 
 where sdt='current') b on a.purchase_org= b.purchase_org 
 where sdt=${hiveconf:w_edt} 
-group by supplier_code,
-    pay_condition,
-    company_code
 ) a 
 left join 
 (select dic_type,
@@ -130,6 +138,7 @@ as
 select 
     a.company_code,
     company_name,
+    a.purchase_org,
     tax_code,
     regexp_replace(a.supplier_code,'^0*','')supplier_code,
     supplier_name,
@@ -147,13 +156,15 @@ select
 from 
 csx_tmp.temp_supplier_list a
 left join 
-(select account,
+(select distinct 
     company_code,
     company_name 
-from csx_ods.source_basic_w_a_md_supplier_company 
-    where sdt='19990101') b
- on regexp_replace(a.supplier_code,'^0*','')=regexp_replace(account,'^0*','') and a.company_code=b.company_code
-left join csx_tmp.temp_supplier_list_01 c on regexp_replace(a.supplier_code,'^0*','')=regexp_replace(c.supplier_code,'^0*','') and a.company_code=c.company_code
+from csx_dw.dws_basic_w_a_csx_shop_m 
+    where sdt='current') b
+ on a.company_code=b.company_code
+left join csx_tmp.temp_supplier_list_01 c on regexp_replace(a.supplier_code,'^0*','')=regexp_replace(c.supplier_code,'^0*','')
+                                    and a.company_code=c.company_code 
+                                    and a.purchase_org=c.purchase_org
 left join 
 csx_tmp.temp_supplier_list_02 d on regexp_replace(a.supplier_code,'^0*','')=regexp_replace(d.supplier_code,'^0*','')
 ;
@@ -165,10 +176,10 @@ select  regexp_replace(a.vendor_id,'^0*','')vendor_id,
         vat_regist_num 
     from b2b.ord_orderflow_t a 
 join 
-(select location_code 
-    from csx_dw.csx_shop 
+(select shop_id 
+    from csx_dw.dws_basic_w_a_csx_shop_m 
     where sdt='current' 
-        and table_type=2 ) b on a.shop_id_in=b.location_code
+        and table_type=2 ) b on a.shop_id_in=b.shop_id
 left join 
 (select vendor_id,
     vat_regist_num 
@@ -198,7 +209,7 @@ a.pay_condition as payment_clause_code,
 a.dic_value as panment_clause_name, 
 a.create_date ,
 if(b.vat_regist_num is null ,'否','是') yh_note,
-'',
+purchase_org,
 '',
 current_timestamp(),
 substr(${hiveconf:edate},1,6) 
@@ -222,8 +233,8 @@ a.reconciliation_tag,
 a.pay_condition,
 a.dic_value,
 a.create_date,
-if(b.vat_regist_num is null ,'否','是') 
-
+if(b.vat_regist_num is null ,'否','是') ,
+a.purchase_org
 ;
 
 CSX_TMP_ADS_FR_R_M_SUPPLIER_REUSE

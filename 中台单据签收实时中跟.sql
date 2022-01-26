@@ -144,10 +144,10 @@ FROM
   GROUP BY province_name, city_group_name
 ) t2 ON t1.province_name = t2.province_name AND t1.city_group_name = t2.city_group_name
 FULL JOIN
-( -- 待发货+配送中+待客户确认数据统计
+( -- 待发货+配送中+待客户确认数据统计 --CUTTED待出库 STOCKOUT配送中 
   SELECT
     e.province_name, f.city_group_name,
-    SUM(coalesce(IF(order_status IN ('CUTTED', 'STOCKOUT'), send_amt, purchase_amt), 0)) AS no_receive_amt,
+    SUM(coalesce(IF(order_status IN ('CUTTED', 'STOCKOUT'), send_amt, purchase_amt), 0)) AS no_receive_amt,   --CUTTED待出库 STOCKOUT配送中 
     sum(coalesce(case when order_status IN ('CUTTED', 'STOCKOUT') then  send_amt end,0 )) send_amt,                   --已发货未签收金额
     sum(coalesce(case when order_status IN ('CUTTED', 'STOCKOUT') then  send_cost end,0 )) send_cost,                   --已发货未签收成本金额
     sum(coalesce(case when order_status IN ('CUTTED', 'STOCKOUT') then  send_amt end,0 ))- sum(coalesce(case when order_status IN ('CUTTED', 'STOCKOUT') then  send_cost end,0 )) send_profit, -- 已发货未签收毛利金额
