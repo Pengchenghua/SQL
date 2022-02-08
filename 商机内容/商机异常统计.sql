@@ -24,7 +24,7 @@
 
 
 -- 1.1 计算重复商机客户
-
+drop  table  csx_tmp.temp_sj_01 ;
 create temporary table csx_tmp.temp_sj_01 as 
  select province_code,
     province_name,
@@ -32,7 +32,9 @@ create temporary table csx_tmp.temp_sj_01 as
     count(*) as cust_num
  from 
  csx_dw.dws_crm_w_a_business_customer
- where sdt='20220121'
+ where sdt='20220131'
+     and create_time>='2022-01-01 00:00:00 '
+
     and approval_status=2
     and status=1
     group by province_code,
@@ -58,7 +60,8 @@ from (
     min(update_time) min_update
  from 
  csx_dw.dws_crm_w_a_business_customer
- where sdt='20220121'
+ where sdt='20220131'
+     and create_time>='2022-01-01 00:00:00 '
     and approval_status=2
     and status=1
 group by province_code,
@@ -72,7 +75,9 @@ left join
     max(update_time) max_update
  from 
  csx_dw.dws_crm_w_a_business_customer
- where sdt='20220121'
+ where sdt='20220131'
+     and create_time>='2022-01-01 00:00:00 '
+
     and approval_status=2
     and status=1
 group by province_code,
@@ -135,7 +140,8 @@ update_time,
 sign_time,
 first_sign_time
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121'
+where sdt ='20220131'
+    and create_time>='2022-01-01 00:00:00 '
    and approval_status=2
     and status=1
 )a
@@ -155,7 +161,7 @@ join (
 
 
 
---2.1 商机签约时间易于履约时间
+--2.1 商机签约时间大于履约时间
   select 
 a.province_code,
 a.province_name,
@@ -204,7 +210,9 @@ update_time,
 sign_time,
 first_sign_time
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121'
+where sdt ='20220131'
+    and create_time>='2022-01-01 00:00:00 '
+
    and approval_status=2
     and status=1
 )a
@@ -216,7 +224,9 @@ SELECT province_code,
     expect_execute_time,
     expect_sign_time
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt='20220121' 
+where sdt='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
     and expect_sign_time>expect_execute_time
     and expect_execute_time!=''
     and approval_status=2
@@ -230,7 +240,9 @@ SELECT province_code,
     customer_name,
     estimate_once_amount
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
     and  estimate_once_amount>=50
     and approval_status=2
     and status=1
@@ -248,7 +260,9 @@ SELECT province_code,
     customer_name,
     estimate_month_amount
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
     and  estimate_month_amount>=200
     and approval_status=2
     and status=1
@@ -266,7 +280,7 @@ SELECT province_code,
     customer_name,
     estimate_contract_amount
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
+where sdt ='20220131' 
     and  estimate_contract_amount>=2000
     and approval_status=2
     and status=1
@@ -326,7 +340,9 @@ update_time,
 sign_time,
 first_sign_time
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121'
+where sdt ='20220131'
+    and create_time>='2022-01-01 00:00:00 '
+
    and approval_status=2
     and status=1
 )a
@@ -338,7 +354,9 @@ SELECT province_code,
     count(DISTINCT case when gross_profit_rate<5 then customer_name end ) as gross_5,
     count(DISTINCT case when gross_profit_rate>30 then customer_name end ) as gross_30
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
     and  (gross_profit_rate<5 or gross_profit_rate>30)
     and approval_status=2
     and status=1
@@ -348,7 +366,7 @@ GROUP BY province_code,
 ) b on a.province_code=b.province_code and a.customer_name=b.customer_name
     ;
 
-    
+    -- 月度金额>200万&一次性金额>50万&合同金额>2000千万
  select 
 a.province_code,
 a.province_name,
@@ -397,7 +415,9 @@ update_time,
 sign_time,
 first_sign_time
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121'
+where sdt ='20220131'
+    and create_time>='2022-01-01 00:00:00 '
+
    and approval_status=2
     and status=1
 )a
@@ -406,8 +426,10 @@ join
     province_name,
     customer_name
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
-    and ( estimate_contract_amount >= '2000'  or  estimate_once_amount >= '50' or estimate_month_amount >= '200')
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
+    and (coalesce( estimate_contract_amount,0) >= 2000  or  coalesce(estimate_once_amount,0) >= 50 or coalesce( estimate_month_amount,0) >= 200)
     and approval_status=2
     and status=1
 GROUP BY province_code,
@@ -417,16 +439,19 @@ GROUP BY province_code,
     ;
 
 
+
 -- 统计异常配送额客户数
+
+
 select 
     a.province_code,
    a.province_name,
    all_num,
    diff_days,
    execute_num,
-   estimate_once,
-   estimate_month,
-   estimate_contract,
+   estimate_once,           --预估一次性配送金额
+   estimate_month,          --月配送金额
+   estimate_contract,       --合同金额
    gross_5,
    gross_30
 from 
@@ -435,7 +460,8 @@ from
    a.province_name,
    count(customer_name) as all_num
 from  csx_dw.dws_crm_w_a_business_customer  a 
-    where sdt ='20220121' 
+    where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
     and approval_status=2
     and status=1
 group by a.province_code,
@@ -481,7 +507,9 @@ SELECT province_code,
    0 gross_5,
     0 gross_30
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt='20220121' 
+where sdt='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
     and expect_sign_time>expect_execute_time
     and expect_execute_time!=''
 group by 
@@ -498,7 +526,8 @@ SELECT province_code,
      count(DISTINCT case when gross_profit_rate<5 then customer_name end ) as  gross_5,
      count(DISTINCT case when gross_profit_rate>30 then customer_name end ) as gross_30
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
     and  (gross_profit_rate<5 or gross_profit_rate>30)   
     and approval_status=2
     and status=1
@@ -509,14 +538,16 @@ SELECT province_code,
     province_name,
     0 diff_days,
     0 as execute_num,
-    count(DISTINCT case when estimate_contract_amount>'2000' then customer_name end ) estimate_contract, --合同数
-    count(DISTINCT case when estimate_month_amount>'200' then customer_name end ) estimate_month,
-    count(DISTINCT case when estimate_once_amount>'59' then  customer_name end  ) estimate_once,
+    count(DISTINCT case when cast(coalesce( estimate_contract_amount,0) as int)>=2000 then customer_name end ) estimate_contract, --合同数
+    count(DISTINCT case when cast(coalesce( estimate_month_amount,0) as int)>=200 then customer_name end ) estimate_month,
+    count(DISTINCT case when coalesce(estimate_once_amount,0)>=50 then  customer_name end  ) estimate_once,
     0 gross_5,
     0 gross_30
 from  csx_dw.dws_crm_w_a_business_customer 
-where sdt ='20220121' 
-    and ( estimate_contract_amount >= '2000'  or  estimate_once_amount >= '50' or estimate_month_amount >= '200')
+where sdt ='20220131' 
+    and create_time>='2022-01-01 00:00:00 '
+
+    and (coalesce( estimate_contract_amount,0) >= 2000  or  coalesce(estimate_once_amount,0) >= 50 or coalesce( estimate_month_amount,0) >= 200)
     and approval_status=2
     and status=1
 GROUP BY province_code,
@@ -525,5 +556,7 @@ GROUP BY province_code,
 group by    a.province_code,
    a.province_name
   ) b on a.province_code=b.province_code;
+
+
 
 

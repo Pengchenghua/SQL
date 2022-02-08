@@ -135,6 +135,7 @@ where (inv_qty !=0 or inv_amt!=0);
 
 
 --导出数据
+ads_fr_r_d_forecast_collection_report
 select * from  csx_tmp.temp_inve_01;
 
 select sum(no_tax_inv_amt) from  csx_tmp.temp_inve_01;
