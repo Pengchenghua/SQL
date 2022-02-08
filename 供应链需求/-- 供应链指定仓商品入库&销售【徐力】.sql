@@ -1,14 +1,14 @@
--- 供应链指定仓商品入库&销售【徐力】
-drop table  csx_tmp.temp_goods ;
+-- 供应链指定仓商品入库&销售【徐力】drop table  csx_tmp.temp_goods ;
 create temporary table csx_tmp.temp_goods as 
 select shop_code,
     product_code,
+    bar_code,
     goods_name,
     des_specific_product_status,
     product_status_name,
     regionalized_trade_names,
     unit_name,
-    brand_name,
+    b.brand_name,
     division_code,
     division_name,
     classify_large_code,
@@ -26,6 +26,7 @@ select shop_code,
 from csx_dw.dws_basic_w_a_csx_product_info a 
 left join
 (select goods_id,
+    bar_code,
     goods_name,
     unit_name,
     brand_name,
@@ -51,26 +52,19 @@ and shop_code in
     'W0R9','W0A5','W0P8','W0AS','W0N1','W0A6','W0N0','W0W7','W0X2','W0Z9','W0A7')
     
     ;
-    
-
-    show create table csx_dw.dws_basic_w_a_csx_product_info;
-
--- 查询入库
--- ，近3月入库金额，近6月入库金额，近一年入库金额，近3月销售金额，近6月销售金额，近一年入库金额，
-
 drop table  csx_tmp.temp_goods_01 ;
 create temporary table csx_tmp.temp_goods_01 as 
 select receive_location_code,
     goods_code,
-    sum(case when sdt between '20210901' and '20211130' then  receive_qty end ) mon3_qty,
-    sum(case when sdt between '20210901' and '20211130' then  amount end ) mon3_amt,
-    sum(case when sdt between '20210601' and '20211130' then  receive_qty end ) mon6_qty,
-    sum(case when sdt between '20210601' and '20211130' then  amount end ) mon6_amt,
+    sum(case when sdt between '20211101' and '20220131'  then  receive_qty end ) mon3_qty,
+    sum(case when sdt between '20211101' and '20220131'  then  amount end ) mon3_amt,
+    sum(case when sdt between '20210801' and '20220131'  then  receive_qty end ) mon6_qty,
+    sum(case when sdt between '20210801' and '20220131'  then  amount end ) mon6_amt,
     sum(receive_qty) year_qty,
     sum(amount) year_amt
 from csx_dw.dws_wms_r_d_entry_detail
-where sdt>='20210101'
-    and sdt<='20211130'
+where sdt>='20210201'
+    and sdt<='20220131'
     and order_type_code like 'P%'
     and business_type='01'
     and receive_location_code in ('W0A2','W0A3','W0F4','W0K1','W0A8','W0J2','W0L3','W0AU','W0G9','W0AJ','W0AL','W0AH',
@@ -80,21 +74,20 @@ where sdt>='20210101'
 group by receive_location_code,
     goods_code;
     
- -- 近3月销售金额，近6月销售金额，近一年入库金额，
-
+    
 drop table  csx_tmp.temp_goods_02 ;
 create temporary table csx_tmp.temp_goods_02 as 
 select dc_code,
     goods_code,
-    sum(case when sdt between '20210901' and '20211130' then  sales_qty end ) mon3_qty,
-    sum(case when sdt between '20210901' and '20211130' then  sales_value end ) mon3_amt,
-    sum(case when sdt between '20210601' and '20211130' then  sales_qty end ) mon6_qty,
-    sum(case when sdt between '20210601' and '20211130' then  sales_value end ) mon6_amt,
+    sum(case when sdt between '20211101' and '20220131' then  sales_qty end ) mon3_qty,
+    sum(case when sdt between '20211101' and '20220131' then  sales_value end ) mon3_amt,
+    sum(case when sdt between '20210801' and '20220131' then  sales_qty end ) mon6_qty,
+    sum(case when sdt between '20210801' and '20220131' then  sales_value end ) mon6_amt,
     sum(sales_qty) year_qty,
     sum(sales_value) year_amt
 from csx_dw.dws_sale_r_d_detail
-where sdt>='20210101'
-   and sdt<='20211130'
+where sdt>='20210201'
+   and sdt<='20220131'
     and dc_code in ('W0A2','W0A3','W0F4','W0K1','W0A8','W0J2','W0L3','W0AU','W0G9','W0AJ','W0AL','W0AH',
     'WB11','W0K6','WA96','W0G6','W0F7','W0BK','W0Q2','W0Q9','W0BH','W0BS','W0BR',
     'W0R9','W0A5','W0P8','W0AS','W0N1','W0A6','W0N0','W0W7','W0X2','W0Z9','W0A7')
@@ -112,6 +105,7 @@ select
     a.shop_code,
     shop_name,
     product_code,
+    bar_code,
     goods_name,
     des_specific_product_status,
     product_status_name,
