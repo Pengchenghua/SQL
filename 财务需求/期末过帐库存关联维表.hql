@@ -1,6 +1,6 @@
 --弃用
 --导入库存
---导入数据时，20210901
+--导入数据时，20210901  导入时要把商品名称清空后在导入，避免商品名称格式不对造成，导入失败或者错乱
 -- 1、将excel 转换csv 文件后，上传 /tmp/pengchenghua/ 目录中，通过以下代码导入表中
 LOAD data inpath '/tmp/pengchenghua/库存余额3.csv' OVERWRITE INTO TABLE csx_tmp.temp_inv_cost_05 ; 
 
@@ -67,7 +67,9 @@ group by
     a.receive_are_code,
     a.goods_code
 )b on a.dc_code=b.dc_code and a.goods_code=b.goods_code and a.receive_are_code=b.receive_are_code
-)a ;
+)a 
+
+;
 
 
 

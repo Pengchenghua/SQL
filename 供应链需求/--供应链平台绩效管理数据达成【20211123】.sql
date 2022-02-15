@@ -1,5 +1,6 @@
 --供应链平台绩效管理数据达成【20211123】
---迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大客户渠道 business_type_code not in('4','9')set edt='${enddate}';
+--迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大客户渠道 business_type_code not in('4','9')
+set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
@@ -177,7 +178,8 @@ left join
         join_entry_target,
         sales_target
 FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` 
-    WHERE `sdt`=substr('${hiveconf:e_dt}',1,6) ) b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
+   -- WHERE sdt=substr(${hiveconf:e_dt},1,6) 
+    ) b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
 group by a.classify_large_code,
     a.classify_large_name,
     a.classify_middle_code,

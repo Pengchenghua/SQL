@@ -72,3 +72,43 @@ sqoop export \
 
   y='2022-01-01'
   echo ${y//-/} 
+level_id,sales_months,zone_id,zone_name,channel_code,channel_name,province_code,province_name,daily_plan_sale,daily_sales_value,real_daily_sales_value,real_daily_sale_fill_rate,daily_sale_fill_rate,last_week_daily_sales,daily_sale_growth_rate,daily_plan_profit,daily_profit,daily_profit_fill_rate,daily_profit_rate,daily_negative_profit,daily_often_cust_sale,daily_new_cust_sale,daily_sale_cust_num,month_plan_sale,month_sale_value,real_month_sale_value,real_month_sale_fill_rate,month_sale_fill_rate,last_month_sale,mom_sale_growth_rate,month_plan_profit,month_profit,month_profit_fill_rate,month_profit_rate,month_negative_profit,month_often_cust_sale,month_new_cust_sale,month_sale_cust_num,last_months_daily_sale,daily_sign_cust_num,daily_sign_amount,sign_cust_num,sign_amount,update_time,sdt
+
+
+-- 按照分区导入设置动参 yesterday=`date -d "yesterday" +%Y%m%d`
+columns='level_id,sales_months,zone_id,zone_name,channel_code,channel_name,province_code,province_name,daily_plan_sale,daily_sales_value,real_daily_sales_value,real_daily_sale_fill_rate,daily_sale_fill_rate,last_week_daily_sales,daily_sale_growth_rate,daily_plan_profit,daily_profit,daily_profit_fill_rate,daily_profit_rate,daily_negative_profit,daily_often_cust_sale,daily_new_cust_sale,daily_sale_cust_num,month_plan_sale,month_sale_value,real_month_sale_value,real_month_sale_fill_rate,month_sale_fill_rate,last_month_sale,mom_sale_growth_rate,month_plan_profit,month_profit,month_profit_fill_rate,month_profit_rate,month_negative_profit,month_often_cust_sale,month_new_cust_sale,month_sale_cust_num,last_months_daily_sale,daily_sign_cust_num,daily_sign_amount,sign_cust_num,sign_amount,update_time,sdt'
+day=${enddate}
+yesterday=${day//-/}
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table ads_sale_r_d_zone_sales_fr \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table ads_sale_r_d_zone_sales_fr \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
+
+
+-- 按照分区导入设置动参 yesterday=`date -d "yesterday" +%Y%m%d`  day=${enddate}
+columns='level_id,sales_month,zone_id,zone_name,province_code,province_name,channel,channel_name,attribute_code,attribute_name,business_division_code,business_division_name,division_code,division_name,classify_middle_code,classify_middle_name,daily_plan_sale,daily_sale_value,daily_sale_fill_rate,daily_profit,daily_profit_rate,month_plan_sale,month_sale,month_sale_fill_rate,mom_sale_growth_rate,month_sale_ratio,month_avg_cust_sale,month_plan_profit,month_profit,month_profit_fill_rate,month_profit_rate,month_sales_sku,month_sale_cust_num,cust_penetration_rate,all_sale_cust_num,last_month_sale,last_month_profit,last_profit_rate,last_cust_penetration_rate,last_month_sale_cust_num,last_all_sale_cust,last_month_sale_ratio,same_period_sale,same_period_profit,same_period_profit_rate,same_period_cust_penetration_rate,same_period_sale_cust_num,same_period_all_sale_cust,same_sale_ratio,row_num,updatetime,months,sdt'
+day=${enddate}
+yesterday=${day//-/}
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table report_sale_r_d_zone_classify_sale_fr \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table report_sale_r_d_zone_classify_sale_fr \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
+
