@@ -3,7 +3,9 @@ CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_details`(
   `sdt` string COMMENT '收货日期(包含出库日期)', 
   `purchase_org` string COMMENT '采购组织', 
   `purchase_org_name` string COMMENT '采购组织名称', 
-  `order_code` string COMMENT '采购订单号', 
+  `order_code` string COMMENT '采购订单号',
+   receive_code string comment '入库单号',
+    
   `sales_province_code` string COMMENT '省区编码', 
   `sales_province_name` string COMMENT '省区名称', 
   `source_type_name` string COMMENT '来源采购订单类型', 
