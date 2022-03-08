@@ -452,3 +452,279 @@ group by region_code,
   
 order by case when region_code='00' then '0' else region_code end,
 province_code,classify_middle_code
+;
+
+
+
+-- 年至今刷新
+
+set hive.support.quoted.identifiers=none;
+
+set edate='${enddate}';
+set edt=regexp_replace(${hiveconf:edate},'-','');
+set sdt=regexp_replace(trunc(${hiveconf:edate},'MM'),'-','');
+set l_edt=regexp_replace(if(${hiveconf:edate}=last_day(${hiveconf:edate}),last_day(add_months(${hiveconf:edate},-1)),add_months(${hiveconf:edate},-1)),'-','');
+set l_sdt=regexp_replace(add_months(trunc(${hiveconf:edate},'MM'),-3),'-','');
+
+drop table if exists csx_tmp.temp_goods_info;
+create temporary table csx_tmp.temp_goods_info as 
+select classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       division_code,
+       division_name,
+       department_id,
+       department_name,
+       category_small_code,
+       goods_id,
+       bar_code,
+       goods_name,
+       unit_name,
+       brand_name,
+       standard,
+       product_purchase_level,
+       product_purchase_level_name
+from
+(SELECT goods_id,
+       bar_code,
+       goods_name,
+       unit_name,
+       brand_name,
+       standard,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       division_code,
+       division_name,
+       department_id,
+       department_name,
+       category_small_code
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current')a 
+left join 
+(select temp_sync_product_code,
+        product_purchase_level,
+    case when product_purchase_level='01' then '全国商品'
+        when product_purchase_level='02' then '一般商品'
+        when product_purchase_level='03' then 'OEM商品'
+        else '其他'
+        end product_purchase_level_name
+from csx_ods.source_master_w_a_md_product_info a 
+where sdt=${hiveconf:edt}
+and temp_sync_product_code is not null 
+and temp_sync_product_code !=''
+) b on a.goods_id=b.temp_sync_product_code 
+;
+
+
+drop table if exists csx_tmp.temp_goods_sale;
+create temporary table csx_tmp.temp_goods_sale as 
+select sdt,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        goods_code,
+        b.bar_code,
+        b.goods_name,
+        b.unit_name,
+        b.brand_name,
+        b.standard,
+        b.classify_large_code,
+        b.classify_large_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+        b.classify_small_name,
+        b.division_code,
+        b.division_name,
+        b.department_id,
+        b.department_name,
+        b.category_small_code,
+        product_purchase_level,
+        product_purchase_level_name,
+        sum(sales_qty) sales_qty,
+        sum(sales_cost) sales_cost,
+        sum(sales_value) sales_value,
+        sum(profit) profit,
+        sum(excluding_tax_sales)excluding_tax_sales,
+        sum(excluding_tax_cost)excluding_tax_cost,
+        sum(excluding_tax_profit)excluding_tax_profit
+from csx_dw.dws_sale_r_d_detail a 
+join
+csx_tmp.temp_goods_info  b on a.goods_code=b.goods_id
+where sdt>=${hiveconf:l_sdt} 
+    and sdt<=${hiveconf:edt}
+group by sdt,
+        region_code,region_name,province_code,province_name,
+        city_group_code,
+        city_group_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        goods_code,
+        b.bar_code,
+        b.goods_name,
+        b.unit_name,
+        b.brand_name,
+        b.standard,
+        b.classify_large_code,
+        b.classify_large_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+        b.classify_small_name,
+        b.division_code,
+        b.division_name,
+        b.department_id,
+        b.department_name,
+        b.category_small_code,
+        product_purchase_level,
+        product_purchase_level_name
+       ;
+       
+       drop table if exists  csx_tmp.temp_goods_sale_01;
+       create temporary table csx_tmp.temp_goods_sale_01 as 
+       select `(product_purchase_level_name|product_purchase_level)?+.+`,
+       case when province_code not in ('15','2') and goods_code in ('1456612' ,'1456631') then '02' else 
+       product_purchase_level end purchase_level,
+        case when province_code not in ('15','2') and goods_code in ('1456612' ,'1456631') then '一般商品' else 
+        product_purchase_level_name end purchase_level_name
+    from csx_tmp.temp_goods_sale 
+;
+
+
+ drop table if exists csx_tmp.temp_goods_sale_02;
+  create temporary table  csx_tmp.temp_goods_sale_02 as 
+    select sdt,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        sum(sales_value) sales_value,
+        sum(sales_cost) sales_cost,
+        sum(sales_qty)sales_qty,
+        sum(profit) profit,
+        sum(`excluding_tax_sales`) excluding_tax_sales, 
+        sum(`excluding_tax_cost`) excluding_tax_cost, 
+        sum(`excluding_tax_profit`) excluding_tax_profit ,
+        sum(case when purchase_level='03' then sales_value end ) oem_sales_value,
+        sum(case when purchase_level='03' then sales_cost end ) oem_sales_cost,
+        sum(case when purchase_level='03' then sales_qty end) oem_sales_qty,
+        sum(case when purchase_level='03' then profit end ) oem_profit,
+        sum(case when purchase_level='03' then excluding_tax_sales end )  oem_excluding_tax_sales,
+        sum(case when purchase_level='03' then excluding_tax_cost end )   oem_excluding_tax_cost,
+        sum(case when purchase_level='03' then excluding_tax_profit end ) oem_excluding_tax_profit
+    from  csx_tmp.temp_goods_sale_01
+    group by
+        sdt,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name
+;
+
+drop table if exists csx_tmp.temp_oem_sale_01;
+create temporary table csx_tmp.temp_oem_sale_01 as 
+    select 
+        sdt,
+        substr(sdt,1,6) months,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        sum(sales_qty) sales_qty,
+        sum(sales_cost) sales_cost,
+        sum(sales_value) sales_value,
+        sum(profit) profit,
+        sum(coalesce(oem_sales_qty,0)) oem_sales_qty,
+        sum(coalesce(oem_sales_value,0)) oem_sales_value,
+        sum(coalesce(oem_sales_cost,0)) oem_sales_cost,
+        sum(coalesce(oem_profit,0)) oem_profit
+    from csx_tmp.temp_goods_sale_02 
+        group by 
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        sdt,
+        substr(sdt,1,6)
+   
+    ;
+insert overwrite table csx_tmp.report_fr_r_d_oem_classify_sale partition(sdt)
+
+select  months,
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        ''`city_group_code`,
+        ''`city_group_name`,
+        channel_code,
+        channel_name,
+        business_type_code,
+        business_type_name,
+        classify_large_code,
+        classify_large_name,
+        classify_middle_code,
+        classify_middle_name,
+        sales_qty,
+        sales_cost,
+        sales_value,
+        profit,
+        oem_sales_qty,
+        oem_sales_value,
+        oem_sales_cost,
+        oem_profit,
+        coalesce(coalesce(oem_sales_value,0)/sales_value,0) oem_sale_ratio,
+        sdt 
+from csx_tmp.temp_oem_sale_01;
