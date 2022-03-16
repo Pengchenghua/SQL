@@ -1,6 +1,5 @@
 --销售预测回款表【20220308】关联 csx_dw.fixation_report_customer_sale_income1_scar
 --采用此表关联 现使用
-SET hive.execution.engine=mr; 
 set hive.exec.dynamic.partition=true;
 set hive.exec.dynamic.partition.mode=nonstrict;
 set hive.exec.max.dynamic.partitions.pernode=1200;
@@ -13,7 +12,7 @@ set hive.merge.mapredfiles=true;
 set hive.merge.size.per.task=1024000000;
 set hive.merge.smallfiles.avgsize=1024000000;
 set hive.exec.compress.output=true;
---  set parquet.compression=SNAPPY;
+set parquet.compression=SNAPPY;
 set mapred.output.compress=true;
 set mapred.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
 set mapred.output.compression.type=BLOCK;
@@ -283,109 +282,6 @@ select
         where sdt='current'  ) b on  a.customer_no = b.customer_no
  ;
    
-  -- select * from csx_tmp.temp_cust where customer_no='125913';
- 
- 
- drop table   csx_tmp.temp_cust_00 ;
- create temporary table csx_tmp.temp_cust_00 as 
- select 
-  channel_name,
-  comp_code,
-  comp_name,
-  case
-          when customer_no in ('G7150') then '36'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '北京' then '1'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '上海' then '2'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '河北' then '6'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '江苏' then '10'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '安徽' then '11'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '浙江' then '13'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '福建' then '15'
-          when sales_province_name is null and substr(comp_name, 1, 3) = 'BBC' then '16'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '广东' then '20'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '贵州' then '23'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '四川' then '24'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '陕西' then '26'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '重庆' then '32'
-          when sales_province_name is null and substr(comp_name, 1, 2) = '永辉' then '15'
-          else sales_province_code end sales_province_code ,
-    case when customer_no in ('G7150') then '平台-食百采购'
-         when  sales_province_name is null and substr(comp_name, 1, 2) in ('上海', '北京', '重庆') then concat(substr(comp_name, 1, 2), '市')
-         when  sales_province_name is null and substr(comp_name, 1, 2) = '永辉' then '福建省'
-         when  sales_province_name is null then concat(substr(comp_name, 1, 2), '省') 
-        else  sales_province_name end sales_province_name,
-  city_group_code,
-  city_group_name,
-  city_name,
-  prctr,            --成本中心
-  shop_name,
-  customer_no ,
-  customer_name ,
-  first_category_code,
-  first_category_name,
-  second_category_code,
-  second_category_name,
-  third_category_code,
-  third_category_name,
-  work_no ,
-  sales_name ,
-  first_supervisor_work_no,
-  first_supervisor_name,
-  credit_limit ,
-  temp_credit_limit ,
-  payment_terms,
-  payment_name,
-  payment_days,
-  zterm ,
-  diff 
-  from
-  (
-select 
-  channel_name,
-  comp_code,
-  comp_name,
-  coalesce(a.sales_region_code,b.sales_region_code) sales_region_code,
-  coalesce(a.sales_region_name,b.sales_region_name)    sales_region_name,
-  coalesce(a.sales_province_code, b.sales_province_code) sales_province_code,
-  coalesce(a.sales_province_name, b.sales_province_name) sales_province_name,
-  coalesce(a.city_group_code,b.city_group_code) city_group_code,
-  coalesce(a.city_group_name,b.city_group_name) city_group_name,
-  coalesce(a.city_name,  b.city_name)city_name,
-  prctr,            --成本中心
-  shop_name,
-  customer_no ,
-  customer_name ,
-  first_category_code,
-  first_category_name,
-  second_category_code,
-  second_category_name,
-  third_category_code,
-  third_category_name,
-  work_no ,
-  sales_name ,
-  first_supervisor_work_no,
-  first_supervisor_name,
-  credit_limit ,
-  temp_credit_limit ,
-  payment_terms,
-  payment_name,
-  payment_days,
-  payment_terms as zterm ,
-  diff 
-  from csx_tmp.temp_cust a 
-  left join
-  (select concat('S',shop_id) cust_id,
-    sales_region_code,
-    sales_region_name,
-    sales_province_code,
-    sales_province_name,
-    city_group_code,
-    city_group_name,
-    city_name
-  from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') b on a.customer_no=b.cust_id
-  ) a 
-  ; 
-  
 
 
 --关联 法务介入表、目标表
@@ -569,9 +465,9 @@ from csx_dw.fixation_report_customer_sale_income1_scar
 ;
 
 
--- insert overwrite table csx_tmp.ads_fr_r_d_forecast_collection_report_20220304 partition (sdt)
-drop table csx_tmp.temp_acc_01;
-create temporary table csx_tmp.temp_acc_01 as 
+insert overwrite table csx_tmp.ads_fr_r_d_forecast_collection_report_20220304 partition (sdt)
+-- drop table csx_tmp.temp_acc_01;
+-- create temporary table csx_tmp.temp_acc_01 as 
 select 
    coalesce(channel_name,'-')channel_name,
    coalesce(sales_channel_name,'-')sales_channel_name,
@@ -633,6 +529,7 @@ left join
 
 ;
 
+
 -- 更改表名
 ALTER TABLE csx_tmp.ads_fr_r_d_forecast_collection_report RENAME TO csx_tmp.ads_fr_r_d_forecast_collection_report_back20220308;
 
@@ -651,3 +548,38 @@ sqoop export \
   --hive-partition-key sdt \
   --hive-partition-value ${partition}
   -m 10
+
+
+
+
+  ;
+
+-- 较验数据准确性
+  select province_code, comp_code,customer_no,customer_name,sum(need_receivable_amount-aa)need_receivable_amount,
+sum(acall) acall,
+sum(bb) bb,
+sum(acall-bb) diff
+from (
+select province_code,comp_code,customer_no,customer_name,
+sum(need_receivable_amount)need_receivable_amount,
+sum(ac_all) acall,
+0 aa,
+0 bb
+from csx_tmp.ads_fr_r_d_forecast_collection_report_20220304 where sdt='20220307'
+group by customer_no,customer_name,province_code,comp_code
+union all 
+select sales_province_code province_code,sap_merchant_code comp_code,regexp_replace(kunnr,'(^0*)','') customer_no,customer_name,
+0 need_receivable_amount,
+0 acall,
+0 aa,
+sum(ac_all) bb
+from csx_dw.fixation_report_customer_sale_income1_scar
+where 1=1 
+and sdt='20220307'
+and smonth='小计'
+group by sales_province_code,sap_merchant_code,kunnr,customer_name
+)a 
+where 1=1 
+    --and comp_code='2300'
+group by province_code, comp_code,customer_no,customer_name
+having diff!=0;

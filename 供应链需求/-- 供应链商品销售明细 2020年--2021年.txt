@@ -1,0 +1,60 @@
+-- 供应链商品销售明细 2020年--2021年 
+-- 供应商类别	0	空
+-- 供应商类别	1	代理商
+-- 供应商类别	2	生产厂商
+-- 供应商类别	3	经销商(资产)
+-- 供应商类别	4	集成商(资产)
+SELECT supplier_type_name,
+        b.category_large_code,
+        b.category_large_name,
+        b.category_middle_code,
+        b.category_middle_name,
+        count(DISTINCT b.category_small_code) category_cn,
+       count(DISTINCT goods_id) oem_sku,
+       sum(a.amount)/10000 sales_value
+FROM CSX_DW.dws_wms_r_d_entry_batch a 
+join 
+(select vendor_id,
+    supplier_type ,
+    case when supplier_type='0' then ''
+        when supplier_type='1' then '代理商'
+        when supplier_type='2' then '生产厂商'
+        when supplier_type='3' then '经销商(资产)'
+        when supplier_type='4' then '集成商(资产)'
+        else supplier_type end supplier_type_name
+from  csx_dw.dws_basic_w_a_csx_supplier_m 
+    where sdt='current'
+
+)c on a.supplier_code=c.vendor_id
+join 
+(SELECT goods_id,
+       goods_name,
+       brand_name,
+       unit_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       category_large_code,
+       category_large_name,
+       category_middle_code,
+       category_middle_name,
+       category_small_code,
+       category_small_name,
+       product_purchase_level ,
+       product_purchase_level_name 
+       
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current'
+   -- and product_purchase_level='03'
+    -- and classify_middle_code ='B0302'
+)b on a.goods_code=b.goods_id
+WHERE SDT>='20210101' 
+    AND SDT<='20221231'
+GROUP BY   supplier_type_name,
+        b.category_large_code,
+        b.category_large_name,
+        b.category_middle_code,
+        b.category_middle_name;
