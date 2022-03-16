@@ -183,7 +183,8 @@
       "typescript": ".ts"
     },
     "files.autoGuessEncoding": true,
-    "editor.fontSize": 18
+    "editor.fontSize": 18,
+    "search.useGlobalIgnoreFiles": true
   },
   "extensions": {
     "recommendations": [
