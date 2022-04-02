@@ -118,6 +118,19 @@
         "password": "I&^lshoejfj02934",
         "name": "业务数据同步",
         "database": "data_sync"
+      },
+      {
+        "mysqlOptions": {
+          "authProtocol": "default"
+        },
+        "previewLimit": 50,
+        "server": "10.252.193.44",
+        "port": 3306,
+        "driver": "MySQL",
+        "name": "test_数据集市",
+        "username": "datagrouptest",
+        "password": "OUl2u82p83$#2",
+        "database": "test_csx_data_market"
       }
     ],
     "editor.suggest.shareSuggestSelections": true,

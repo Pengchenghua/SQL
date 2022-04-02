@@ -4,15 +4,18 @@
 
 --更新 蔬菜按照区域占比 孙鲁 北京、安徽、湖北、陕西、河南，江韩国 福建、广东，董春发 四川 、成都、贵州
 --
+
 set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
-set shopid=('WA93','W0A2','W080','W0K7','W0L4','W0AW','W0J8','W048','WB04','W0A3','WB11',
-        'W0A8','WB03','W053','W0F4','W0G9','W0K6','W0AH','W0AJ','W0J2','W0F7','W0G6','WA96','W0K1','W0AU','W0L3',
-        'W0BK','W0AL','W0S9','W0Q2','W0Q9','W0Q8','W0BS','W0BH','W0BR','W0R9','WB00','W0R8','W088','W0BZ','W0A5',
-        'W0P8','WA94','W0AS','W0AR','WA99','W0N1','W079','W0A6','W0BD','W0N0','WB01','W0P3','W0W7','W0X1','W0X2',
-        'W0Z8','W0Z9','W0AZ','W039','W0A7');
+set shopid=('WA93','W0A2','W080','W0K7','W0L4','W0AW','W0J8','W048','WB04','W0A3','WB11','W0A8','WB03','W053','W0F4','W0G9',
+'W0K6','W0AH','W0AJ','W0J2','W0F7','W0G6','WA96','W0K1','W0AU','W0L3','W0BK','W0AL','W0S9','W0Q2','W0Q9','W0Q8',
+'W0BS','W0BH','W0BR','W0R9','WB00','W0R8','W088','W0BZ','W0A5','W0P8','WA94','W0AS','W0AR','WA99','W0N1','W079',
+'W0A6','W0BD','W0N0','WB01','W0P3','W0W7','W0X1','W0X2','W0Z8','W0Z9','W0AZ','W039','W0A7','W0BT');
+-- 蔬菜基地
+SET sc_shop=('W080','WA93','WB04','W048','WB03','W0G9','W0BK','W0S9','W0Q9','W0BH','W0BR','W0BT','W0BZ',
+'W088','WB00','W0P8','WA99','W0AR','W0AS','W079','W0N0','W0W7','W039','W0AZ');
 --上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
 set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
 set parquet.compression=snappy;
@@ -24,16 +27,15 @@ set hive.exec.dynamic.partition.mode=nonstrict;
 drop table if exists csx_tmp.temp_sale_01 ;
 create temporary table csx_tmp.temp_sale_01 as 
 select substr(sdt,1,6) as sales_months,
+    province_name,
     classify_large_code,
     classify_large_name,
     classify_middle_code,
     classify_middle_name,
-    classify_small_code,
-    classify_small_name,
     sum(sales_value)sales_value,
     sum(profit) profit,
-    sum(case when business_type_code='1' and  dc_code not in ('W0Z7','W0K4','WB26') then sales_value end ) as daliy_sales_value,
-    sum(case when business_type_code='1' AND dc_code not in ('W0Z7','W0K4','WB26') then profit end ) as  daliy_profit
+    sum(case when business_type_code='1' and  dc_code not in ('W0Z7','W0K4','WB26','WB38') then sales_value end ) as daliy_sales_value,
+    sum(case when business_type_code='1' AND dc_code not in ('W0Z7','W0K4','WB26','WB38') then profit end ) as  daliy_profit
 from csx_dw.dws_sale_r_d_detail
 where sdt>=${hiveconf:s_dt}
     and sdt<=${hiveconf:e_dt}
@@ -44,10 +46,9 @@ group by  classify_large_code,
     classify_large_name,
     classify_middle_code,
     classify_middle_name,
-    classify_small_code,
-    classify_small_name,
     business_type_code,
     business_type_name,
+     province_name,
     substr(sdt,1,6) ;
     
 --商品入库全国采购占比=全国类型供应商（全国基地/产地、自有品牌、全国集采）品类入库金额/品类总入库金额
@@ -62,11 +63,9 @@ select substr(sdt,1,6) sales_months,
     classify_large_name,
     classify_middle_code,
     classify_middle_name,
-    classify_small_code,
-    classify_small_name,
-    sum(price*receive_qty) as amt
+    sum(amount) as amt,
+    sum(case when receive_location_code in ${hiveconf:sc_shop} and classify_middle_code ='B0202' and b.joint_purchase=1 then  amount end) sc_amt
 from csx_dw.dws_wms_r_d_entry_batch as a
-
 left join 
 (select vendor_id,joint_purchase from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') b on a.supplier_code=b.vendor_id
 where sdt>=${hiveconf:s_dt}
@@ -81,8 +80,6 @@ group by  supplier_code,
     classify_large_name,
     classify_middle_code,
     classify_middle_name,
-    classify_small_code,
-    classify_small_name,
     joint_purchase,
     province_name,
     substr(sdt,1,6) ;
@@ -101,7 +98,7 @@ select sales_months,
     classify_large_management,
     classify_middle_management,
     sum(amt) entry_amt,
-    sum(case when joint_purchase=1 then amt end ) join_entry_amt
+    sum(case when  a.classify_middle_code ='B0202' then sc_amt when  joint_purchase=1 and a.classify_middle_code !='B0202'  then amt end ) join_entry_amt
 from csx_tmp.temp_pch_sale_01 as a
 left join 
 (SELECT distinct classify_middle_code,
@@ -111,7 +108,9 @@ left join
         province_name
  FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` 
    -- WHERE sdt=substr(${hiveconf:e_dt},1,6) 
-    ) b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  and if(a.classify_middle_name!='蔬菜','',a.province_name)=b.province_name
+    ) b on a.classify_large_code=b.classify_large_code 
+        and a.classify_middle_code=b.classify_middle_code  
+        and if(a.classify_middle_code !='B0202','',a.province_name)=b.province_name
 group by 
     a.classify_large_code,
     a.classify_large_name,
@@ -120,14 +119,11 @@ group by
      classify_large_management,
     classify_middle_management,
     sales_months
-
-
 ;
 
+-- select * from csx_tmp.temp_sale_02;
 
-
-
-insert overwrite table csx_tmp.report_scm_r_d_classify_performance_fr partition(sdt)
+insert overwrite table csx_tmp.report_scm_r_d_classify_performance_fr partition(months)
 select 
     sales_months,
     a.classify_large_code,
@@ -152,7 +148,96 @@ select
     sum(join_entry_amt)/sum(entry_amt) join_entry_ratio,
     0 join_entry_completion_rate,
     current_timestamp(),
-    ${hiveconf:e_dt}
+    substr(${hiveconf:e_dt},1,6)
+from (
+select sales_months,
+    a.classify_large_code,
+    a.classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    classify_large_management,
+    classify_middle_management,
+    sales_target,
+    sales_value,
+    profit,
+    daliy_sales_target,
+    daliy_sales_value,
+    daliy_profit,
+    0 join_entry_target,
+    0 entry_amt,
+    0 join_entry_amt
+from  csx_tmp.temp_sale_01 a 
+left join 
+(SELECT  distinct classify_middle_code,
+        classify_large_code,
+        classify_large_management,
+        classify_middle_management,
+        daliy_sales_target,
+        join_entry_target,
+        sales_target,
+        province_name
+FROM `csx_tmp`.`report_scm_r_d_classify_performance_person` 
+   -- WHERE sdt=substr(${hiveconf:e_dt},1,6) 
+    ) b on a.classify_large_code=b.classify_large_code and a.classify_middle_code=b.classify_middle_code  
+    and if(a.classify_middle_code !='B0202','',a.province_name)=b.province_name
+union all 
+select sales_months,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_large_management,
+    classify_middle_management,
+    0 sales_target,
+    0 sales_value,
+    0 profit,
+    0 daliy_sales_target,
+    0 daliy_sales_value,
+    0 daliy_profit,
+    0 join_entry_target,
+    entry_amt,
+    join_entry_amt
+from  csx_tmp.temp_sale_02 a 
+) a 
+group by a.classify_large_code,
+    a.classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    sales_months,
+    classify_large_management,
+    classify_middle_management
+    ;
+    
+    show create table csx_tmp.report_scm_r_d_classify_performance_fr;
+
+-- select * from csx_tmp.temp_sale_02;
+
+insert overwrite table csx_tmp.report_scm_r_d_classify_performance_fr partition(months)
+select 
+    sales_months,
+    a.classify_large_code,
+    a.classify_large_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    classify_large_management,
+    classify_middle_management,
+    sum(sales_target)sales_target,
+    sum(sales_value)sales_value,
+    0 sales_completion_rate,
+    sum(profit)profit,
+    coalesce(sum(profit)/sum(sales_value),0) profit_rate,
+    sum(daliy_sales_target) daliy_sales_target,
+    sum(daliy_sales_value)daliy_sales_value,
+    0 daliy_sales_completion_rate,
+    sum(daliy_profit)daliy_profit,
+    coalesce(sum(daliy_profit)/sum(daliy_sales_value),0) daliy_profit_rate,
+    sum(join_entry_target)join_entry_target,
+    sum(entry_amt)entry_amt,
+    sum(join_entry_amt)join_entry_amt,
+    sum(join_entry_amt)/sum(entry_amt) join_entry_ratio,
+    0 join_entry_completion_rate,
+    current_timestamp(),
+    substr(${hiveconf:e_dt},1,6)
 from (
 select sales_months,
     a.classify_large_code,
@@ -211,6 +296,7 @@ group by a.classify_large_code,
     classify_middle_management
     ;
     
+    show create table csx_tmp.report_scm_r_d_classify_performance_fr;
 
     ---以下上一版本绩效方案数据
 set hive.exec.dynamic.partition=true; 
@@ -220,11 +306,8 @@ set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
-set shopid=('WA93','W0A2','W080','W0K7','W0L4','W0AW','W0J8','W048','WB04','W0A3','WB11',
-        'W0A8','WB03','W053','W0F4','W0G9','W0K6','W0AH','W0AJ','W0J2','W0F7','W0G6','WA96','W0K1','W0AU','W0L3',
-        'W0BK','W0AL','W0S9','W0Q2','W0Q9','W0Q8','W0BS','W0BH','W0BR','W0R9','WB00','W0R8','W088','W0BZ','W0A5',
-        'W0P8','WA94','W0AS','W0AR','WA99','W0N1','W079','W0A6','W0BD','W0N0','WB01','W0P3','W0W7','W0X1','W0X2',
-        'W0Z8','W0Z9','W0AZ','W039','W0A7');
+set shopid=('W080','WA93','WB04','W048','WB03','W0G9','W0BK','W0S9','W0Q9','W0BH','W0BR','W0BT',
+'W0BZ','W088','WB00','W0P8','WA99','W0AR','W0AS','W079','W0N0','W0W7','W039','W0AZ');
 
 --上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
 set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
@@ -263,6 +346,7 @@ group by  classify_large_code,
     
 --商品入库全国采购占比=全国类型供应商（全国基地/产地、自有品牌、全国集采）品类入库金额/品类总入库金额
 -- 指标说明：按品类采购负责的管理二级/三级分类 是否集采：是
+
 drop table  csx_tmp.temp_pch_sale_01 ;
 create temporary table csx_tmp.temp_pch_sale_01 as 
 select substr(sdt,1,6) sales_months,

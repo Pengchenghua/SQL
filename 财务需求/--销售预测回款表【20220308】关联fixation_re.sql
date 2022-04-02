@@ -533,23 +533,21 @@ left join
 -- 更改表名
 ALTER TABLE csx_tmp.ads_fr_r_d_forecast_collection_report RENAME TO csx_tmp.ads_fr_r_d_forecast_collection_report_back20220308;
 
-partition='20220307'
+day='2022-03-15'
+yesterday=${day//-/}
 columns='channel_name,sales_channel_name,hkont,account_name,comp_code,comp_name,region_code,region_name,province_code,province_name,city_group_code,city_group_name,sales_city,prctr,shop_name,customer_no,customer_name,first_category_code,first_category,second_category_code,second_category,third_category_code,third_category,work_no,sales_name,first_supervisor_work_no,first_supervisor_name,credit_limit,temp_credit_limit,payment_terms,payment_name,payment_days,zterm,diff,ac_all,ac_wdq,ac_all_month_last_day,ac_wdq_month_last_day,ac_overdue_month_last_day,ac_overdue_month_last_day_rate,target_sale_value,receivable_amount_target,unreceivable_amount,current_receivable_amount,need_receivable_amount,temp_1,temp_2,temp_3,law_is_flag,update_time,sdt'
 sqoop export \
-  --connect "jdbc:mysql://10.252.193.44:3306/test_csx_data_market?useUnicode=true&characterEncoding=utf-8" \
-  --username datagrouptest \
-  --password 'OUl2u82p83$#2' \
+  --connect "jdbc:mysql://10.0.74.77:7477/csx_data_market?useUnicode=true&characterEncoding=utf-8" \
+  --username datagroup_app \
+  --password 'Hoaerwsadr' \
   --table ads_fr_r_d_forecast_collection_report \
   --hcatalog-database csx_tmp \
-  --hcatalog-table ads_fr_r_d_forecast_collection_report_20220304 \
-  --columns "${columns}" \
-  --input-null-string '\\N' \
-  --input-null-non-string '\\N' \
-  --hive-partition-key sdt \
-  --hive-partition-value ${partition}
-  -m 10
-
-
+  --hcatalog-table ads_fr_r_d_forecast_collection_report \
+ --hive-partition-key sdt \
+ --hive-partition-value "$yesterday" \
+ --input-null-string '\\N'  \
+ --input-null-non-string '\\N' \
+ --columns "${columns}"
 
 
   ;

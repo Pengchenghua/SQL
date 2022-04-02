@@ -37,7 +37,7 @@ sqoop export \
 
 -- 按照分区导入设置动参 yesterday=`date -d "yesterday" +%Y%m%d`
 columns='level_id,sales_months,zone_id,zone_name,channel,channel_name,province_code,province_name,city_group_code,city_group_name,manager_no,manager_name,all_cust_count,all_daily_sale,all_plan_sale,all_month_sale,real_month_sale,real_sales_fill_rate,all_sales_fill_rate,all_last_month_sale,all_mom_sale_growth_rate,all_plan_profit,all_month_profit,all_month_profit_fill_rate,all_month_profit_rate,old_cust_count,old_daily_sale,old_plan_sale,old_month_sale,old_sales_fill_rate,old_last_month_sale,old_mom_sale_growth_rate,old_month_profit,old_month_profit_rate,new_plan_sale_cust_num,new_cust_count,new_cust_count_fill,new_daily_sale,new_plan_sale,new_month_sale,new_month_sale_fill_rate,new_last_month_sale,new_mom_sale_growth_rate,new_month_profit,new_month_profit_rate,new_sign_cust_num,new_sign_amount,daily_sign_cust_num,daily_sign_amount,update_time,sdt'
-day='2022-01-01'
+day=2022-02-28
 yesterday=${day//-/}
 sqoop export \
 --connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
@@ -112,3 +112,56 @@ sqoop export \
 --input-null-non-string '\\N' \
 --columns "${columns}"
 
+
+columns='level_id,sales_month,zone_id,zone_name,province_code,province_name,attribute_code,attribute,daily_plan_sale,daily_sales_value,daily_sale_fill_rate,daily_profit,daily_profit_rate,month_plan_sale,month_sale,month_sale_fill_rate,last_month_sale,mom_sale_growth_rate,month_plan_profit,month_profit,month_profit_fill_rate,month_profit_rate,month_sale_cust_num,mom_diff_sale_cust,last_month_profit,last_month_sale_cust_num,update_time,months'
+day=2022-03-24
+yesterday=`date -d ${day} +%Y%m`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table ads_sale_r_d_zone_cust_attribute_fr \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table ads_sale_r_d_zone_cust_attribute_fr \
+--hive-partition-key months \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
+
+
+columns='region_code,region_name,province_code,province_name,city_group_code,city_group_name,customer_no,customer_name,ring_sale_value,ring_profit,ring_profit_rate,sale_value,profit,profit_rate,diff_profit_rate,ring_rank_desc,rank_desc,update_time,months'
+day=2022-02-28
+yesterday=`date -d ${day} +%Y%m`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table report_fr_r_d_zone_sale_customer_top10 \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table report_fr_r_d_zone_sale_customer_top10 \
+--hive-partition-key months \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
+;
+
+columns='sdt,region_code,region_name,province_code,province_name,city_group_code,city_group_name,plan_sales,plan_profit,sales_value,profit,profit_rate,sales_fill_rate,profit_fill_rate,update_time,mon'
+day=2022-02-28
+yesterday=`date -d ${day} +%Y%m`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table report_fr_r_d_zone_sale_days_trend \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table report_fr_r_d_zone_sale_days_trend \
+--hive-partition-key mon \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"

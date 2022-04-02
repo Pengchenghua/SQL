@@ -1,6 +1,9 @@
 --采购备货数据
 -- 重庆（W0A7）,四川（W0A6）,福州（W0A8），杭州（W0N0），苏州（W0A5）
-set shop=('W0A7','W0A6','W0A8','W0N0','W0A5');
+set shop=('W0A2','W0A3');
+set enddt='20220329';
+set sdt='20220301';
+
 -- 1.0 供应商满足率
 drop table  csx_tmp.temp_supplier_fill_rate;
 create temporary table csx_tmp.temp_supplier_fill_rate as 
@@ -17,6 +20,7 @@ sum(order_amt ) order_amt ,
 sum(receive_qty) receive_qty ,
 sum(receive_amt) receive_amt ,
 sum(order_sign) order_sign,
+sum(zs_plan_amt) zs_plan_amt,
 sum(zs_amount) zs_amount
 from 
 (
@@ -31,12 +35,13 @@ max(price*plan_qty )order_amt ,
 sum(receive_qty )as receive_qty ,
 sum(amount )as receive_amt ,
 if(max(plan_qty )=sum(receive_qty ),1,0) as order_sign,
+sum(case when order_type_code='P03' then price*plan_qty end ) zs_plan_amt,
 sum(case when order_type_code='P03' then amount end ) zs_amount
 from  csx_dw.dws_wms_r_d_entry_detail a
 
 where 
-sdt>='20220201' 
- and sdt<='20220228'
+sdt>= ${hiveconf:sdt} 
+ and sdt<=${hiveconf:enddt} 
  and receive_status =2
  and receive_location_code in ${hiveconf:shop}
  and order_type_code  LIKE 'P%' and order_type_code <>'P02'
@@ -94,7 +99,7 @@ left join
 from csx_dw.dws_basic_w_a_csx_product_m 
 where sdt='current'
     ) b on a.goods_id=b.goods_id
-where sdt='20220228'
+where sdt=${hiveconf:enddt}
     and dc_code in  ${hiveconf:shop}
 group by dc_code,
        b.classify_large_code,
@@ -123,8 +128,8 @@ from
 (select dc_code,goods_code,
     sum(sales_value) sales_value
 from csx_dw.dws_sale_r_d_detail 
-    where sdt>='20220101'
-    and sdt<='20220228'
+    where sdt>= ${hiveconf:sdt} 
+    and sdt<=${hiveconf:enddt} 
     and business_type_code='1'
     and channel_code in ('1','7','9')
     and dc_code in  ${hiveconf:shop}
@@ -225,8 +230,8 @@ select receive_location_code,
         sum(amount) entry_amount,
         0 shipp_amt
 from csx_dw.dws_wms_r_d_entry_batch 
-where sdt>='20210901'
-    and sdt<='20220228'
+where sdt>= ${hiveconf:sdt} 
+ and sdt<=${hiveconf:enddt} 
     and receive_location_code in  ${hiveconf:shop}
     and receive_status='2'
     and order_type_code like'P%' 
@@ -240,8 +245,8 @@ select shipped_location_code receive_location_code,
     0 entry_amount,
     sum(amount) shipp_amt
 from  csx_dw.dws_wms_r_d_ship_batch
-where sdt>='20210901'
-    and sdt<='20220228'
+where sdt>= ${hiveconf:sdt} 
+ and sdt<=${hiveconf:enddt} 
     and shipped_location_code in  ${hiveconf:shop}
     and order_type_code like 'P%'
     AND business_type_code='05'
@@ -306,7 +311,7 @@ where sdt='current'
     ) b ON a.goods_id=b.goods_id
 
 WHERE    
-    sdt='20220228'             --更改查询日期
+    sdt =${hiveconf:enddt}              --更改查询日期
   AND a.final_qty>a.entry_qty
   AND ( (category_large_code='1101' and days_turnover_30>45 AND final_amt>3000)
     or (dept_id in ('H02','H03') and days_turnover_30>5 and a.final_amt>500 )
@@ -345,7 +350,7 @@ FROM
 (select dc_code,goods_code,
     sum(amt_no_tax) amt_no_tax
 from csx_dw.dws_wms_r_d_accounting_stock_m
-where sdt='20220228'
+where sdt=${hiveconf:enddt} 
 and dc_code in  ${hiveconf:shop}
 and reservoir_area_code not in ('PD01','PD02','TS01')
 group by dc_code,goods_code
@@ -354,8 +359,7 @@ left join
 (
 select dc_code,goods_code,sum(sales_value) sales_value
 from csx_dw.dws_sale_r_d_detail
-where sdt>='20210901'
-    and sdt<='20220228'
+where sdt =${hiveconf:enddt} 
     and dc_code in  ${hiveconf:shop}
 group by dc_code,goods_code
 ) b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
@@ -392,8 +396,8 @@ select dc_code,
     sum(order_value) order_value,
     sum(sales_value) sales_value
 from  csx_dw.ads_wms_r_d_lack_goods_detail
-where sdt>='20220201'
-and sdt<='20220228'
+where sdt>= ${hiveconf:sdt} 
+ and sdt<=${hiveconf:enddt} 
 and dc_code  in  ${hiveconf:shop}
 group by   classify_large_code,
   classify_large_name,
@@ -405,6 +409,7 @@ group by   classify_large_code,
   ;
 
 
+drop table  csx_tmp.temp_all_01;
 create temporary table csx_tmp.temp_all_01 as 
 select 
     dc_code ,
@@ -420,6 +425,7 @@ select
     sum(receive_qty  )  receive_qty ,
     sum(receive_amt  )  receive_amt ,
     sum(order_sign )  order_sign,
+    sum(zs_plan_amt) zs_plan_amt,
     sum(zs_amount )  zs_amount,
     sum(order_value )  order_value,
     sum(sales_value )  sales_value,
@@ -451,6 +457,7 @@ order_amt ,
 receive_qty ,
 receive_amt ,
 order_sign,
+zs_plan_amt,
 zs_amount,
   0 order_value,
     0 sales_value,
@@ -484,6 +491,7 @@ select dc_code,
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     order_value,
     sales_value,
@@ -516,6 +524,7 @@ select dc_code,
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -549,6 +558,7 @@ select
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -581,6 +591,7 @@ select dc_code,
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -613,6 +624,7 @@ select dc_code,
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -646,6 +658,7 @@ SELECT
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -677,6 +690,7 @@ select dc_code,
     0 receive_qty ,
     0 receive_amt ,
     0 order_sign,
+    0 zs_plan_amt,
     0 zs_amount,
     0 order_value,
     0 sales_value,
@@ -705,9 +719,77 @@ group by    dc_code ,
     classify_small_code,
     classify_small_name
     ;
+ 
+ 
+ drop table   csx_tmp.temp_stock_00;
+ create temporary table csx_tmp.temp_stock_00 as  
+  select A.dc_code,
+     div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    count(case when stock_properties=1   then goods_code end) all_stock_sku, 
+    count(case when stock_properties=1 and amt_no_tax>0  then goods_code end) stock_sku,       --存储商品SKU
+    sum(case when stock_properties=1 then amt end ) stock_amt,    -- 存储商品库存金额
+    count(case when stock_properties=1 and amt_no_tax<=0 then goods_code end) qh_sku,
+    count(case when stock_properties !=1 and amt_no_tax>0  then goods_code end) no_stock_sku,       --存储商品SKU
+    sum(case when stock_properties !=1 then amt end ) no_stock_amt,    -- 存储商品库存金额
+	sum(A.qty) qty,
+	sum(A.amt) amt
+FROM (
+   select A.dc_code,A.goods_code,
+   case when classify_large_code in ('B01','B02','B03') then '11' else '12' end  div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name ,
+     stock_properties,
+	stock_properties_name,
+	sum(A.qty) qty,
+	sum(A.amt) amt,
+	sum(amt_no_tax) amt_no_tax
+from csx_dw.dws_wms_r_d_accounting_stock_m  A 
+   left join 
+   (select product_code,
+    shop_code,
+    sales_return_tag,
+    stock_properties,
+	stock_properties_name,
+	product_status_name
+from  csx_dw.dws_basic_w_a_csx_product_info 
+where sdt='current'
+    and des_specific_product_status='0'
+    and shop_code in  ${hiveconf:shop}
+) b on a.dc_code=b.shop_code and a.goods_code=b.product_code
+
+   where sdt=${hiveconf:enddt}  
+    and dc_code in ${hiveconf:shop}  
+    and reservoir_area_code not in ('PD01','PD02','TS01')
+    group by  A.dc_code,A.goods_code,
+   case when classify_large_code in ('B01','B02','B03') then '11' else '12' end  ,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name ,
+     stock_properties,
+	stock_properties_name
+) A
+group by A.dc_code,
+     div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name
+    ;
     
     
-    select 
+    
+  select 
     dc_code ,
     div_code,
     classify_large_code,
@@ -720,10 +802,13 @@ group by    dc_code ,
     sum(order_amt  )  order_amt ,   --订单金额
     sum(receive_qty  )  receive_qty ,   --入库数量
     sum(receive_amt  )  receive_amt ,   --入库金额
-    sum(order_sign )  order_sign,       --满足标识 
+    sum(receive_qty  ) /sum(order_qty)  order_sign_rate,       --满足标识 
+    sum(zs_plan_amt) zs_plan_amt,       --客户直送订单金额
     sum(zs_amount )  zs_amount,         --客户直送金额
-    sum(order_value )  order_value,     --客户订单金额
-    sum(sales_value )  sales_value,     --客户出库金额
+    sum(zs_amount)/sum(receive_amt) zs_ratio,   --客户直送入库占比
+    sum(order_value )  order_value,     --客户配送订单金额 剔除地采 
+    sum(sales_value )  sales_value,     --客户配送出库金额 剔除地采
+    sum(sales_value )/ sum(order_value ) cust_sale_ratio,       --客户配送满足率占比
     sum(daily_sales_value )  daily_sales_value,     --日配销售金额
     sum(stock_sale_value )  stock_sale_value,       --存储商品销售额
     sum(return_sku )  return_sku,                   --退货标识SKU
@@ -737,8 +822,108 @@ group by    dc_code ,
     sum(h_final_qty )  h_final_qty,                 --高库存金额
     sum(h_final_amt )  h_final_amt,                 --高库存金额
     sum(stock_all_sku )  stock_all_sku,             --库存SKU   
-    sum(pin_sku )  pin_sku                          --动销SKU
+    sum(pin_sku )  pin_sku ,                         --动销SKU
+    sum(all_stock_sku) all_stock_sku,
+    sum(stock_sku) stock_sku,       --存储商品SKU
+    sum(stock_amt) stock_amt,    -- 存储商品库存金额
+    sum(qh_sku) qh_sku,
+    sum(no_stock_sku) no_stock_sku,       --存储商品SKU
+    sum(no_stock_amt) no_stock_amt,    -- 存储商品库存金额
+	sum(qty) qty,
+	sum(amt ) amt 
+	from (
+    select 
+    dc_code ,
+    div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    -- classify_small_code,
+    -- classify_small_name,
+    sum(order_qty )  order_qty,     --订单数量
+    sum(order_amt  )  order_amt ,   --订单金额
+    sum(receive_qty  )  receive_qty ,   --入库数量
+    sum(receive_amt  )  receive_amt ,   --入库金额
+    sum(receive_qty  ) /sum(receive_qty)  order_sign_rate,       --满足标识 
+    sum(zs_plan_amt) zs_plan_amt,       --客户直送订单金额
+    sum(zs_amount )  zs_amount,         --客户直送金额
+  -- sum(zs_amount)/sum(receive_amt) zs_ratio,   --客户直送入库占比
+    sum(order_value )  order_value,     --客户配送订单金额 剔除地采 
+    sum(sales_value )  sales_value,     --客户配送出库金额 剔除地采
+   -- sum(sales_value )/ sum(order_value ) cust_sale_ratio,       --客户配送满足率占比
+    sum(daily_sales_value )  daily_sales_value,     --日配销售金额
+    sum(stock_sale_value )  stock_sale_value,       --存储商品销售额
+    sum(return_sku )  return_sku,                   --退货标识SKU
+    sum(all_sku )  all_sku,                         --在档SKU 正常状态商品
+    sum(entry_amount )  entry_amount,               -- 入库金额
+    sum(shipp_amt )  shipp_amt,                     --退货金额
+    sum(final_amt  )  final_amt ,                   --库存金额
+    sum(cost_30day )  cost_30day,                   --30天成本
+    sum(period_inv_amt_30day ) period_inv_amt_30day,        --30天期间库存金额
+    sum(period_inv_amt_30day )/sum(cost_30day )  days_turnover_30,  --30天周转
+    sum(h_final_qty )  h_final_qty,                 --高库存金额
+    sum(h_final_amt )  h_final_amt,                 --高库存金额
+    sum(stock_all_sku )  stock_all_sku,             --库存SKU   
+    sum(pin_sku )  pin_sku ,                         --动销SKU
+    0 all_stock_sku,
+    0 stock_sku,       --存储商品SKU
+    0 stock_amt,    -- 存储商品库存金额
+    0 qh_sku,
+    0 no_stock_sku,       --存储商品SKU
+    0 no_stock_amt,    -- 存储商品库存金额
+	0 qty,
+	0 amt 
 from csx_tmp.temp_all_01
+group by dc_code ,
+    div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name
+union all 
+select
+    dc_code ,
+    div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    0  order_qty,     --订单数量
+    0  order_amt ,   --订单金额
+    0  receive_qty ,   --入库数量
+    0  receive_amt ,   --入库金额
+    0   order_sign_rate,       --满足标识 
+    0 zs_plan_amt,
+    0   zs_amount,         --客户直送金额
+    0   order_value,     --客户订单金额
+    0   sales_value,     --客户出库金额
+    0  daily_sales_value,     --日配销售金额
+    0 stock_sale_value,       --存储商品销售额
+    0 return_sku,                   --退货标识SKU
+    0 all_sku,                         --在档SKU 正常状态商品
+    0 entry_amount,               -- 入库金额
+    0 shipp_amt,                     --退货金额
+    0 final_amt ,                   --库存金额
+    0 cost_30day,                   --30天成本
+    0 period_inv_amt_30day,        --30天期间库存金额
+    0 days_turnover_30,  --30天周转
+    0  h_final_qty,                 --高库存金额
+    0  h_final_amt,                 --高库存金额
+    0  stock_all_sku,             --库存SKU  
+   0  pin_sku ,
+   all_stock_sku,
+    stock_sku,       --存储商品SKU
+    stock_amt,    -- 存储商品库存金额
+    qh_sku,
+    no_stock_sku,       --存储商品SKU
+    no_stock_amt,    -- 存储商品库存金额
+	qty,
+	amt 
+from  csx_tmp.temp_stock_00
+
+
+)a 
 group by dc_code ,
     div_code,
     classify_large_code,
