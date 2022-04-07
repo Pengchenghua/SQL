@@ -165,3 +165,21 @@ sqoop export \
 --input-null-string '\\N'  \
 --input-null-non-string '\\N' \
 --columns "${columns}"
+
+
+columns='level_id,years,smonth,channel_name,region_code,region_name,province_code,province_name,city_group_code,city_group_name,classify_large_code,classify_large_name,classify_middle_code,classify_middle_name,classify_small_code,classify_small_name,sales_value,profit,profit_rate,daily_sales_value,daily_profit,daily_profit_rate,last_sales_value,last_profit,last_profit_rate,last_daily_sales_value,last_daily_profit,last_daily_profit_rate,ring_b_sales_rate,ring_daily_sales_rate,diff_profit_rate,diff_daily_profit_rate,all_sales_value,all_profit,all_profit_rate,classify_sales_ratio,prov_daily_sales_value,last_prov_daily_sales_value,sales_qty_30day,sales_value_30day,profit_30day,final_qty,final_amt,daily_cust_number,last_daily_cust_number,b_daily_cust_number,last_b_daily_cust_number,daily_cust_penetration_rate,last_daily_cust_penetration_rate,diff_daily_cust_penetration_rate,daily_sales_ratio,last_daily_sales_ratio,diff_daily_ratio_rate,grouping__id,update_time,months'
+day=2022-03-31
+yesterday=`date -d ${day} +%Y%m`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table report_sale_r_d_classify_ratio_fr \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table report_sale_r_d_classify_ratio_fr \
+--hive-partition-key months \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
