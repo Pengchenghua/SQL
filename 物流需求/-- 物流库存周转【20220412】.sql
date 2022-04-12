@@ -1,4 +1,5 @@
 -- 物流库存周转【20220412】
+-- 剔除仓位 'B999','B997','PD01','PD02','TS01','CY01'
 --set hive.execution.engin=spark;
 -- 20201026 增加客户配送销售，地采关联销售订单，仓配=销售-地采、
 -- 20200825 增加DC用途及更改dctype 工厂 、仓库、门店
@@ -310,7 +311,7 @@ create temporary table	if not exists csx_tmp.p_invt_2 as
 		sum(receipt_amt)receipt_amt,
         SUM(receipt_qty) receipt_qty,
         SUM(material_take_amt) material_take_amt,
-        SUM(material_take_qty) material_take_qty
+        SUM(material_take_qty) material_take_qty,
 		dc_type     ,
 		dc_uses
 from
@@ -467,6 +468,10 @@ select
 		final_qty/if(qty_30day/30<=0,0.01,coalesce(qty_30day/30,0.01)) as inv_sales_days ,
 		period_inv_qty_30day ,
 		period_inv_amt_30day ,
+        sum(receipt_amt)receipt_amt,
+        SUM(receipt_qty) receipt_qty,
+        SUM(material_take_amt) material_take_amt,
+        SUM(material_take_qty) material_take_qty,
 		coalesce(case when (cost_30day<=0 and period_inv_amt_30day>0) then 9999 
 					 when cost_30day<=0 and period_inv_amt_30day<=0 then 0
 					 when cost_30day>0 and period_inv_amt_30day<0 then 0
@@ -644,8 +649,6 @@ from
 where
 	sdt = 'current' 
 	) as m on a.category_small_code =m.category_small_code 
-LEFT join 
-(select * from csx_tmp.temp_rece_01) c on a.goods_id=c.goods_code and a.dc_code=c.dc_code  
 left join 
 (select shop_code,shop_id,product_code,joint_purchase_flag from csx_dw.dws_basic_w_a_csx_product_info where sdt='current' ) d on a.dc_code=d.shop_code and a.goods_id=d.product_code
 left join 
