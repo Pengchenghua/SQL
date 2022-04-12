@@ -24,10 +24,10 @@ SELECT CASE
 FROM csx_dw.dws_wms_r_d_entry_detail a
 WHERE (business_type in ('ZN01','ZN02')
        OR order_type_code LIKE 'P%')
-  AND (sdt>='20200101'
+  AND (sdt>='20220101'
        OR sdt='19990101')
   AND receive_status IN (1,2)
-  AND purpose IN ('01','02','03','08','07')
+  AND purpose IN ('01','02','03','08','07')  -- 1 大客户物流 2 商超物流 3 工厂 7 BBC物流 8 代加工  
   and supplier_code not in
 ('20015439','20019761','20021783','20024437','20026794','75000002',
 '75000016',
