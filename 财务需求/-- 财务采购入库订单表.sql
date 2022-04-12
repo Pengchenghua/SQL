@@ -78,11 +78,26 @@ CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   stored as parquet
   ;
 
+-- 财务采购入库订单表
+-- 需要增加采购订单状态
 
-SET hive.execution.engine=mr; 
+
+--SET hive.execution.engine=mr; 
 --- 财务采购商品入库明细 20211009
-set s_date='20200101';
-set e_date='20201231';
+set hive.map.aggr         =true;
+--set hive.groupby.skewindata                 =true;
+set hive.exec.parallel                      =true;
+set hive.exec.dynamic.partition             =true;     --开启动态分区
+set hive.exec.dynamic.partition.mode        =nonstrict;--设置为非严格模式
+set hive.exec.max.dynamic.partitions        =10000;    --在所有执行MR的节点上，最大一共可以创建多少个动态分区。
+set hive.exec.max.dynamic.partitions.pernode=100000;   --源数据中包含了一年的数据，即day字段有365个值，那么该参数就需要设置成大于365，如果使用默认值100，则会报错
+
+set s_date='20210601';
+set e_date='20211231';
+
+
+-- select sum(receive_amt) from csx_tmp.temp_entry_00 where dc_code='W0A5' and supplier_code='20031166' and receive_sdt>='20211001';
+
 
 drop table csx_tmp.temp_entry_00 ;
 create table csx_tmp.temp_entry_00 as
@@ -137,7 +152,6 @@ select origin_order_code order_no,
     0 no_tax_shipped_amt,
     regexp_replace( to_date(receive_time ),'-','') receive_sdt
 from csx_dw.dws_wms_r_d_entry_batch a 
-
 where (sdt>=${hiveconf:s_date} or sdt='19990101')
     and regexp_replace( to_date(receive_time ),'-','')<= ${hiveconf:e_date}
     and  regexp_replace( to_date(receive_time ),'-','')>=${hiveconf:s_date}
@@ -192,6 +206,9 @@ join
 where substr(dc_code,1,1) !='L'
 ;
 
+
+-- select sum(receive_amt) from csx_tmp.temp_order_table where dc_code='W0A5' and supplier_code='20031166' and receive_sdt>='20211001';
+
 drop table csx_tmp.temp_order_table ;
 create temporary table csx_tmp.temp_order_table as 
 select sales_province_code,
@@ -212,7 +229,7 @@ select sales_province_code,
     source_type,
     source_type_name,
     local_purchase_flag,
-    a. order_no,
+    a.order_no,
     receive_no,
     a.batch_code,
     dc_code,
@@ -339,6 +356,8 @@ from csx_dw.dws_basic_w_a_csx_shop_m
 ) d on a.dc_code=d.shop_id
 ;
 
+-- select sum(receive_amt) from csx_tmp.temp_purch_table where dc_code='W0A5' and supplier_code='20031166' and sdt>='20211001';
+
 
 drop table csx_tmp.temp_purch_table;
 create temporary table csx_tmp.temp_purch_table as
@@ -419,7 +438,7 @@ select receive_sdt  as sdt,
     substr(receive_sdt,1,6) mon
 from csx_tmp.temp_order_table j 
 left join  
-(select company_code,supplier_code,yh_reuse_tag 
+(select distinct company_code,supplier_code,yh_reuse_tag 
 from csx_tmp.ads_fr_r_m_supplier_reuse 
 where months=substr(${hiveconf:e_date},1,6) ) s on j.company_code=s.company_code and j.supplier_code=s.supplier_code
 left join
@@ -431,6 +450,8 @@ from csx_dw.dws_basic_w_a_csx_shop_m
     and  table_type=1 
 ) m on if(j.send_dc_code='',0,j.send_dc_code)=m.send_dc_code
 ;
+
+-- select sum(receive_amt) from csx_tmp.temp_order_dtl where dc_code='W0A5' and supplier_code='20031166' and sdt>='20211001';
 
 drop table csx_tmp.temp_order_dtl;
 create temporary table csx_tmp.temp_order_dtl as 
