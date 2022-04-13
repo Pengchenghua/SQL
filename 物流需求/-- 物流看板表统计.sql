@@ -1,7 +1,7 @@
 -- 物流看板表统计
 -- 省区库存看板统计
-drop table csx_tmp.report_wms_r_d_turnover_provinve_kanban_fr;
-create table csx_tmp.report_wms_r_d_turnover_provinve_kanban_fr as 
+drop table csx_tmp.report_wms_r_d_turnover_province_kanban_fr;
+create table csx_tmp.report_wms_r_d_turnover_province_kanban_fr as 
 select 
 province_name,
 sku,
@@ -226,4 +226,61 @@ group by province_name,
  
 ) a 
 order by total_amt desc
+;
+
+-- 趋势情况
+
+create table csx_tmp.report_wms_r_d_tunover_mon_kanban_fr as 
+select a.province_name,
+       substr(a.sdt,1,6)  mon,
+       sum(final_amt)/10000 total_amt,
+round(sum( period_inv_amt_30day  )/ sum(case when division_code in ('11','10') then cost_30day+receipt_amt+material_take_amt else cost_30day end ) ,0)total_turnover_day
+from csx_tmp.ads_wms_r_d_goods_turnover a
+join 
+(select distinct month,
+    if(regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','')>regexp_replace(date_sub(current_date(),0),'-',''),  regexp_replace(date_sub(current_date(),1),'-',''),regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','')) sdt  
+from csx_dw.dws_basic_w_a_date 
+    where calday >regexp_replace(to_date(add_months(current_date(),-5)),'-','')
+    and calday  < regexp_replace(current_date(),'-','')
+) b on a.sdt=b.sdt
+where 1=1
+     and division_code in ('11','10','12','13','14')
+group by substr(a.sdt,1,6),a.province_name
+union all 
+select '全国'province_name,
+       substr(a.sdt,1,6)  mon,
+       sum(final_amt)/10000 total_amt,
+round(sum( period_inv_amt_30day  )/ sum(case when division_code in ('11','10') then cost_30day+receipt_amt+material_take_amt else cost_30day end ) ,0)total_turnover_day
+from csx_tmp.ads_wms_r_d_goods_turnover a
+join 
+(select distinct month,
+    if(regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','')>regexp_replace(date_sub(current_date(),0),'-',''),  regexp_replace(date_sub(current_date(),1),'-',''),regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','')) sdt  
+from csx_dw.dws_basic_w_a_date 
+    where calday >regexp_replace(to_date(add_months(current_date(),-5)),'-','')
+    and calday  < regexp_replace(current_date(),'-','')
+) b on a.sdt=b.sdt
+where 1=1
+     and division_code in ('11','10','12','13','14')
+group by substr(a.sdt,1,6)
+;
+
+--仓库类型库存统计
+create table csx_tmp.report_wms_r_d_turnover_dc_uses_kanban_fr as
+select '全国' province_name,
+    dc_uses,
+    sum(final_amt)/10000 total_amt
+from csx_tmp.ads_wms_r_d_goods_turnover 
+where sdt='20220412' 
+   -- and dc_uses in ('大客户物流','工厂')
+     and division_code in ('11','10','12','13','14')
+    group by dc_uses
+union all 
+select   province_name,
+    dc_uses,
+    sum(final_amt)/10000 total_amt
+from csx_tmp.ads_wms_r_d_goods_turnover 
+where sdt='20220412' 
+   -- and dc_uses in ('大客户物流','工厂')
+     and division_code in ('11','10','12','13','14')
+    group by dc_uses,province_name
 ;
