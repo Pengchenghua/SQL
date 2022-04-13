@@ -268,6 +268,7 @@ mon
 
 
 
+--省区 BBC+B端+城市服务商 销售SKU，未税销售额、毛利率
 
 select case when province_name like '福建%' then 1
 when province_name like '广东%' then 2
