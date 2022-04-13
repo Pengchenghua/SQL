@@ -1,7 +1,7 @@
 --财务库存过帐数据关联维表【20220406】
---导入数据时，注意将商品名称清空及中间有空白行
-csx_tmp.temp_inv_sale_01 ;-- 操作记录
-csx_tmp.temp_inv_cost_05; --结存库存
+-- 导入数据时，注意将商品名称清空及中间有空白行
+-- csx_tmp.temp_inv_sale_01 ;-- 操作记录
+-- csx_tmp.temp_inv_cost_05; --结存库存
 
 
 --计算期末库存额，库存余额-期间操作日志
@@ -71,7 +71,9 @@ select a.dc_code,b.shop_name,company_code,company_name,a.receive_are_code,
     a.inv_qty,
     a.no_tax_inv_amt,
     a.inv_amt,
-    tax_rate
+    tax_rate,
+    valuation_category_code,
+    valuation_category_name
 from csx_tmp.temp_inv_01 a 
 left join 
 (select shop_id,shop_name,company_code,company_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') b on a.dc_code=b.shop_id
@@ -95,8 +97,10 @@ left join
        classify_small_name,
        department_id,
        department_name,
-       tax_rate
-FROM csx_dw.dws_basic_w_a_csx_product_m
+       tax_rate,
+       valuation_category_code,
+       valuation_category_name
+FROM   csx_dw.dws_basic_w_a_csx_product_m
 WHERE sdt='current') c on a.goods_code=c.goods_id
 left join
 (select code,name,parent_code from csx_dw.dws_wms_w_a_basic_warehouse_reservoir where level='3') d on a.dc_code=d.parent_code and a.receive_are_code=d.code
@@ -105,3 +109,5 @@ where (inv_qty !=0 or inv_amt!=0);
 
 --导出数据
 select * from  csx_tmp.temp_inve_01;
+
+select sum(inv_amt)from  csx_tmp.temp_inve_01;

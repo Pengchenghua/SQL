@@ -1,7 +1,7 @@
 --采购备货数据
 -- 重庆（W0A7）,四川（W0A6）,福州（W0A8），杭州（W0N0），苏州（W0A5）
 set shop=('W0A2','W0A3');
-set enddt='20220329';
+set enddt='20220407';
 set sdt='20220301';
 
 -- 1.0 供应商满足率
@@ -335,7 +335,7 @@ group by  a.dc_code,
   ;
   
 -- 7.0 无动销SKU
-
+drop table csx_tmp.temp_pin ;
 create temporary table  csx_tmp.temp_pin as 
 select a.dc_code,
     classify_large_code,
@@ -345,7 +345,7 @@ select a.dc_code,
     classify_small_code,
     classify_small_name,
     count(case when  amt_no_tax!=0 then a.goods_code end ) stock_sku,
-    count(case when  coalesce(sales_value,0) >0 and amt_no_tax!=0  then a.goods_code end ) pin_sku
+    count(case when  coalesce(sales_value,0) >0   then a.goods_code end ) pin_sku
 FROM
 (select dc_code,goods_code,
     sum(amt_no_tax) amt_no_tax
@@ -359,7 +359,8 @@ left join
 (
 select dc_code,goods_code,sum(sales_value) sales_value
 from csx_dw.dws_sale_r_d_detail
-where sdt =${hiveconf:enddt} 
+where sdt <=${hiveconf:enddt} 
+    and sdt>=${hiveconf:sdt}
     and dc_code in  ${hiveconf:shop}
 group by dc_code,goods_code
 ) b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
@@ -706,8 +707,8 @@ select dc_code,
     0 days_turnover_30,
     0 h_final_qty,
     0 h_final_amt,
-    stock_sku as stock_all_sku,
-    pin_sku
+    stock_sku as stock_all_sku,   
+    pin_sku 
 FROM csx_tmp.temp_pin
 )a 
 group by    dc_code ,
@@ -733,8 +734,8 @@ group by    dc_code ,
     count(case when stock_properties=1 and amt_no_tax>0  then goods_code end) stock_sku,       --存储商品SKU
     sum(case when stock_properties=1 then amt end ) stock_amt,    -- 存储商品库存金额
     count(case when stock_properties=1 and amt_no_tax<=0 then goods_code end) qh_sku,
-    count(case when stock_properties !=1 and amt_no_tax>0  then goods_code end) no_stock_sku,       --存储商品SKU
-    sum(case when stock_properties !=1 then amt end ) no_stock_amt,    -- 存储商品库存金额
+    count(case when stock_properties !=1 and amt_no_tax>0  then goods_code end) no_stock_sku,       --非存储商品SKU
+    sum(case when stock_properties !=1 then amt end ) no_stock_amt,    -- 非存储商品库存金额
 	sum(A.qty) qty,
 	sum(A.amt) amt
 FROM (
@@ -910,14 +911,14 @@ select
     0 days_turnover_30,  --30天周转
     0  h_final_qty,                 --高库存金额
     0  h_final_amt,                 --高库存金额
-    0  stock_all_sku,             --库存SKU  
+    0  stock_all_sku,             --有库存SKU  
    0  pin_sku ,
    all_stock_sku,
     stock_sku,       --存储商品SKU
     stock_amt,    -- 存储商品库存金额
-    qh_sku,
-    no_stock_sku,       --存储商品SKU
-    no_stock_amt,    -- 存储商品库存金额
+    qh_sku,         -- 缺货SKU
+    no_stock_sku,     --非存储商品SKU
+    no_stock_amt,    -- 非存储商品库存金额
 	qty,
 	amt 
 from  csx_tmp.temp_stock_00

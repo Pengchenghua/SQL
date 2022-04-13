@@ -207,6 +207,8 @@ group by a.classify_large_code,
     classify_large_management,
     classify_middle_management
     ;
+
+    
     
     show create table csx_tmp.report_scm_r_d_classify_performance_fr;
 

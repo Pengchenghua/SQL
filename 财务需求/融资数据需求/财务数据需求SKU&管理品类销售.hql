@@ -43,9 +43,7 @@ from csx_dw.dws_sale_r_d_detail where sdt>='20210601'
 and channel_code in ('1','9')
 and business_type_code!='4'
 group by concat(substr(sdt,1,4),'-',substr(sdt,5,2))
- 
 )a 
-
 order by 
 case when province_name like '福建%' then 1
 when province_name like '广东%' then 2
