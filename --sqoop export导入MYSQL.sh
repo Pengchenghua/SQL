@@ -183,3 +183,23 @@ sqoop export \
 --input-null-string '\\N'  \
 --input-null-non-string '\\N' \
 --columns "${columns}"
+
+
+
+-- 物流商品库存周转
+columns='years,months,province_code,province_name,dist_code,dist_name,city_code,city_name,dc_code,dc_name,goods_id,goods_name,standard,unit_name,brand_name,dept_id,dept_name,business_division_code,business_division_name,division_code,division_name,category_large_code,category_large_name,category_middle_code,category_middle_name,category_small_code,category_small_name,classify_large_code,classify_large_name,classify_middle_code,classify_middle_name,classify_small_code,classify_small_name,joint_purchase_flag,valid_tag,valid_tag_name,goods_status_id,goods_status_name,sales_qty,sales_value,profit,sales_cost,period_inv_qty,period_inv_amt,final_qty,final_amt,days_turnover,cost_30day,sales_30day,qty_30day,dms,inv_sales_days,period_inv_qty_30day,period_inv_amt_30day,days_turnover_30,max_sale_sdt,no_sale_days,dc_type,entry_qty,entry_value,entry_sdt,entry_days,contain_transfer_entry_qty,contain_transfer_entry_value,contain_transfer_entry_sdt,contain_transfer_entry_days,receipt_amt,receipt_qty,material_take_amt,material_take_qty,dc_uses,update_time,sdt'
+day=2022-04-13
+yesterday=`date -d ${day} +%Y%m%d`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table ads_wms_r_d_goods_turnover \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table ads_wms_r_d_goods_turnover \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"

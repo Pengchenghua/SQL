@@ -84,6 +84,8 @@ order by total_amt desc
 drop table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr;
 create table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr as 
 select 
+ level_id,
+ province_code,
  province_name,
  classify_large_code ,
  classify_large_name ,
@@ -100,6 +102,8 @@ select
  validity_sku
 from 
 (select 
+ '1' level_id,
+ province_code,
  province_name,
  classify_large_code ,
  classify_large_name ,
@@ -137,6 +141,8 @@ classify_large_code ,
  classify_middle_name 
 union all 
 select 
+ '0' level_id,
+ '000001'province_code
  '全国' province_name,
  classify_large_code ,
  classify_large_name ,
