@@ -314,9 +314,12 @@ sqoop export \
 -- 物流看板--管理品类异常统计表
   drop table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr;
 CREATE TABLE `csx_tmp.report_wms_r_d_turnover_classify_kanban_fr`(
-    level_id string COMMENT'层级：0 全国 1省区 2 DC',
-    province_code string comment '省区编码,全国-平台100000，000001 全国',
+  level_id string COMMENT'层级：0 全国 1省区 2 DC',
+  province_code string comment '省区编码,全国-平台100000，000001 全国',
   `province_name` string COMMENT '省区名称', 
+  dc_code string comment 'DC编码',
+  dc_name string COMMENT 'DC名称',
+  dc_uses string comment 'DC用途',
   `classify_large_code` string comment '管理一级品类编码', 
   `classify_large_name` string COMMENT '管理一级品类名称', 
   `classify_middle_code` string comment '管理二级品类编码', 
@@ -337,10 +340,13 @@ CREATE TABLE `csx_tmp.report_wms_r_d_turnover_classify_kanban_fr`(
   ;
 
   CREATE TABLE `report_wms_r_d_turnover_classify_kanban_fr`(
-      id bigint not null auto_increment,
+    id bigint not null auto_increment,
     level_id varchar(64) COMMENT'层级：0 全国 1省区 2 DC',
     province_code varchar(64) comment '省区编码,全国-平台100000，000001 全国',
   `province_name` varchar(64) COMMENT '省区名称', 
+   dc_code varchar(64) comment 'DC编码',
+  dc_name varchar(64) COMMENT 'DC名称',
+  dc_uses varchar(64) comment 'DC用途',
   `classify_large_code` varchar(64) comment '管理一级品类编码', 
   `classify_large_name` varchar(64) COMMENT '管理一级品类名称', 
   `classify_middle_code` varchar(64) comment '管理二级品类编码', 
@@ -355,5 +361,211 @@ CREATE TABLE `csx_tmp.report_wms_r_d_turnover_classify_kanban_fr`(
   `validity_amt` decimal(38,6) COMMENT  '临期库存金额(临期、过期)', 
   `validity_sku` bigint COMMENT '临期商品SKU',
   update_time TIMESTAMP comment '更新时间',
-  sdt varchar(64) comment '日期'
-  )comment= '物流库存概览看板-管理品类异常统计'
+  sdt varchar(64) comment '日期',
+  primary key (id),
+  key index_sdt(sdt,level_id,province_name,province_code,dc_code,dc_name,dc_uses)
+  )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 comment= '物流库存概览看板-管理品类异常统计'
+
+
+
+-- 库存看板--管理品类异常统计
+set edate='${enddate}'  ;
+set dc_uses=('寄售门店','城市服务商','合伙人物流','');
+set edt=regexp_replace(${hiveconf:edate},'-','');
+
+drop table csx_tmp.temp_wms_kanban_class;
+create temporary table csx_tmp.temp_wms_kanban_class as 
+select 
+ level_id,
+ province_code,
+ province_name,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+ sku,
+ total_amt,
+ total_turnover_day,
+ high_stock_amt,      -- 高库存金额
+ high_stock_sku,            -- 高库存SKU
+ no_sales_stock_amt,          -- 无销售库存金额
+ no_sales_stock_sku,   -- 无销售库存SKU
+ validity_amt,
+ validity_sku,
+ current_timestamp(),
+ ${hiveconf:edt}
+from 
+(select 
+ '1' level_id,
+ province_code,
+ province_name,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+count(distinct case when final_qty!=0 then goods_id end) sku,
+sum(final_amt) total_amt,
+sum(period_inv_amt_30day  )/ sum(case when division_code in ('11','10') then cost_30day+receipt_amt+material_take_amt else cost_30day end ) total_turnover_day,
+sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
+        end ) high_stock_amt,      -- 高库存金额
+count(distinct  case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then a.goods_id
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then goods_id
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then goods_id
+        end ) high_stock_sku,            -- 高库存SKU
+sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end ) no_sales_stock_amt,          -- 无销售库存金额
+count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_id   end ) no_sales_stock_sku,   -- 无销售库存SKU
+sum(stock_amt) as validity_amt,
+count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
+from csx_tmp.ads_wms_r_d_goods_turnover  a
+left join 
+(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
+    where sdt=${hiveconf:edt}
+        and validity_type in ('过期','临期')
+        group by  dc_code,goods_code
+        )  b on a.dc_code=b.dc_code and a.goods_id=b.goods_code
+where sdt=${hiveconf:edt} 
+    and dc_uses not in ${hiveconf:dc_uses}
+    and division_code in ('11','10','12','13','14')
+group by province_name,a.province_code,
+classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name 
+union all 
+select 
+ '0' level_id,
+ '000001'province_code,
+ '全国' province_name,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+count(distinct case when final_qty!=0 then goods_id end) sku,
+sum(final_amt) total_amt,
+sum(period_inv_amt_30day  )/ sum(case when division_code in ('11','10') then cost_30day+receipt_amt+material_take_amt else cost_30day end ) total_turnover_day,
+sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
+        end ) high_stock_amt,      -- 高库存金额
+count(distinct  case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then a.goods_id
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then goods_id
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then goods_id
+        end ) high_stock_sku,            -- 高库存SKU
+sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end ) no_sales_stock_amt,          -- 无销售库存金额
+count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_id   end ) no_sales_stock_sku,   -- 无销售库存SKU
+sum(stock_amt) as validity_amt,
+count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
+from csx_tmp.ads_wms_r_d_goods_turnover  a
+left join 
+(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
+    where sdt=${hiveconf:edt}
+        and validity_type in ('过期','临期')
+        group by  dc_code,goods_code
+        )  b on a.dc_code=b.dc_code and a.goods_id=b.goods_code
+where sdt=${hiveconf:edt} 
+    and dc_uses not in ${hiveconf:dc_uses}
+    and division_code in ('11','10','12','13','14')
+group by 
+classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name
+ G 
+) a 
+;
+
+
+insert overwrite table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr partition(sdt)
+select  
+ level_id,
+ province_code,
+ province_name,
+ dc_code,
+ dc_name,
+ dc_uses,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+ sku,
+ total_amt/10000 total_amt,
+ total_turnover_day,
+ high_stock_amt/10000 high_stock_amt,      -- 高库存金额
+ high_stock_sku,            -- 高库存SKU
+ no_sales_stock_amt/10000 no_sales_stock_amt,          -- 无销售库存金额
+ no_sales_stock_sku,   -- 无销售库存SKU
+ validity_amt/10000 validity_amt,
+ validity_sku,
+ current_timestamp(),
+ ${hiveconf:edt}
+ from (
+select  
+ level_id,
+ province_code,
+ province_name,
+ '' as dc_code,
+ '' as dc_name,
+ '' as dc_uses,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+ sku,
+ total_amt,
+ total_turnover_day,
+ high_stock_amt,      -- 高库存金额
+ high_stock_sku,            -- 高库存SKU
+ no_sales_stock_amt,          -- 无销售库存金额
+ no_sales_stock_sku,   -- 无销售库存SKU
+ validity_amt,
+ validity_sku
+from  csx_tmp.temp_wms_kanban_class
+union all 
+select 
+ '2' level_id,
+ province_code,
+ province_name,
+ a.dc_code,
+ a.dc_name,
+ dc_uses,
+ classify_large_code ,
+ classify_large_name ,
+ classify_middle_code,
+ classify_middle_name ,
+count(distinct case when final_qty!=0 then goods_id end) sku,
+sum(final_amt) total_amt,
+sum(period_inv_amt_30day  )/ sum(case when division_code in ('11','10') then cost_30day+receipt_amt+material_take_amt else cost_30day end ) total_turnover_day,
+sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
+        end ) high_stock_amt,      -- 高库存金额
+count(distinct  case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then a.goods_id
+         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then goods_id
+          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then goods_id
+        end ) high_stock_sku,            -- 高库存SKU
+sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end ) no_sales_stock_amt,          -- 无销售库存金额
+count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_id   end ) no_sales_stock_sku,   -- 无销售库存SKU
+sum(stock_amt) as validity_amt,
+count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
+from csx_tmp.ads_wms_r_d_goods_turnover  a
+left join 
+(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
+    where sdt=${hiveconf:edt}
+        and validity_type in ('过期','临期')
+        group by  dc_code,goods_code
+        )  b on a.dc_code=b.dc_code and a.goods_id=b.goods_code
+where sdt=${hiveconf:edt} 
+    and dc_uses not in ${hiveconf:dc_uses}
+    and division_code in ('11','10','12','13','14')
+group by province_name,a.province_code,
+a.dc_code,
+dc_name,
+dc_uses,
+classify_large_code ,
+classify_large_name ,
+classify_middle_code,
+ classify_middle_name 
+ ) a 
+ ;

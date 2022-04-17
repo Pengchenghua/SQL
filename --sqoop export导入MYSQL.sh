@@ -203,3 +203,23 @@ sqoop export \
 --input-null-string '\\N'  \
 --input-null-non-string '\\N' \
 --columns "${columns}"
+
+
+columns='level_id,province_code,province_name,dc_code,dc_name,dc_uses,classify_large_code,classify_large_name,classify_middle_code,classify_middle_name,sku,total_amt,total_turnover_day,high_stock_amt,high_stock_sku,no_sales_stock_amt,no_sales_stock_sku,validity_amt,validity_sku,update_time,sdt'
+day=2022-04-14
+yesterday=`date -d ${day} +%Y%m%d`
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table report_wms_r_d_turnover_classify_kanban_fr \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table report_wms_r_d_turnover_classify_kanban_fr \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}";
+
+  REPORT_WMS_R_D_STOCK_KANBAN_FR
