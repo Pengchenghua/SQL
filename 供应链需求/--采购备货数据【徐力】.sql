@@ -1,8 +1,8 @@
 --采购备货数据
 -- 重庆（W0A7）,四川（W0A6）,福州（W0A8），杭州（W0N0），苏州（W0A5）
 set shop=('W0A2','W0A3');
-set enddt='20220407';
-set sdt='20220301';
+set enddt='20220419';
+set sdt='20220401';
 
 -- 1.0 供应商满足率
 drop table  csx_tmp.temp_supplier_fill_rate;
@@ -345,14 +345,15 @@ select a.dc_code,
     classify_small_code,
     classify_small_name,
     count(case when  amt_no_tax!=0 then a.goods_code end ) stock_sku,
-    count(case when  coalesce(sales_value,0) >0   then a.goods_code end ) pin_sku
+    count(case when  coalesce(sales_value,0) >0   then a.goods_code end ) pin_sku,
+    count(CASE WHEN coalesce(sales_value,0)<=0 AND amt_no_tax>0 then a.goods_code end  ) no_pin_sku  --不动销库存大于0
 FROM
 (select dc_code,goods_code,
     sum(amt_no_tax) amt_no_tax
 from csx_dw.dws_wms_r_d_accounting_stock_m
 where sdt=${hiveconf:enddt} 
 and dc_code in  ${hiveconf:shop}
-and reservoir_area_code not in ('PD01','PD02','TS01')
+and reservoir_area_code not in ('PD01','PD02','TS01','CY01')
 group by dc_code,goods_code
 ) a 
 left join
@@ -443,7 +444,8 @@ select
     sum(h_final_qty )  h_final_qty,
     sum(h_final_amt )  h_final_amt,
     sum(stock_all_sku )  stock_all_sku,
-    sum(pin_sku )  pin_sku
+    sum(pin_sku )  pin_sku,
+    sum(no_pin_sku) no_pin_sku
 from ( 
 select 
 receive_location_code as dc_code ,
@@ -475,7 +477,8 @@ zs_amount,
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from 
 csx_tmp.temp_supplier_fill_rate         --供应商满足率
 union all 
@@ -509,7 +512,8 @@ select dc_code,
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from csx_tmp.temp_cust_sale_01
 union all 
 -- 存储商品销售
@@ -542,7 +546,8 @@ select dc_code,
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from csx_tmp.temp_sale_01
 union all 
 -- 可退商品占比
@@ -576,7 +581,8 @@ select
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from csx_tmp.temp_sku
 union all 
 -- 退货占比
@@ -609,7 +615,8 @@ select dc_code,
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from  csx_tmp.temp_entry_01
 union all
 -- 周转
@@ -642,7 +649,8 @@ select dc_code,
     0 h_final_qty,
     0 h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 from  csx_tmp.temp_turnover  
 union all 
 -- 高库存金额占比
@@ -676,7 +684,8 @@ SELECT
       final_qty h_final_qty,
       final_amt h_final_amt,
     0  stock_all_sku,
-    0 pin_sku
+    0 pin_sku,
+    0 no_pin_sku
 FROM csx_tmp.tmp_hight_turn_goods
 union all 
 select dc_code,
@@ -708,7 +717,8 @@ select dc_code,
     0 h_final_qty,
     0 h_final_amt,
     stock_sku as stock_all_sku,   
-    pin_sku 
+    pin_sku ,
+    no_pin_sku
 FROM csx_tmp.temp_pin
 )a 
 group by    dc_code ,
@@ -768,7 +778,7 @@ where sdt='current'
 
    where sdt=${hiveconf:enddt}  
     and dc_code in ${hiveconf:shop}  
-    and reservoir_area_code not in ('PD01','PD02','TS01')
+    and reservoir_area_code not in ('PD01','PD02','TS01','CY01')
     group by  A.dc_code,A.goods_code,
    case when classify_large_code in ('B01','B02','B03') then '11' else '12' end  ,
     classify_large_code,
@@ -824,6 +834,7 @@ group by A.dc_code,
     sum(h_final_amt )  h_final_amt,                 --高库存金额
     sum(stock_all_sku )  stock_all_sku,             --库存SKU   
     sum(pin_sku )  pin_sku ,                         --动销SKU
+    sum(no_pin_sku)no_pin_sku,
     sum(all_stock_sku) all_stock_sku,
     sum(stock_sku) stock_sku,       --存储商品SKU
     sum(stock_amt) stock_amt,    -- 存储商品库存金额
@@ -867,6 +878,7 @@ group by A.dc_code,
     sum(h_final_amt )  h_final_amt,                 --高库存金额
     sum(stock_all_sku )  stock_all_sku,             --库存SKU   
     sum(pin_sku )  pin_sku ,                         --动销SKU
+    sum(no_pin_sku) no_pin_sku,
     0 all_stock_sku,
     0 stock_sku,       --存储商品SKU
     0 stock_amt,    -- 存储商品库存金额
@@ -913,6 +925,7 @@ select
     0  h_final_amt,                 --高库存金额
     0  stock_all_sku,             --有库存SKU  
    0  pin_sku ,
+   0  no_pin_sku,
    all_stock_sku,
     stock_sku,       --存储商品SKU
     stock_amt,    -- 存储商品库存金额

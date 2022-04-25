@@ -1,6 +1,6 @@
 -- 财务采购入库订单表
 -- 需要增加采购订单状态
-drop table csx_tmp.report_fr_r_m_financial_purchase_detail;
+drop table csx_tmp. ;
 CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   `sdt` string COMMENT '收货日期(包含出库日期)', 
   `purchase_org` string COMMENT '采购组织', 
