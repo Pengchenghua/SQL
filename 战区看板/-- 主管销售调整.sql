@@ -7,13 +7,13 @@ set hive.exec.max.dynamic.partitions=1000;
 set hive.exec.dynamic.partition=true;
 set hive.exec.max.dynamic.partitions.pernode=1000000;--每个mapper节点最多创建1000个分区
 set hive.exec.dynamic.partition.mode=nonstrict;
--- set hive.exec.compress.intermediate=true --启用中间数据压缩
--- SET hive.exec.compress.output=true; -- 启用最终数据输出压缩
--- set mapreduce.output.fileoutputformat.compress=true; --启用reduce输出压缩
--- set mapreduce.output.fileoutputformat.compress.codec=org.apache.hadoop.io.compress.SnappyCodec --设置reduce输出压缩格式
--- set mapreduce.map.output.compress=true; --启用map输入压缩
--- set mapreduce.map.output.compress.codec=org.apache.hadoop.io.compress.SnappyCodec；-- 设置map输出压缩格式
--- set parquet.compression=snappy;
+set hive.exec.compress.intermediate=true --启用中间数据压缩
+SET hive.exec.compress.output=true; -- 启用最终数据输出压缩
+set mapreduce.output.fileoutputformat.compress=true; --启用reduce输出压缩
+set mapreduce.output.fileoutputformat.compress.codec=org.apache.hadoop.io.compress.SnappyCodec --设置reduce输出压缩格式
+set mapreduce.map.output.compress=true; --启用map输入压缩
+set mapreduce.map.output.compress.codec=org.apache.hadoop.io.compress.SnappyCodec；-- 设置map输出压缩格式
+set parquet.compression=snappy;
 
 set edate= regexp_replace(${hiveconf:edt},'-','');
 set sdate=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
@@ -61,6 +61,7 @@ from
   from csx_dw.dwd_uc_w_a_user_adjust
   where sdt = 'current'
     and user_source_busi=1
+     and del_flag='0'
    -- and status=1
 ) tmp where tmp.rank = 1
 and position is not null and position!=''
@@ -113,12 +114,12 @@ from
         channel_name,
         a.customer_no,
         sdt,
-        sales_name,
-        work_no,
-        supervisor_name,
-        supervisor_work_no,
-        sales_manager_no,           -- 销售经理工号
-        sales_manager_name,         -- 销售经理
+        b.sales_name,
+        b.work_no,
+        b.first_supervisor_name as supervisor_name,
+        b.first_supervisor_work_no as supervisor_work_no,
+        b.sales_manager_no,           -- 销售经理工号
+        b.sales_manager_name,         -- 销售经理
         customer_name,
         regexp_replace(split(sign_time, ' ')[0], '-', '') as sign_time,
         case when (sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate}) then '本月' else '环比月' end smonth,
@@ -130,12 +131,17 @@ from
   from csx_dw.dws_sale_r_d_detail a 
     left join (select customer_no,second_supervisor_work_no as sales_manager_no,second_supervisor_name as sales_manager_name,
                      first_supervisor_work_no,
-                     first_supervisor_name 
-                from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_no=b.customer_no
+                     first_supervisor_name,
+                     sales_name,
+                     work_no
+                from csx_dw.dws_crm_w_a_customer 
+                    where sdt='current'
+                        and customer_no!='') b on a.customer_no=b.customer_no
       where (  ( sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate} ) --本月
         or (sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate}))--环比月
   and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046',
             'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
+            
   group by province_code,
     province_name,
     city_group_code,
@@ -146,10 +152,10 @@ from
     sdt,
     sales_manager_no,  
     sales_manager_name,
-    sales_name,
-    work_no,
-    a.supervisor_name,
-    supervisor_work_no,
+    b.sales_name,
+    b.work_no,
+    b.first_supervisor_name,
+    b.first_supervisor_work_no,
     customer_name,
     case when (sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate}) then '本月' else '环比月' end,
     business_type_code,
@@ -260,10 +266,11 @@ from (SELECT
             b.province_name as province_name,
             city_group_code,
             city_group_name,
-            coalesce(c.sales_manager_work_no,d.sales_manager_work_no) sales_manager_no,
-            coalesce(c.sales_manager_name,d.sales_manager_name) sales_manager_name,
-            coalesce(sales_service_manager_work_no,work_no) manager_no,
-            coalesce(a.manager_name,'')manager_name,
+            c.sales_manager_work_no sales_manager_no,
+            c.sales_manager_name sales_manager_name,
+            sales_service_manager_work_no manager_no,
+            a.manager_name  manager_name,
+            position,
             0 as old_cust_count,
             0 as  old_daily_sale,
             0 as  old_month_sale,
@@ -296,20 +303,11 @@ from (SELECT
                 sales_manager_work_no,
                 sales_service_manager_name,
                 sales_service_manager_work_no,
+                position,
                 prov_code
             from  csx_tmp.temp_user
             where position in( 'CUSTOMER_SERVICE_MANAGER')
         ) c on regexp_replace( c.sales_service_manager_name ,' ','') = regexp_replace(coalesce(manager_name,'0'),' ','') and c.prov_code=a.province_code
-            left join 
-        (select distinct  
-                sales_manager_name,
-                sales_manager_work_no,
-                sales_name,
-                work_no,
-                prov_code
-            from  csx_tmp.temp_user
-            where position in( 'SALES')
-        ) d on regexp_replace( d.sales_name ,' ','') = regexp_replace(coalesce(manager_name,'0'),' ','') and d.prov_code=a.province_code
       join 
       (select distinct region_code,region_name,province_code,province_name from csx_dw.dws_sale_w_a_area_belong) b on a.province_code=b.province_code
     
@@ -323,13 +321,155 @@ from (SELECT
             b.province_name ,
             city_group_code,
             city_group_name,
-            coalesce(c.sales_manager_work_no,d.sales_manager_work_no) ,
-            coalesce(c.sales_manager_name,d.sales_manager_name) ,
-            coalesce(sales_service_manager_work_no,work_no) ,
-            coalesce(a.manager_name,'')
+            c.sales_manager_work_no ,
+            c.sales_manager_name ,
+            sales_service_manager_work_no ,
+            a.manager_name,
+            position
             ;
+            
+  drop table csx_tmp.temp_plan_02;
+ CREATE temporary table csx_tmp.temp_plan_02 as 
+   SELECT 
+            region_code,
+            region_name,
+            province_code,
+            province_name,
+            city_group_code,
+            city_group_name,
+            coalesce(a.sales_manager_no,d.sales_manager_work_no) sales_manager_no,
+            coalesce(a.sales_manager_name,d.sales_manager_name) as sales_manager_name,
+           work_no  manager_no,
+           a.manager_name,
+           coalesce(a.position,d.position) position,
+            0 as old_cust_count,
+            0 as  old_daily_sale,
+            0 as  old_month_sale,
+            0 as  old_month_profit,
+            0 as  old_last_month_sale,
+            0 as  new_cust_count,
+            0 as  new_daily_sale,
+            0 as  new_month_sale,
+            0 as  new_month_profit,
+            0 as  new_last_month_sale,
+            0 as  all_daily_sale,
+            0 as  all_month_sale,
+            0 as real_month_sale,   --不含批发内购销售
+            0 as  all_month_profit,
+            0 as  all_last_month_sale,
+            0 all_last_month_profit,
+            old_plan_sale,
+            new_plan_sale,
+            new_plan_sale_cust_num,
+            all_plan_sale,
+            all_plan_profit,
+            0 as daily_sign_cust_num,
+            0 as daily_sign_amount,
+            0 as sign_cust_num,
+            0 as sign_amount
+      FROM csx_tmp.temp_plan_01 a
+    left join 
+        (select distinct  
+                sales_manager_name,
+                sales_manager_work_no,
+                sales_name,
+                work_no,
+                prov_code,
+                position
+            from  csx_tmp.temp_user
+             where position != 'CUSTOMER_SERVICE_MANAGER'
+        ) d on regexp_replace( d.sales_name ,' ','') = regexp_replace(coalesce(manager_name,'0'),' ','') and d.prov_code=a.province_code
+where 1=1
+and a.manager_no is null
+     
+          ;
+          
+ 
+   drop table csx_tmp.temp_plan_03;
+ CREATE temporary table csx_tmp.temp_plan_03 as 
+          SELECT 
+            region_code,
+            region_name,
+            province_code,
+            province_name,
+            city_group_code,
+            city_group_name,
+            sales_manager_no,
+             sales_manager_name,
+             manager_no,
+            a.manager_name,
+            position,
+            0 as old_cust_count,
+            0 as  old_daily_sale,
+            0 as  old_month_sale,
+            0 as  old_month_profit,
+            0 as  old_last_month_sale,
+            0 as  new_cust_count,
+            0 as  new_daily_sale,
+            0 as  new_month_sale,
+            0 as  new_month_profit,
+            0 as  new_last_month_sale,
+            0 as  all_daily_sale,
+            0 as  all_month_sale,
+            0 as real_month_sale,   --不含批发内购销售
+            0 as  all_month_profit,
+            0 as  all_last_month_sale,
+            0 all_last_month_profit,
+            old_plan_sale,
+            new_plan_sale,
+            new_plan_sale_cust_num,
+            all_plan_sale,
+            all_plan_profit,
+            0 as daily_sign_cust_num,
+            0 as daily_sign_amount,
+            0 as sign_cust_num,
+            0 as sign_amount
+      FROM csx_tmp.temp_plan_01 a
+      where a.manager_no is not null 
+      union all
+       SELECT 
+            region_code,
+            region_name,
+            province_code,
+            province_name,
+            city_group_code,
+            city_group_name,
+           sales_manager_no,
+           sales_manager_name,
+            manager_no,
+           a.manager_name,
+           position,
+            0 as old_cust_count,
+            0 as  old_daily_sale,
+            0 as  old_month_sale,
+            0 as  old_month_profit,
+            0 as  old_last_month_sale,
+            0 as  new_cust_count,
+            0 as  new_daily_sale,
+            0 as  new_month_sale,
+            0 as  new_month_profit,
+            0 as  new_last_month_sale,
+            0 as  all_daily_sale,
+            0 as  all_month_sale,
+            0 as real_month_sale,   --不含批发内购销售
+            0 as  all_month_profit,
+            0 as  all_last_month_sale,
+            0 all_last_month_profit,
+            old_plan_sale,
+            new_plan_sale,
+            new_plan_sale_cust_num,
+            all_plan_sale,
+            all_plan_profit,
+            0 as daily_sign_cust_num,
+            0 as daily_sign_amount,
+            0 as sign_cust_num,
+            0 as sign_amount
+      FROM csx_tmp.temp_plan_02 a
+
+;
     
     
+   
 drop table csx_tmp.temp_manger_sale;
 create temporary  TABLE csx_tmp.temp_manger_sale AS
 select 
@@ -340,8 +480,8 @@ select
    province_name,
    city_group_code,
    city_group_name,
-   if(sales_manager_name is null ,'无经理',sales_manager_name) as sales_manager_name, 
-   if(sales_manager_no is null ,'88888888',sales_manager_no)  as sales_manager_work_no,   
+   case when sales_manager_name is null or sales_manager_name='' then '无经理' else sales_manager_name end  as sales_manager_name, 
+   case when sales_manager_no is null or sales_manager_no='' then '88888888'else sales_manager_no end  as sales_manager_work_no,   
    case when manager_name='' or manager_name is null then '88888888'else manager_no end  manager_no,  
    case when manager_name='' or manager_name is null then  '无主管'else manager_name end  manager_name, 
    coalesce(sum(old_cust_count),0) as  old_cust_count,
@@ -409,67 +549,52 @@ from
 from   csx_tmp.temp_manger_sale_01
     union all 
     SELECT 
-            b.region_code,
-            b.region_name,
-            b.province_code,
-            b.province_name as province_name,
-            city_group_code,
-            case when city_group_name like '攀枝%' then '攀枝花市' else city_group_name end city_group_name,
-            sales_manager_work_no sales_manager_no,
-            sales_manager_name,
-            sales_supervisor_work_no manager_no,
-            coalesce(a.manager_name,'')manager_name,
-            0 as old_cust_count,
-            0 as  old_daily_sale,
-            0 as  old_month_sale,
-            0 as  old_month_profit,
-            0 as  old_last_month_sale,
-            0 as  new_cust_count,
-            0 as  new_daily_sale,
-            0 as  new_month_sale,
-            0 as  new_month_profit,
-            0 as  new_last_month_sale,
-            0 as  all_daily_sale,
-            0 as  all_month_sale,
-            0 as real_month_sale,   --不含批发内购销售
-            0 as  all_month_profit,
-            0 as  all_last_month_sale,
-            0 all_last_month_profit,
-            sum(case when customer_age_code ='1' then plan_sales_value end ) as old_plan_sale,
-            sum(case when customer_age_code ='2' then plan_sales_value end ) as new_plan_sale,
-            sum(case when customer_age_code ='2' then a.customer_count end ) as new_plan_sale_cust_num,
-            coalesce(sum(plan_sales_value),0)all_plan_sale,
-            sum(plan_profit)all_plan_profit,
-            0 as daily_sign_cust_num,
-            0 as daily_sign_amount,
-            0 as sign_cust_num,
-            0 as sign_amount
-      FROM csx_tmp.dws_csms_manager_month_sale_plan_tmp a
-      join 
-      (select distinct region_code,region_name,province_code,province_name from csx_dw.dws_sale_w_a_area_belong) b on a.province_code=b.province_code
-      left join 
-        (select distinct case when prov_code='24' then sales_name else sales_supervisor_name end sales_supervisor_name,
-                case when prov_code='24' then work_no else sales_supervisor_work_no end sales_supervisor_work_no,
-                sales_manager_name,
-                sales_manager_work_no,
-                prov_code
-            from  csx_tmp.temp_user
-            --  where prov_code='24'
-        ) c on regexp_replace( c.sales_supervisor_name ,' ','') = regexp_replace(coalesce(manager_name,'0'),' ','') and c.prov_code=a.province_code
-      WHERE MONTH= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
-      and sdt =substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
-        and customer_attribute_name!='批发内购'
-       --  AND channel_name='大客户'
-      GROUP BY b.region_code,
-            b.region_name,
-            b.province_code,
-            b.province_name,
-            sales_supervisor_work_no,
-            manager_name,
-            sales_manager_name,
-            sales_manager_work_no,
-            city_group_code,
-            city_group_name
+        region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        sales_manager_no,
+        sales_manager_name,
+        case when position='CUSTOMER_SERVICE_MANAGER'then '' else manager_no end manager_no ,
+        case when position='CUSTOMER_SERVICE_MANAGER'then '' else manager_name end  manager_name,
+        0 as old_cust_count,
+        0 as  old_daily_sale,
+        0 as  old_month_sale,
+        0 as  old_month_profit,
+        0 as  old_last_month_sale,
+        0 as  new_cust_count,
+        0 as  new_daily_sale,
+        0 as  new_month_sale,
+        0 as  new_month_profit,
+        0 as  new_last_month_sale,
+        0 as  all_daily_sale,
+        0 as  all_month_sale,
+        0 as real_month_sale,   --不含批发内购销售
+        0 as  all_month_profit,
+        0 as  all_last_month_sale,
+        0 all_last_month_profit,
+        sum(old_plan_sale) as old_plan_sale,
+        sum(new_plan_sale) as new_plan_sale,
+        sum(new_plan_sale_cust_num) as new_plan_sale_cust_num,
+        coalesce(sum(all_plan_sale),0)all_plan_sale,
+        sum(all_plan_profit)all_plan_profit,
+        0 as daily_sign_cust_num,
+        0 as daily_sign_amount,
+        0 as sign_cust_num,
+        0 as sign_amount
+      FROM csx_tmp.temp_plan_03
+      group by region_code,
+        region_name,
+        province_code,
+        province_name,
+        city_group_code,
+        city_group_name,
+        sales_manager_no,
+        sales_manager_name,
+        case when position='CUSTOMER_SERVICE_MANAGER'then '' else manager_no end  ,
+        case when position='CUSTOMER_SERVICE_MANAGER'then '' else manager_name end  
     union all 
      SELECT
             b.region_code,
@@ -543,12 +668,12 @@ from   csx_tmp.temp_manger_sale_01
             region_name,
             province_code,
             province_name,
-            manager_name,
-            manager_no,
+            case when sales_manager_name is null or sales_manager_name='' then '无经理' else sales_manager_name end  , 
+            case when sales_manager_no is null or sales_manager_no='' then '88888888'else sales_manager_no end  ,   
+            case when manager_name='' or manager_name is null then '88888888'else manager_no end  ,  
+            case when manager_name='' or manager_name is null then  '无主管'else manager_name end  , 
             city_group_code,
-            city_group_name,
-            sales_manager_name,
-            sales_manager_no 
+            city_group_name
 ;
 
 
@@ -674,3 +799,22 @@ FROM csx_tmp.temp_manger_sale_02 a
  order by 
     zone_id,case when   province_code='00' then '9999' else   province_code end desc,level_id asc ,
     case when manager_name like '虚%' then 9999 else 1 end asc;
+
+
+day=${enddate}
+day=2022-04-25
+columns='level_id,sales_months,zone_id,zone_name,channel,channel_name,province_code,province_name,city_group_code,city_group_name,sales_manager_no,sales_manager_name,manager_no,manager_name,all_cust_count,all_daily_sale,all_plan_sale,all_month_sale,real_month_sale,real_sales_fill_rate,all_sales_fill_rate,all_last_month_sale,all_last_month_profit,all_mom_sale_growth_rate,all_plan_profit,all_month_profit,all_month_profit_fill_rate,all_month_profit_rate,old_cust_count,old_daily_sale,old_plan_sale,old_month_sale,old_sales_fill_rate,old_last_month_sale,old_mom_sale_growth_rate,old_month_profit,old_month_profit_rate,new_plan_sale_cust_num,new_cust_count,new_cust_count_fill,new_daily_sale,new_plan_sale,new_month_sale,new_month_sale_fill_rate,new_last_month_sale,new_mom_sale_growth_rate,new_month_profit,new_month_profit_rate,new_sign_cust_num,new_sign_amount,daily_sign_cust_num,daily_sign_amount,update_time,sdt'
+yesterday=${day//-/}
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table ads_sale_r_d_zone_supervisor_fr_back \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table ads_sale_r_d_zone_supervisor_fr_back \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"

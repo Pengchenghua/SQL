@@ -1,4 +1,5 @@
 -- 大区渠道销售报表【20220423】
+-- 大区渠道销售报表【20220423】
 --set hive.execution.engine=tez;
 --set tez.queue.name=caishixian;
 --set tez.am.speculation.enabled=true;  --是否开启推测执行，默认是false，在出现最后一个任务很慢的情况下，建议把这个参数设置为true
@@ -40,6 +41,7 @@ CREATE TEMPORARY TABLE csx_tmp.temp_war_zone_sale AS
 SELECT a.channel_name,
     a.province_code,
     a.province_name,
+    city_group_code,
     sum(yesterday_sales_value) as yesterday_sales_value, 
     sum(real_yesterday_sales_value)as real_yesterday_sales_value,
    -- last_day_sales,
@@ -66,6 +68,7 @@ SELECT CASE
        END channel_name,
        a.province_code,
        a.province_name,
+       city_group_code,
        a.customer_no,
     sum(CASE  WHEN sdt=regexp_replace(${hiveconf:edate},'-','') THEN sales_value  END)AS yesterday_sales_value, 
      sum(CASE  WHEN sdt=regexp_replace(${hiveconf:edate},'-','') and a.business_type_name!='批发内购' THEN sales_value  END)AS real_yesterday_sales_value, --不含批发内购销售
@@ -93,6 +96,7 @@ WHERE sdt>=regexp_replace(${hiveconf:sdate},'-','')
 				'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
 GROUP BY province_code,
          province_name,
+         city_group_code,
          CASE
            WHEN a.channel_code IN ('1','7','9') THEN '大客户'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
@@ -104,7 +108,8 @@ GROUP BY province_code,
 GROUP BY 
     a.channel_name,
     a.province_code,
-    a.province_name
+    a.province_name,
+    city_group_code
 ;
 
 
@@ -118,6 +123,7 @@ CREATE TEMPORARY TABLE csx_tmp.temp_war_zone_sale_01 AS
 SELECT a.channel_name,
     a.province_code,
     a.province_name,
+    a.city_group_code,
     yesterday_sales_value, 
     real_yesterday_sales_value,
     last_week_daily_sales,
@@ -145,6 +151,7 @@ left join
            ELSE a.channel_name
        END channel_name,
        province_code,
+       city_group_code,
        sum(a.sales_value)as last_week_daily_sales,      --上周同日销售额
        sum(profit) as last_week_daily_profit
     from csx_dw.dws_sale_r_d_detail a
@@ -157,8 +164,9 @@ left join
 		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
            ELSE a.channel_name
        END ,
-       province_code
-     ) as c on a.province_code=c.province_code and a.channel_name=c.channel_name;
+       province_code,
+       city_group_code
+     ) as c on a.province_code=c.province_code and a.channel_name=c.channel_name and a.city_group_code=c.city_group_code;
 
 -- select regexp_replace(date_sub(${hiveconf:edate},7),'-','');
 -- show create table csx_dw.ads_sale_w_d_ads_customer_sales_q;
@@ -174,6 +182,7 @@ SELECT CASE
        END channel_name,
        province_code,
        province_name,
+       city_group_code,
        sum(CASE
                WHEN sdt=regexp_replace(${hiveconf:l_edate},'-','') THEN sales_value
            END)AS last_month_daily_sale,
@@ -187,6 +196,7 @@ WHERE sdt>=regexp_replace(${hiveconf:l_sdate},'-', '')
 				'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
 GROUP BY province_code,
          province_name,
+         city_group_code,
          CASE
            WHEN a.channel_code IN ('1','7','9') THEN '大客户'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
@@ -206,6 +216,7 @@ select
     '大客户' as channel_name,
     province_code ,
     province_name  ,
+    city_group_code,
     count(distinct  1 )as sale_sku,
     sum(sale/10000)sale,
     sum(profit/10000 )profit,
@@ -216,6 +227,7 @@ select
 select
     province_code ,
     province_name ,
+    city_group_code,
     sdt,
     a.customer_no,
     avg(cost_price )avg_cost,
@@ -236,43 +248,47 @@ group by
    province_code ,
     province_name ,
     sdt,
-    a.customer_no
+    a.customer_no,
+    city_group_code
    ) a 
 group by 
    province_code ,
-   province_name ;
+   province_name ,
+   city_group_code;
  
 -- 计划表统计  
 drop table if exists csx_tmp.temp_plan_sale;
 create temporary table csx_tmp.temp_plan_sale
 as 
 select trim(province_code)province_code,
+    city_group_code,
     channel_name,
     sum(daily_plan_sales_value)daily_plan_sales_value,
     sum(daily_plan_profit)  daily_plan_profit,
     sum(plan_sales_value)plan_sales_value ,
     sum(plan_profit)plan_profit 
    from 
-   (select province_code,'大客户' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
+   (select province_code,city_group_code,'大客户' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
    from csx_tmp.dws_csms_province_month_sale_plan_tmp
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6)
     and sdt=substr(regexp_replace(${hiveconf:edate},'-',''),1,6)
     and customer_attribute_name!='批发内购'
 	and  (weeknum is null or weeknum='')
      union all 
-    select province_code,'商超' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
+    select province_code,city_group_code,'商超' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
     from csx_tmp.dws_ssms_province_month_sale_plan_tmp
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
      and sdt=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
 	and  (weeknum is null or weeknum='')
 	union all 
-    select province_code,channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(sales_value )plan_sales_value ,0 plan_profit 
+    select province_code,city_group_code,channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(sales_value )plan_sales_value ,0 plan_profit 
     from csx_tmp.report_sale_r_m_province_target 
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
         and province_code not in ('32','23','24')
     ) d 
     group by 
 province_code,
+city_group_code,
 channel_name
 ;
 
@@ -285,12 +301,10 @@ drop table if exists  csx_tmp.temp_plan_sale_01;
 create temporary table  csx_tmp.temp_plan_sale_01 as 
 SELECT '1' level_id,
        substr(regexp_replace(${hiveconf:edate},'-',''),1,6) as  sales_months,
-       zone_id,
-       zone_name,
        case when a.channel_name='大客户' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
        a.channel_name,
        a.province_code,
-       a.province_name,
+       a.city_group_code,
        --0 as daily_plan_sale,
        sum(yesterday_sales_value/10000 )AS daily_sales_value,
        --0 as daily_sale_fill_rate,
@@ -325,7 +339,7 @@ SELECT '1' level_id,
 FROM
   (SELECT channel_name,
           province_code,
-          province_name,
+          city_group_code,
           yesterday_sales_value,
           real_yesterday_sales_value,
           yesterday_profit,
@@ -347,7 +361,7 @@ FROM
    FROM csx_tmp.temp_war_zone_sale_01
    UNION ALL SELECT channel_name,
                     province_code,
-                    province_name,
+                    city_group_code,
                     0 AS yesterday_sales_value,
                     0  as real_yesterday_sales_value,
                     0 AS yesterday_profit,
@@ -369,15 +383,10 @@ FROM
    FROM csx_tmp.temp_ring_war_zone_sale
    ) a  
    left join 
-   csx_tmp.temp_war_zone_sale_02 c on a.province_code=c.province_code and a.channel_name=c.channel_name
-   left join 
-   (select distinct province_code,province_name,region_code as zone_id,region_name as zone_name from csx_dw.dws_sale_w_a_area_belong ) b on 
-    case when a.province_code in ('35','36') then '35' else a.province_code end =b.province_code
+   csx_tmp.temp_war_zone_sale_02 c on a.province_code=c.province_code and a.channel_name=c.channel_name and a.city_group_code=c.city_group_code
 GROUP BY a.channel_name,
          a.province_code,
-         a.province_name,
-         zone_id,
-         zone_name,
+         a.city_group_code,
          negative_days_profit,
          negative_profit
     ;
@@ -385,45 +394,48 @@ GROUP BY a.channel_name,
     
     
     
---插入数据
+--销售数据关联目标计划表
 
 -- INSERT overwrite table csx_tmp.ads_sale_r_d_zone_sales_fr partition(sdt)
 drop table csx_tmp.temp_sale_into_01;
 CREATE temporary table csx_tmp.temp_sale_into_01 as 
 SELECT level_id,
        substr(regexp_replace(${hiveconf:edate},'-',''),1,6) as  sales_months,
-       zone_id,
-       zone_name,
+       b.zone_id,
+       b.zone_name,
        channel_code,
        a.channel_name,
        a.province_code,
-       a.province_name,
-       daily_plan_sales_value as daily_plan_sale,
+       b.province_name,
+       a.city_group_code,
+       b.city_group_name,
+       coalesce(daily_plan_sales_value,0) as daily_plan_sale,
        daily_sales_value,
        real_daily_sales_value,
-       coalesce(real_daily_sales_value/d.daily_plan_sales_value,0)    real_daily_sale_fill_rate,
-       coalesce(daily_sales_value/d.daily_plan_sales_value,0)    daily_sale_fill_rate,
-       last_week_daily_sales as last_day_sales,
+       if(coalesce(d.daily_plan_sales_value,0)=0,0,(real_daily_sales_value/d.daily_plan_sales_value))    real_daily_sale_fill_rate,
+       if(coalesce(d.daily_plan_sales_value,0)=0,0,daily_sales_value/d.daily_plan_sales_value)    daily_sale_fill_rate,
+       last_week_daily_sales ,
+       last_week_daily_profit  ,
        (coalesce((daily_sales_value),0)-coalesce((last_week_daily_sales),0))/coalesce((last_week_daily_sales),0) as daily_sale_growth_rate,
-       d.daily_plan_profit,
+       coalesce(d.daily_plan_profit,0) daily_plan_profit,
        daily_profit,
-       coalesce(daily_profit/d.daily_plan_profit,0) as daily_profit_fill_rate,
-       coalesce((daily_profit)/(daily_sales_value),0) as daily_profit_rate,
+       if(coalesce(d.daily_plan_profit,0)=0,0,(daily_profit/d.daily_plan_profit)) as daily_profit_fill_rate,
+       coalesce(daily_profit/daily_sales_value,0) as daily_profit_rate,
        daily_negative_profit,
        daily_often_cust_sale,
        daily_new_cust_sale,
        daily_sale_cust_num,
-       plan_sales_value as month_plan_sale,
+       coalesce(plan_sales_value ,0) as month_plan_sale,
        month_sale_value,
        real_months_sales_value real_month_sale_value,
-       (real_months_sales_value/plan_sales_value) as real_month_sale_fill_rate,
-       (month_sale_value/plan_sales_value) as month_sale_fill_rate,
+       if(coalesce(plan_sales_value,0)=0,0,(real_months_sales_value/plan_sales_value)) as real_month_sale_fill_rate,
+       if(coalesce(plan_sales_value,0)=0,0,(month_sale_value/plan_sales_value)) as month_sale_fill_rate,
        last_month_sale,
        last_month_profit,
        (coalesce((month_sale_value),0)-coalesce((last_month_sale),0))/coalesce((last_month_sale),0) as mom_sale_growth_rate,
-       d.plan_profit as month_plan_profit,
+       coalesce(d.plan_profit,0) as month_plan_profit,
        month_profit,
-       (month_profit /d.plan_profit) as month_proft_fill_rate,
+       if(coalesce(d.plan_profit,0)=0,0,(month_profit /d.plan_profit)) as month_proft_fill_rate,
        (month_profit)/(month_sale_value) as month_profit_rate,
        month_negative_profit, 
        month_often_cust_sale,
@@ -433,7 +445,10 @@ SELECT level_id,
 FROM
  csx_tmp.temp_plan_sale_01 a  
    left join 
-   csx_tmp.temp_plan_sale d on a.province_code=d.province_code and trim(a.channel_name)=trim(d.channel_name)
+   csx_tmp.temp_plan_sale d on a.province_code=d.province_code and trim(a.channel_name)=trim(d.channel_name) and a.city_group_code=d.city_group_code
+      left join 
+   (select distinct city_group_code,city_group_name,province_code,province_name,region_code as zone_id,region_name as zone_name from csx_dw.dws_sale_w_a_area_belong ) b on 
+    case when a.province_code in ('35','36') then '35' else a.province_code end =b.province_code and a.city_group_code=b.city_group_code
    
 ;
 
@@ -449,12 +464,15 @@ select
        a.channel_name,
        a.province_code,
        a.province_name,
+       city_group_code,
+       city_group_name,
        sum(daily_plan_sale) daily_plan_sale,
        sum(daily_sales_value) daily_sales_value,
        sum(real_daily_sales_value) real_daily_sales_value,
       -- sum()coalesce(real_daily_sales_value/d.daily_plan_sales_value,0)    real_daily_sale_fill_rate,
       -- sum()coalesce(daily_sales_value/d.daily_plan_sales_value,0)    daily_sale_fill_rate,
-       sum(last_day_sales) last_day_sales,
+       sum(last_week_daily_sales) last_week_daily_sales,
+       sum(last_week_daily_profit) last_week_daily_profit,
       -- sum()(coalesce((daily_sales_value),0)-coalesce((last_week_daily_sales),0))/coalesce((last_week_daily_sales),0) as daily_sale_growth_rate,
        sum(daily_plan_profit) daily_plan_profit,
        sum(daily_profit)daily_profit,
@@ -488,37 +506,30 @@ select
        zone_id,
        zone_name,
        channel_code,
-       a.channel_name,
-       a.province_code,
-       a.province_name
+       channel_name,
+       province_code,
+       province_name,
+       city_group_code,city_group_name
      grouping sets
-     (( sales_months,
-       zone_id,
-       zone_name,
-       channel_code,
-       a.channel_name,
-       a.province_code,
-       a.province_name),
-       ( sales_months,
-       zone_id,
-       zone_name,
-       channel_code,
-       a.channel_name),
-       ( sales_months,
-       zone_id,
-       zone_name),
-       ( sales_months,
-       zone_id,
-       zone_name,
-       a.province_code,
-       a.province_name))
+     (( sales_months,zone_id,zone_name, channel_code,channel_name, province_code,province_name,city_group_code,city_group_name),
+       ( sales_months,zone_id,zone_name, channel_code,channel_name, province_code,province_name ),
+       ( sales_months,zone_id,zone_name, channel_code,channel_name ),
+       ( sales_months,zone_id,zone_name),
+       ( sales_months,zone_id,zone_name, province_code,province_name,city_group_code,city_group_name),
+       ( sales_months,zone_id,zone_name, province_code,province_name) )
        ;
+    
+
+    drop table   csx_tmp.temp_sale_into_03;
        
+    create temporary table csx_tmp.temp_sale_into_03 as 
      select 
      case when grouping__id='127' then '1'
         when grouping__id='7' then '3' 
           when grouping__id='31' then '2'
           when grouping__id='103' then '4'
+          when grouping__id='487' then '5'
+          when grouping__id='511' then '6'
          else grouping__id end level_id,
        sales_months,
        zone_id,
@@ -527,13 +538,16 @@ select
        coalesce(a.channel_name,'合计')channel_name,
        coalesce(a.province_code,'00')province_code,
        coalesce(a.province_name,'小计')province_name,
+       coalesce(a.city_group_code,'00')city_group_code,
+       coalesce(a.city_group_name,'小计')city_group_name,
        daily_plan_sale,
        daily_sales_value,
        real_daily_sales_value,
        coalesce(real_daily_sales_value/daily_plan_sale,0)    real_daily_sale_fill_rate,
        coalesce(daily_sales_value/daily_plan_sale,0)    daily_sale_fill_rate,
-        last_day_sales,
-       (coalesce((daily_sales_value),0)-coalesce((last_day_sales),0))/coalesce((last_day_sales),0) as daily_sale_growth_rate,
+        last_week_daily_sales,
+        last_week_daily_profit,
+       (coalesce((daily_sales_value),0)-coalesce((last_week_daily_sales),0))/coalesce((last_week_daily_sales),0) as daily_sale_growth_rate,
        daily_plan_profit,
        daily_profit,
        coalesce(daily_profit/daily_plan_profit,0) as daily_profit_fill_rate,
@@ -552,7 +566,7 @@ select
         (coalesce((month_sale_value),0)-coalesce((last_month_sale),0))/coalesce((last_month_sale),0) as mom_sale_growth_rate,
        month_plan_profit,
        month_profit,
-       (month_profit /month_plan_profit) as month_proft_fill_rate,
+       (month_profit /month_plan_profit) as month_profit_fill_rate,
       (month_profit)/(month_sale_value) as month_profit_rate,
        month_negative_profit, 
        month_often_cust_sale,
@@ -565,12 +579,13 @@ select
 
 -- 统计新签约客户数及签约客户金额
 
-drop table if exists csx_tmp.temp_sale_01;
-create temporary table csx_tmp.temp_sale_01 as 
+drop table if exists csx_tmp.temp_cust_01;
+create temporary table csx_tmp.temp_cust_01 as 
 select 
 channel_code,
 coalesce( region_code,'00')  as region_code,
-coalesce( sales_province_code,'00') as province_code,
+coalesce( province_code,'00') as province_code,
+coalesce( city_group_code,'00') as city_group_code,
 daily_sign_cust_num,
 daily_sign_amount,
 sign_cust_num,
@@ -581,7 +596,8 @@ from
 select 
 '1' as channel_code,
 region_code,
-sales_province_code,
+a.province_code,
+a.city_group_code,
 count(case when regexp_replace(to_date(sign_time),'-','') =regexp_replace(${hiveconf:edate},'-','') then customer_no end ) as daily_sign_cust_num,
 sum(case when regexp_replace(to_date(sign_time),'-','') =regexp_replace(${hiveconf:edate},'-','') then estimate_contract_amount end ) as daily_sign_amount,
 count(case when substr(regexp_replace(to_date(sign_time),'-',''),1,6)=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) then customer_no end ) as sign_cust_num,
@@ -592,40 +608,92 @@ join
 (select distinct region_code,city_group_code,province_code from csx_dw.dws_sale_w_a_area_belong ) b on a.city_group_code=b.city_group_code and a.sales_province_code=b.province_code
 where sdt='current' 
 -- and sales_province_code='15'
-group by sales_province_code,
+group by a.province_code,
+a.city_group_code,
 region_code
 grouping sets
-(
-(
-region_code,
-sales_province_code
-),
-(
-region_code),
+((region_code,a.province_code,a.city_group_code),
+(region_code,a.province_code),
+(region_code),
 ())
 )a
 ;
 
-insert overwrite table  csx_tmp.ads_sale_r_d_zone_sales_fr partition(sdt)
-SELECT a.*,
-    daily_sign_cust_num,
-    daily_sign_amount,
-    sign_cust_num,
-    sign_amount,
+
+
+insert overwrite table  csx_tmp.ads_sale_r_d_zone_sales_fr_20220424 partition(sdt)
+SELECT level_id, 
+    a.`sales_months`,
+    `zone_id`,
+    `zone_name`,
+    a.`channel_code`,
+    `channel_name`,
+    a.`province_code`,
+    `province_name`,
+    a.city_group_code,
+    a.city_group_name,
+    `daily_plan_sale`,
+    `daily_sales_value`,
+    `real_daily_sales_value`,
+    `real_daily_sale_fill_rate`,
+    `daily_sale_fill_rate`,
+    `last_week_daily_sales`,
+     last_week_daily_profit,
+    `daily_sale_growth_rate`,
+    `daily_plan_profit`,
+    `daily_profit`,
+    `daily_profit_fill_rate`,
+    `daily_profit_rate`,
+    `daily_negative_profit`,
+    `daily_often_cust_sale`,
+    `daily_new_cust_sale`,
+    `daily_sale_cust_num`,
+    `month_plan_sale`,
+    `month_sale_value`,
+    `real_month_sale_value`,
+    `real_month_sale_fill_rate`,
+    `month_sale_fill_rate`,
+    `last_month_sale`,
+     last_month_profit,
+    `mom_sale_growth_rate`,
+    `month_plan_profit`,
+    `month_profit`,
+    `month_profit_fill_rate`,
+    `month_profit_rate`,
+    `month_negative_profit`,
+    `month_often_cust_sale`,
+    `month_new_cust_sale`,
+    `month_sale_cust_num`,
+    `last_month_daily_sale`,
+    `daily_sign_cust_num`,
+    `daily_sign_amount`,
+    `sign_cust_num`,
+    `sign_amount`,
     current_timestamp(),
     regexp_replace(${hiveconf:edate},'-','') 
 from(
-SELECT * from csx_tmp.temp_sale_into_01
-union all 
-select * from csx_tmp.temp_sale_into_02
-UNION all 
-select * from csx_tmp.temp_sale_into_03
-union all 
-select * from csx_tmp.temp_sale_into_04
-) a 
+SELECT * from  csx_tmp.temp_sale_into_03) a
 LEFT JOIN
-csx_tmp.temp_sale_01 b on a.zone_id=b.region_code and a.province_code=b.province_code and a.channel_code=b.channel_code
+csx_tmp.temp_cust_01 b on a.zone_id=b.region_code and a.province_code=b.province_code and a.channel_code=b.channel_code and a.city_group_code=b.city_group_code
 ;
 
 
 
+
+
+columns='level_id,sales_months,zone_id,zone_name,channel_code,channel_name,province_code,province_name,city_group_code,city_group_name,daily_plan_sale,daily_sales_value,real_daily_sales_value,real_daily_sale_fill_rate,daily_sale_fill_rate,last_week_daily_sales,last_week_daily_profit,daily_sale_growth_rate,daily_plan_profit,daily_profit,daily_profit_fill_rate,daily_profit_rate,daily_negative_profit,daily_often_cust_sale,daily_new_cust_sale,daily_sale_cust_num,month_plan_sale,month_sale_value,real_month_sale_value,real_month_sale_fill_rate,month_sale_fill_rate,last_month_sale,last_month_profit,mom_sale_growth_rate,month_plan_profit,month_profit,month_profit_fill_rate,month_profit_rate,month_negative_profit,month_often_cust_sale,month_new_cust_sale,month_sale_cust_num,last_months_daily_sale,daily_sign_cust_num,daily_sign_amount,sign_cust_num,sign_amount,update_time,sdt'
+day=${enddate}
+yesterday=${day//-/}
+sqoop export \
+--connect "jdbc:mysql://10.0.74.77:7477/data_analysis_prd?useUnicode=true&useSSL=false&characterEncoding=utf-8" \
+--username dataanprd_all \
+--password 'slH25^672da' \
+--table ads_sale_r_d_zone_sales_fr_back \
+--m 64 \
+--hcatalog-database csx_tmp \
+--hcatalog-table ads_sale_r_d_zone_sales_fr_20220224 \
+--hive-partition-key sdt \
+--hive-partition-value "$yesterday" \
+--input-null-string '\\N'  \
+--input-null-non-string '\\N' \
+--columns "${columns}"
