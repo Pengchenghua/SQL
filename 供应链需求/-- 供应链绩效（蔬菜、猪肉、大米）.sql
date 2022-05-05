@@ -1,13 +1,6 @@
 -- 供应链绩效（蔬菜、猪肉、大米）
 -- 1、涉及:蔬菜、猪肉、大米
 -- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
--- 1、涉及:蔬菜、猪肉、大米
--- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
--- 供应链绩效（蔬菜、猪肉、大米）
--- 1、涉及:蔬菜、猪肉、大米
--- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
--- 1、涉及:蔬菜、猪肉、大米
--- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
 
 set edt ='${enddate}';
 set edate=regexp_replace(${hiveconf:edt},'-','');
@@ -337,7 +330,8 @@ csx_tmp.temp_cust_01 b on a.province_code=b.province_code and a.city_group_code=
 left join
   csx_tmp.temp_cust_02 c on a.classify_middle_code=c.classify_middle_code ;
 
-
+drop table csx_tmp.temp_rank_01;
+create temporary table csx_tmp.temp_rank_01 as 
 SELECT a.province_code,
     a.province_name,
     group_aa,
@@ -359,17 +353,18 @@ SELECT a.province_code,
     all_oem_sale_ratio ,   -- 全国OEM销售占比
     cust_p_rate,   --渗透率
     all_qg_p_rate ,   -- 全国渗透率
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY sales_growth_rate desc) as sales_growth_rate_rank, --销售环比增长率排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY diff_profit_rate desc) as diff_profit_rate_rank,   --毛利率环比增长率排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY cust_p_rate desc) as cust_p_rate_rank,   --渗透率比增长率排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY oem_sale_rate desc) as oem_sale_rate_rank,   --渗透率比增长率排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY ring_cost_rate desc) as ring_cost_rate_rank,   --渗透率比增长率排名
+    diff_profit_rate,   --毛利率环比
+    case when sales_growth_rate<0 then 0 else  dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY sales_growth_rate desc) end  as sales_growth_rate_rank, --销售环比增长率排名
+    case when diff_profit_rate<0 then 0 else dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY diff_profit_rate desc) end  as diff_profit_rate_rank,   --毛利率环比增长率排名
+    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY cust_p_rate desc) as cust_p_rate_rank,             --渗透率比增长率排名
+    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY oem_sale_rate desc) as oem_sale_rate_rank,         --OEM占比排名
+    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY ring_cost_rate desc) as ring_cost_rate_rank,       --猪肉平均成本环比排名
      -- 毛利率高于全国值
     diff_qg_profit_rate,
     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_profit_rate desc) as diff_qg_profit_rate_rank,
      -- 全国销售增长
     diff_qg_sale_rate,
-     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_sale_rate desc) as diff_qg_sale_rate_rank,
+    dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_sale_rate desc) as diff_qg_sale_rate_rank,
      --客户渗透率高于全国
      diff_cust_r_rate,
       dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_cust_r_rate desc) as diff_qg_cust_rate_rank,
@@ -439,3 +434,154 @@ WHERE city_group_name in ('福州市','北京市','成都市','重庆主城','�
     and a.classify_middle_name in ('米','蔬菜','猪肉')
 
 ) a ;
+
+
+
+
+
+SELECT a.province_code,
+    a.province_name,
+    group_aa,
+    a.city_group_code,
+    a.city_group_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    diff_qg_sale_rate_integral,         -- 销售增长率高于全国值 5
+    sales_growth_rate_rank_intrgral,    --销售环比增长率排名积分15、10、5
+    diff_qg_profit_rate_rank_integral , -- 毛利率高于全国毛利率得分
+    diff_profit_rate_rank_intrgral,     --毛利率环比增长率排名积分35、20、10
+    diff_cust_r_rate_integral,         --渗透率高于全国得5分
+    cust_p_rate_rank_intrgral,          --组内渗透率得分 5、3、2
+    diff_oem_sale_rate_integral,        -- 销售占比高于或等于全国
+    oem_sale_rate_rank_integral,        -- 组内OEM排名10、7、5
+    ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
+    sales_cost,
+    sales_qty,
+    sales_value,
+    profit,
+    profit_rate,                                          -- 毛利率
+    oem_sales,
+    oem_sale_rate,                                        -- OEM占比
+    oem_profit,
+    last_sales_cost,
+    last_sales_qty,
+    last_sales_value,
+    last_profit,
+    last_oem_sales,
+    last_oem_profit ,
+    class_cust_num,
+    last_class_cust_num,
+    all_cust_num,
+    last_all_cust_num,
+    sales_growth_rate,           -- 销售环比增长率
+    all_sales_growth_rate,       -- 全国环比增长率
+    all_profit_rate ,           -- 全国毛利率
+    all_oem_sale_ratio ,         -- 全国OEM销售占比
+    cust_p_rate,                 --渗透率
+    all_qg_p_rate ,              -- 全国渗透率
+    sales_growth_rate_rank,      --销售环比增长率排名
+    diff_profit_rate_rank,       --毛利率环比增长率排名
+    cust_p_rate_rank,            --渗透率比增长率排名
+    oem_sale_rate_rank,            --渗透率比增长率排名
+    ring_cost_rate_rank,
+     -- 毛利率高于全国值
+    diff_qg_profit_rate,
+    diff_qg_profit_rate_rank,
+     -- 销售环比高于或等于全国销售增长
+     diff_qg_sale_rate,
+     diff_qg_sale_rate_rank,
+     --客户渗透率高于全国
+     diff_cust_r_rate,
+      diff_qg_cust_rate_rank,
+     --OEM全国占比
+    diff_oem_sale_rate,
+    diff_qg_oem_rate_rank,
+    qg_class_num,
+    qg_cust_num,
+    ring_cost_rate
+
+FROM(
+
+SELECT a.province_code,
+    a.province_name,
+    group_aa,
+    a.city_group_code,
+    a.city_group_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    sales_cost,
+    sales_qty,
+    sales_value,
+    profit,
+    profit_rate,                                          -- 毛利率
+    oem_sales,
+    oem_sale_rate,                                        -- OEM占比
+    oem_profit,
+    sales_growth_rate,           -- 销售环比增长率
+    all_sales_growth_rate,       -- 全国环比增长率
+    all_profit_rate ,           -- 全国毛利率
+    all_oem_sale_ratio ,         -- 全国OEM销售占比
+    cust_p_rate,                 --渗透率
+    all_qg_p_rate ,              -- 全国渗透率
+      -- 销售环比高于或等于全国销售增长
+     diff_qg_sale_rate,
+    if(diff_qg_sale_rate>=0,5,0) diff_qg_sale_rate_integral,  
+    sales_growth_rate_rank,      --销售环比增长率排名
+    case when sales_growth_rate_rank=1 then 15
+         when sales_growth_rate_rank=2 then 10
+         when sales_growth_rate_rank=3 then 5 
+         else 0 end sales_growth_rate_rank_intrgral,    --销售环比增长率排名积分15、10、5
+     -- 毛利率高于全国值
+    diff_qg_profit_rate,
+    diff_qg_profit_rate_rank,
+    case when diff_qg_profit_rate_rank=1 then 15
+         when diff_qg_profit_rate_rank=2 then 10
+         when diff_qg_profit_rate_rank=3 then 5 
+         else 0 end diff_qg_profit_rate_rank_integral , -- 毛利率高于全国毛利率得分
+    diff_profit_rate_rank,       --毛利率环比增长率排名
+    case when diff_profit_rate_rank=1 then 35
+         when diff_profit_rate_rank=2 then 20
+         when diff_profit_rate_rank=3 then 10 
+         else 0 end diff_profit_rate_rank_intrgral,    --毛利率环比增长率排名积分35、20、10
+      --客户渗透率高于全国
+     diff_cust_r_rate,
+     case when diff_cust_r_rate>=0 then 5 else 0 end diff_cust_r_rate_integral,         --渗透率高于全国得5分 
+    cust_p_rate_rank,                                   --渗透率比增长率排名
+    case when cust_p_rate_rank=1 then 5
+         when cust_p_rate_rank=2 then 3
+         when cust_p_rate_rank=3 then 2 
+         else 0 end cust_p_rate_rank_intrgral,      --组内渗透率得分 5、3、2
+    oem_sale_rate_rank,                             --渗透率比增长率排名
+         --OEM全国占比
+    diff_oem_sale_rate,
+    if (diff_oem_sale_rate>=0,10,0) as diff_oem_sale_rate_integral, -- OEM占比高于全国
+    case when oem_sale_rate_rank=1 then 10
+         when oem_sale_rate_rank=2 then 7
+         when oem_sale_rate_rank=3 then 5 
+         else 0 end oem_sale_rate_rank_integral,    -- 组内OEM排名10、7、5
+    ring_cost_rate_rank,
+    case when ring_cost_rate_rank=1 then 20
+         when ring_cost_rate_rank=2 then 10
+         when ring_cost_rate_rank=3 then 5
+         else 0 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
+     diff_qg_sale_rate_rank,
+     diff_qg_cust_rate_rank,
+
+    diff_qg_oem_rate_rank,
+    qg_class_num,
+    qg_cust_num,
+    last_sales_cost,
+    last_sales_qty,
+    last_sales_value,
+    last_profit,
+    last_oem_sales,
+    last_oem_profit ,
+    class_cust_num,
+    last_class_cust_num,
+    all_cust_num,
+    last_all_cust_num,
+    ring_cost_rate
+FROM csx_tmp.temp_rank_01 a 
+) a ;
+
+select * from csx_tmp.temp_rank_01 ;

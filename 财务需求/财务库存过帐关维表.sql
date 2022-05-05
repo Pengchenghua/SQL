@@ -106,8 +106,46 @@ left join
 (select code,name,parent_code from csx_dw.dws_wms_w_a_basic_warehouse_reservoir where level='3') d on a.dc_code=d.parent_code and a.receive_are_code=d.code
 where (inv_qty !=0 or inv_amt!=0);
 
-
+ 
+  INSERT OVERWRITE table csx_tmp.report_wms_r_m_post_inventory PARTITION(months)
+  select * ,current_timestamp(),'202204' from  csx_tmp.temp_inve_01
 --导出数据
 select * from  csx_tmp.temp_inve_01;
 
 select sum(inv_amt)from  csx_tmp.temp_inve_01;
+
+
+CREATE TABLE `csx_tmp.report_wms_r_m_post_inventory` (
+  `dc_code` string, 
+  `shop_name` string, 
+  `company_code` string, 
+  `company_name` string, 
+  `receive_are_code` string, 
+  `receive_are_name` string, 
+  `goods_code` string, 
+  `bar_code`   string, 
+  `goods_name` string, 
+  `division_code` string, 
+  `division_name` string, 
+  `category_large_code`  string, 
+  `category_large_name`  string, 
+  `category_middle_code` string, 
+  `category_middle_name` string, 
+  `category_small_code`  string, 
+  `category_small_name`  string, 
+  `classify_large_code`  string, 
+  `classify_large_name`  string, 
+  `classify_middle_code` string, 
+  `classify_middle_name` string, 
+  `classify_small_code` string, 
+  `classify_small_name` string, 
+  `department_id` string, 
+  `department_name` string, 
+  `inv_qty` decimal(38,6), 
+  `no_tax_inv_amt` decimal(38,6), 
+  `inv_amt` decimal(38,6), 
+  `tax_rate` bigint, 
+  `valuation_category_code` string, 
+  `valuation_category_name` string)
+  comment'财务过帐库存-手工处理'
+  partitioned by (months string comment '月分区')
