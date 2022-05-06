@@ -295,6 +295,8 @@ select a.province_code,
     last_class_cust_num,
     b.all_cust_num,
     last_all_cust_num,
+    a.sales_cost/sales_qty as pig_avg_cost,
+    last_sales_cost/last_sales_qty as last_pig_avg_cost,
     (a.sales_cost/sales_qty-last_sales_cost/last_sales_qty)/(last_sales_cost/last_sales_qty) as ring_cost_rate
 from 
 (select a.province_code,
@@ -353,12 +355,12 @@ SELECT a.province_code,
     all_oem_sale_ratio ,   -- 全国OEM销售占比
     cust_p_rate,   --渗透率
     all_qg_p_rate ,   -- 全国渗透率
-    diff_profit_rate,   --毛利率环比
+    diff_profit_rate,   --毛利率环比差
     case when sales_growth_rate<0 then 0 else  dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY sales_growth_rate desc) end  as sales_growth_rate_rank, --销售环比增长率排名
     case when diff_profit_rate<0 then 0 else dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY diff_profit_rate desc) end  as diff_profit_rate_rank,   --毛利率环比增长率排名
     dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY cust_p_rate desc) as cust_p_rate_rank,             --渗透率比增长率排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY oem_sale_rate desc) as oem_sale_rate_rank,         --OEM占比排名
-    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY ring_cost_rate desc) as ring_cost_rate_rank,       --猪肉平均成本环比排名
+    case when oem_sale_rate <=0 then 0  else dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY oem_sale_rate desc) end as oem_sale_rate_rank,         --OEM占比排名
+    dense_rank()over(PARTITION BY group_aa,classify_middle_code ORDER BY ring_cost_rate asc) as ring_cost_rate_rank,       --猪肉平均成本环比排名
      -- 毛利率高于全国值
     diff_qg_profit_rate,
     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_profit_rate desc) as diff_qg_profit_rate_rank,
@@ -370,7 +372,7 @@ SELECT a.province_code,
       dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_cust_r_rate desc) as diff_qg_cust_rate_rank,
      --OEM全国占比
      diff_oem_sale_rate,
-     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_oem_sale_rate desc) as diff_qg_oem_rate_rank,
+    case when oem_sales<=0 then 0 else  dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_oem_sale_rate desc) end  as diff_qg_oem_rate_rank,
     qg_class_num,
     qg_cust_num,
     last_sales_cost,
@@ -383,9 +385,10 @@ SELECT a.province_code,
     last_class_cust_num,
     all_cust_num,
     last_all_cust_num,
+    pig_avg_cost,
+    last_pig_avg_cost,
      ring_cost_rate
 FROM(
-
 SELECT a.province_code,
     a.province_name,
     group_aa,
@@ -402,12 +405,12 @@ SELECT a.province_code,
     oem_sale_rate,                                        -- OEM占比
     oem_profit,
     sales_growth_rate,     -- 环比增长率
-    (profit_rate-(last_profit/last_sales_value))/abs(last_profit/last_sales_value) as diff_profit_rate,            -- 毛利率环比
+    (profit_rate-(last_profit/last_sales_value)) as diff_profit_rate,            -- 毛利率环比
     all_sales_growth_rate,  -- 全国环比增长率
-     all_profit_rate , -- 全国毛利率
-     all_oem_sale_ratio ,   -- 全国OEM销售占比
+    all_profit_rate , -- 全国毛利率
+    all_oem_sale_ratio ,   -- 全国OEM销售占比
     cust_p_rate,   --渗透率
-     all_qg_p_rate ,   -- 全国渗透率
+    all_qg_p_rate ,   -- 全国渗透率
      -- 毛利率高于全国值
      profit_rate-all_profit_rate  as diff_qg_profit_rate,
      -- 全国销售增长
@@ -428,11 +431,12 @@ SELECT a.province_code,
     last_class_cust_num,
     all_cust_num,
     last_all_cust_num,
-    ring_cost_rate
+    ring_cost_rate,
+    ig_avg_cost,
+    last_pig_avg_cost
 FROM csx_tmp.temp_all_a a
 WHERE city_group_name in ('福州市','北京市','成都市','重庆主城','合肥市','贵阳市','苏州市','松江区','南京市','杭州市','深圳市','西安市','郑州市','武汉市','石家庄市')
     and a.classify_middle_name in ('米','蔬菜','猪肉')
-
 ) a ;
 
 
@@ -455,26 +459,28 @@ SELECT a.province_code,
     diff_oem_sale_rate_integral,        -- 销售占比高于或等于全国
     oem_sale_rate_rank_integral,        -- 组内OEM排名10、7、5
     ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
-    sales_cost,
+    sales_cost/10000 sales_cost,
     sales_qty,
-    sales_value,
-    profit,
+    sales_value/10000 sales_value,
+    profit/10000 profit,
     profit_rate,                                          -- 毛利率
-    oem_sales,
+    oem_sales/10000 oem_sales,
     oem_sale_rate,                                        -- OEM占比
-    oem_profit,
-    last_sales_cost,
+    oem_profit/10000 oem_profit,
+    last_sales_cost/10000 last_sales_cost,
     last_sales_qty,
-    last_sales_value,
-    last_profit,
-    last_oem_sales,
-    last_oem_profit ,
+    last_sales_value/10000 last_sales_value,
+    last_profit/10000 last_profit,
+    (last_profit/last_sales_value) as last_profit_rate,
+    last_oem_sales/10000 last_oem_sales,
+    last_oem_profit/10000 last_oem_profit ,
     class_cust_num,
     last_class_cust_num,
     all_cust_num,
     last_all_cust_num,
     sales_growth_rate,           -- 销售环比增长率
     all_sales_growth_rate,       -- 全国环比增长率
+    (profit_rate- (last_profit/last_sales_value)) diff_profit_rate,  -- 环比毛利率差
     all_profit_rate ,           -- 全国毛利率
     all_oem_sale_ratio ,         -- 全国OEM销售占比
     cust_p_rate,                 --渗透率
@@ -549,20 +555,19 @@ SELECT a.province_code,
     cust_p_rate_rank,                                   --渗透率比增长率排名
     case when cust_p_rate_rank=1 then 5
          when cust_p_rate_rank=2 then 3
-         when cust_p_rate_rank=3 then 2 
-         else 0 end cust_p_rate_rank_intrgral,      --组内渗透率得分 5、3、2
+         else 2 end cust_p_rate_rank_intrgral,      --组内渗透率得分 5、3、2
     oem_sale_rate_rank,                             --渗透率比增长率排名
          --OEM全国占比
     diff_oem_sale_rate,
-    if (diff_oem_sale_rate>=0,10,0) as diff_oem_sale_rate_integral, -- OEM占比高于全国
+    case when diff_oem_sale_rate>=0 and oem_sales >0 then 10 else 0 end as diff_oem_sale_rate_integral, -- OEM占比高于全国
     case when oem_sale_rate_rank=1 then 10
          when oem_sale_rate_rank=2 then 7
          when oem_sale_rate_rank=3 then 5 
          else 0 end oem_sale_rate_rank_integral,    -- 组内OEM排名10、7、5
     ring_cost_rate_rank,
-    case when ring_cost_rate_rank=1 then 20
-         when ring_cost_rate_rank=2 then 10
-         when ring_cost_rate_rank=3 then 5
+    case when ring_cost_rate_rank=1 and a.classify_middle_code='B0302' then 20
+         when ring_cost_rate_rank=2 and a.classify_middle_code='B0302' then 10
+         when ring_cost_rate_rank=3 and a.classify_middle_code='B0302' then 5
          else 0 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
      diff_qg_sale_rate_rank,
      diff_qg_cust_rate_rank,
