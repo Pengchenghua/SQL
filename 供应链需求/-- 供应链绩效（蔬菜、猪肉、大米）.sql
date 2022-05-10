@@ -1,6 +1,7 @@
 -- 供应链绩效（蔬菜、猪肉、大米）
 -- 1、涉及:蔬菜、猪肉、大米
 -- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
+-- 猪肉仓 'W053','W0BK','W0A7','W0A6','W0Q2','W0A3','W0Q9','W0P8','W0BH','W0A2','W0BR','W0A5','W0AS','W0N0','W0R9'
 
 set edt ='${enddate}';
 set edate=regexp_replace(${hiveconf:edt},'-','');
@@ -210,7 +211,7 @@ from csx_tmp.temp_sale_cl_03
 
 ;
 
-
+-- 全国客户成交数
 drop table  csx_tmp.temp_cust_02;
 create temporary table csx_tmp.temp_cust_02 as 
 select 
@@ -257,7 +258,53 @@ from csx_tmp.temp_sale_cl_03
 
 ;
 
+--猪肉入库平均成本
+drop table csx_tmp.pig_cost ;
+create temporary table csx_tmp.pig_cost as 
+select city_group_code,
+       city_group_name,
+       sales_province_code,
+       sales_province_name,
+       classify_middle_code,
+    sum(last_receive_qty) last_receive_qty,
+    sum(last_receive_amt) last_receive_amt,
+    sum(last_receive_amt)/sum(last_receive_qty) last_avg_cost,
+    sum(receive_qty)      receive_qty,
+    sum(receive_amt)      receive_amt,
+    sum(receive_amt) /sum(receive_qty) avg_cost
+from (
+select a.receive_location_code dc_code,
+    a.classify_middle_code,
+    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate} then   a.receive_qty end ) as last_receive_qty,
+    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate} then a.amount end) last_receive_amt,
+    sum(case when sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate} then   a.receive_qty end ) as receive_qty,
+    sum(case when sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate} then a.amount end) receive_amt
+from csx_dw.dws_wms_r_d_entry_batch a 
+where sdt>=${hiveconf:l_sdate}  
+    and sdt<=${hiveconf:edate} 
+    and a.receive_location_code in ('W053','W0BK','W0A7','W0A6','W0Q2','W0A3','W0Q9','W0P8','W0BH','W0A2','W0BR','W0A5','W0AS','W0N0','W0R9')
+    and a.classify_middle_code='B0302'
+group by a.receive_location_code,
+        classify_middle_code
+) a 
+left join
+(SELECT shop_id,
+       city_group_code,
+       city_group_name,
+       sales_province_code,
+       sales_province_name
+FROM csx_dw.dws_basic_w_a_csx_shop_m
+WHERE sdt='current') b on a.dc_code=b.shop_id
+group by city_group_code,
+       city_group_name,
+       sales_province_code,
+       sales_province_name,
+       classify_middle_code
+;
 
+
+
+drop table  csx_tmp.temp_all_a;
 create temporary table csx_tmp.temp_all_a as 
 select a.province_code,
     a.province_name,
@@ -295,9 +342,9 @@ select a.province_code,
     last_class_cust_num,
     b.all_cust_num,
     last_all_cust_num,
-    a.sales_cost/sales_qty as pig_avg_cost,
-    last_sales_cost/last_sales_qty as last_pig_avg_cost,
-    (a.sales_cost/sales_qty-last_sales_cost/last_sales_qty)/(last_sales_cost/last_sales_qty) as ring_cost_rate
+    avg_cost as pig_avg_cost,
+    last_avg_cost as last_pig_avg_cost,
+    (avg_cost-last_avg_cost)/last_avg_cost as ring_cost_rate
 from 
 (select a.province_code,
     province_name,
@@ -330,7 +377,10 @@ from
 left join 
 csx_tmp.temp_cust_01 b on a.province_code=b.province_code and a.city_group_code=b.city_group_code and a.classify_middle_code=b.classify_middle_code
 left join
-  csx_tmp.temp_cust_02 c on a.classify_middle_code=c.classify_middle_code ;
+  csx_tmp.temp_cust_02 c on a.classify_middle_code=c.classify_middle_code 
+left join 
+  csx_tmp.pig_cost d on a.province_code=d.sales_province_code and a.city_group_code=d.city_group_code and a.classify_middle_code=d.classify_middle_code
+  ;
 
 drop table csx_tmp.temp_rank_01;
 create temporary table csx_tmp.temp_rank_01 as 
@@ -387,7 +437,7 @@ SELECT a.province_code,
     last_all_cust_num,
     pig_avg_cost,
     last_pig_avg_cost,
-     ring_cost_rate
+    ring_cost_rate
 FROM(
 SELECT a.province_code,
     a.province_name,
@@ -432,7 +482,7 @@ SELECT a.province_code,
     all_cust_num,
     last_all_cust_num,
     ring_cost_rate,
-    ig_avg_cost,
+    pig_avg_cost,
     last_pig_avg_cost
 FROM csx_tmp.temp_all_a a
 WHERE city_group_name in ('福州市','北京市','成都市','重庆主城','合肥市','贵阳市','苏州市','松江区','南京市','杭州市','深圳市','西安市','郑州市','武汉市','石家庄市')
@@ -450,6 +500,7 @@ SELECT a.province_code,
     a.city_group_name,
     a.classify_middle_code,
     a.classify_middle_name,
+    (diff_qg_sale_rate_integral+sales_growth_rate_rank_intrgral+diff_qg_profit_rate_rank_integral+diff_profit_rate_rank_intrgral+diff_cust_r_rate_integral+ cust_p_rate_rank_intrgral+diff_oem_sale_rate_integral+ oem_sale_rate_rank_integral+  ring_cost_rate_rank_integral ) as total_integral,
     diff_qg_sale_rate_integral,         -- 销售增长率高于全国值 5
     sales_growth_rate_rank_intrgral,    --销售环比增长率排名积分15、10、5
     diff_qg_profit_rate_rank_integral , -- 毛利率高于全国毛利率得分
@@ -504,7 +555,9 @@ SELECT a.province_code,
     diff_qg_oem_rate_rank,
     qg_class_num,
     qg_cust_num,
-    ring_cost_rate
+    ring_cost_rate,
+    pig_avg_cost,
+    last_pig_avg_cost
 
 FROM(
 
@@ -562,16 +615,13 @@ SELECT a.province_code,
     case when diff_oem_sale_rate>=0 and oem_sales >0 then 10 else 0 end as diff_oem_sale_rate_integral, -- OEM占比高于全国
     case when oem_sale_rate_rank=1 then 10
          when oem_sale_rate_rank=2 then 7
-         when oem_sale_rate_rank=3 then 5 
-         else 0 end oem_sale_rate_rank_integral,    -- 组内OEM排名10、7、5
+         else 5 end oem_sale_rate_rank_integral,    -- 组内OEM排名10、7、5
     ring_cost_rate_rank,
     case when ring_cost_rate_rank=1 and a.classify_middle_code='B0302' then 20
-         when ring_cost_rate_rank=2 and a.classify_middle_code='B0302' then 10
-         when ring_cost_rate_rank=3 and a.classify_middle_code='B0302' then 5
-         else 0 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
+         when ring_cost_rate_rank=2 and a.classify_middle_code='B0302' then 10    
+         else 5 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
      diff_qg_sale_rate_rank,
      diff_qg_cust_rate_rank,
-
     diff_qg_oem_rate_rank,
     qg_class_num,
     qg_cust_num,
@@ -585,7 +635,9 @@ SELECT a.province_code,
     last_class_cust_num,
     all_cust_num,
     last_all_cust_num,
-    ring_cost_rate
+    ring_cost_rate,
+    pig_avg_cost,
+    last_pig_avg_cost
 FROM csx_tmp.temp_rank_01 a 
 ) a ;
 

@@ -1,4 +1,4 @@
---安徽销售数据&周转&库存[徐力]
+--仓储备货销售数据&周转&库存[徐力]
 --省区	城市	采购部编码	采购部名称	管理一级分类编码	管理分类一级分类	管理三级分类编码	管理分类三级分类	管理三级分类编码	管理分类三级分类
 --SPU	价格带	商品编码	商品名称	单位	规格	品牌	销售数量	销售额	毛利额	毛利率	动销天数	客户渗透率	动销客户数	下单次数	
 --销售额排名	销售量排名	"动销天数排名"	渗透率排名
@@ -6,6 +6,9 @@
 --取周转表： 当前库存量	当前库存额	库存周转天数	期间DMS（日均销量）	商品状态  
 --有效标识	库存属性（存储/货到即配）stock_properties_name	退货标识 sales_return_tag	安全库存天数 type=1  value
 
+set shopid=('W0A8','W0A7','W0A6','W0N0','W0A5','W0AS','W0R9');
+set sdate='20220201';
+set edate='20220430';
 -- 销售基础
 create temporary table csx_tmp.temp_sale_t1 as 
 select province_code,province_name,
@@ -22,12 +25,14 @@ select province_code,province_name,
         sum(sales_value) sales_value,
         sum(profit) profit
 from csx_dw.dws_sale_r_d_detail
-where sdt>='20211201' 
-    and sdt<'20220301'
+where sdt >= ${hiveconf:sdate}
+    and sdt<= ${hiveconf:edate}
+    and dc_code in ${hiveconf:shopid}
     and sales_type !='fanli'
     and business_type_code='1'
     and channel_code in ('1','7','9')
-    and province_name='安徽省'
+ 
+   -- and province_name='安徽省'
     group by  province_code,province_name,
         city_group_code,
         city_group_name,
@@ -104,10 +109,11 @@ select receive_location_code,
     goods_code,    
     sum(amount) receive_amt
 from csx_dw.dws_wms_r_d_entry_batch 
-where sdt>='20211201' 
-    and sdt<'20220301'
+where sdt >= ${hiveconf:sdate}
+    and sdt<= ${hiveconf:edate}
+    and receive_location_code in ${hiveconf:shopid}
     and order_type_code like 'P%'
-    and province_name='安徽省'
+  --  and province_name='安徽省'
     and receive_status in (1,2)
 group by receive_location_code,
     goods_code
@@ -148,7 +154,8 @@ LEFT JOIN
         `type`,
         value
 from csx_ods.source_scm_w_a_product_purchase_require_config 
-where sdt='20220302'
+where  sdt= ${hiveconf:edate}
+   -- and dc_code in ${hiveconf:shopid}
     and product_category_level='5'
     and `type`=1
     ) b on a.dc_code=b.location_code and a.goods_id=b.product_category_code
@@ -160,8 +167,8 @@ LEFT JOIN
        price_belt_type
 FROM csx_dw.dws_basic_w_a_csx_product_info
 WHERE sdt='current') c on a.dc_code=c.shop_code and a.goods_id=c.product_code
-WHERE sdt='20220302'
-    and province_name ='安徽省';
+WHERE sdt = ${hiveconf:edate}
+    and dc_code in ${hiveconf:shopid};
 
 drop table csx_tmp.temp_sale_t5;
 create temporary table csx_tmp.temp_sale_t5
@@ -218,12 +225,3 @@ left join
 ;
 
 select * from csx_tmp.temp_sale_t5 where sales_value !=0;
-    show create table csx_dw.dws_basic_w_a_csx_product_info;
-    show create table csx_ods.source_scm_w_a_product_purchase_require_config;
-    show create table csx_tmp.ads_wms_r_d_goods_turnover;
-    show create table csx_dw.dws_basic_w_a_csx_product_m;
-    
-    select * from csx_tmp.temp_sale_t5  where goods_id='1008090';
-    
-    
-    
