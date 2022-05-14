@@ -955,3 +955,96 @@ grouping sets (( dc_code ,
     ),
     (dc_code))
     ;
+
+
+-- 缺货明细
+set shop=('W0A2','W0A3' );
+ set edate='20220430';
+ drop table   csx_tmp.temp_stock_00;
+ create temporary table csx_tmp.temp_stock_00 as  
+  select A.dc_code,
+     div_code,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    goods_code,
+    goods_name,
+    unit_name,
+    sales_return_tag,
+    stock_properties,
+	stock_properties_name,
+	product_status_name,
+ 
+    (case when stock_properties=1 and amt_no_tax<=0 then '是' end) qh_sku,
+	 (A.qty) qty,
+	 (A.amt) amt
+FROM (
+   select A.dc_code,
+    goods_code,
+    c.goods_name,
+    c.unit_name,
+   case when c.classify_large_code in ('B01','B02','B03') then '11' else '12' end  div_code,
+    c.classify_large_code,
+    c.classify_large_name,
+    c.classify_middle_code,
+    c.classify_middle_name,
+    c.classify_small_code,
+    c.classify_small_name ,
+     sales_return_tag,
+    stock_properties,
+	stock_properties_name,
+	product_status_name,
+	sum(A.qty) qty,
+	sum(A.amt) amt,
+	sum(amt_no_tax) amt_no_tax
+from csx_dw.dws_wms_r_d_accounting_stock_m  A 
+   left join 
+   (select product_code,
+    product_name,
+    unit,
+    shop_code,
+    sales_return_tag,
+    stock_properties,
+	stock_properties_name,
+	product_status_name
+from  csx_dw.dws_basic_w_a_csx_product_info 
+where sdt='current'
+    and des_specific_product_status='0'
+    and shop_code in  ${hiveconf:shop}
+) b on a.dc_code=b.shop_code and a.goods_code=b.product_code
+left join 
+(select goods_id,
+    goods_name,
+    unit_name,
+    classify_large_code,
+    classify_large_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_code,
+    classify_small_name 
+from csx_dw.dws_basic_w_a_csx_product_m where sdt='current'
+)c on a.goods_code=c.goods_id
+   where sdt=${hiveconf:edate}  
+    and dc_code in ${hiveconf:shop}  
+    and reservoir_area_code not in ('PD01','PD02','TS01','CY01')
+    group by  A.dc_code,
+    goods_code,
+    c.goods_name,
+    c.unit_name,
+   case when c.classify_large_code in ('B01','B02','B03') then '11' else '12' end  ,
+    c.classify_large_code,
+    c.classify_large_name,
+    c.classify_middle_code,
+    c.classify_middle_name,
+    c.classify_small_code,
+    c.classify_small_name,
+     sales_return_tag,
+    stock_properties,
+	stock_properties_name,
+	product_status_name
+) A
+;
+select * from  csx_tmp.temp_stock_00;
+
+select * from csx_dw.dws_basic_w_a_csx_product_m where sdt='current' and goods_id='100';
