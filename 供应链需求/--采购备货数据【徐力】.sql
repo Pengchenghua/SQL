@@ -1,8 +1,8 @@
 --采购备货数据
 -- 重庆（W0A7）,四川（W0A6）,福州（W0A8），杭州（W0N0），苏州（W0A5）
-set shop=('W0A2','W0A3');
-set enddt='20220419';
-set sdt='20220401';
+set shop=('W0A2','W0A3','W0A7','W0A8','W0N0','W0A5','W0A6');
+set enddt='20220526';
+set sdt='20220501';
 
 -- 1.0 供应商满足率
 drop table  csx_tmp.temp_supplier_fill_rate;
@@ -731,7 +731,7 @@ group by    dc_code ,
     classify_small_name
     ;
  
- 
+ SELECT * FROM csx_tmp.temp_stock_00 WHERE dc_code='W0N0';
  drop table   csx_tmp.temp_stock_00;
  create temporary table csx_tmp.temp_stock_00 as  
   select A.dc_code,
@@ -958,8 +958,8 @@ grouping sets (( dc_code ,
 
 
 -- 缺货明细
-set shop=('W0A2','W0A3' );
- set edate='20220430';
+--set shop=('W0A2','W0A3' );
+-- set edate='20220430';
  drop table   csx_tmp.temp_stock_00;
  create temporary table csx_tmp.temp_stock_00 as  
   select A.dc_code,

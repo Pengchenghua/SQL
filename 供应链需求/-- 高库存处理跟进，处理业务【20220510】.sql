@@ -32,6 +32,81 @@ where sdt='20220507'
 ;
 
 
+-- 期初库存取4.18
+drop table csx_tmp.temp_stock_a ;
+create temporary table csx_tmp.temp_stock_a as 
+select a.province_code,
+a.province_name,
+a.dist_code,
+a.dist_name,
+a.dc_code,
+a.dc_name,
+a.goods_id,
+a.goods_name,
+a.classify_large_code,
+a.classify_large_name,
+a.classify_middle_code,
+a.classify_middle_name,
+a.classify_small_code,
+a.classify_small_name,
+a.unit_name,
+qty,
+amt,
+final_qty0507,
+final_amt0507,
+ final_qty0512,
+ final_amt0512
+from
+(
+select a.province_code,a.province_name,
+a.dist_code,
+a.dist_name,
+a.dc_code,
+a.dc_name,
+a.goods_id,
+a.goods_name,
+a.classify_large_code,
+a.classify_large_name,
+a.classify_middle_code,
+a.classify_middle_name,
+a.classify_small_code,
+a.classify_small_name,
+a.unit_name,
+b.qty,
+b.amt,
+ coalesce(a.final_qty,0)  final_qty0507,
+ coalesce(a.final_amt,0)  final_amt0507
+from csx_tmp.ads_wms_r_d_goods_turnover a 
+join  csx_tmp.fanruan b on a.dc_code=b.dc_code and a.goods_id=b.goods_code
+where sdt='20220507'
+)a 
+left join
+(
+select a.province_code,a.province_name,
+a.dist_code,
+a.dist_name,
+a.dc_code,
+a.dc_name,
+a.goods_id,
+a.goods_name,
+a.classify_large_code,
+a.classify_large_name,
+a.classify_middle_code,
+a.classify_middle_name,
+a.classify_small_code,
+a.classify_small_name,
+a.unit_name,
+b.qty,
+b.amt,
+ coalesce(a.final_qty,0)  final_qty0512,
+ coalesce(a.final_amt,0)  final_amt0512
+from csx_tmp.ads_wms_r_d_goods_turnover a 
+join  csx_tmp.fanruan b on a.dc_code=b.dc_code and a.goods_id=b.goods_code
+where sdt='20220512') b on a.dc_code=b.dc_code and a.goods_id=b.goods_id
+;
+
+
+
 drop table csx_tmp.temp_stack_a ;
 -- 库存操作
 create temporary table csx_tmp.temp_stack_a as 

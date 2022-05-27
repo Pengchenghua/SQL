@@ -1,16 +1,13 @@
--- 供应链绩效（蔬菜、猪肉、大米）
--- 1、涉及:蔬菜、猪肉、大米
--- 2、日配业务剔除（W0K4、W0Z7、WB26、WB38）
--- 猪肉仓 'W0A3','W0A2','W0N0','W0A8','W0BH','W0BK','W0Q2','W0A6','W0P8','W0A7','W0Q9','W0A5','W0R9','W0AS','W0BR'
-
+-- 供应链品类竞赛【剔除冬奥客户】
 set edt ='${enddate}';
 set edate=regexp_replace(${hiveconf:edt},'-','');
 set sdate=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set l_edate=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
 set l_sdate=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
+set last_month=regexp_replace(date_sub(trunc(${hiveconf:edt},'MM'),1),'-','');
 set pig_shop=('W0A3','W0A2','W0N0','W0A8','W0BH','W0BK','W0Q2','W0A6','W0P8','W0A7','W0Q9','W0A5','W0R9','W0AS','W0BR');
 set no_shop=('W0K4','W0Z7','WB26','WB38');
-
+set no_cust=('124621','124370','124621','125469','124025','123599','124379','125800','125717','125247');
 
 -- select ${hiveconf:l_sdate} , ${hiveconf:l_edate};
 
@@ -39,6 +36,7 @@ where sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate}
     and business_type_code='1'
     and dc_code not in ${hiveconf:no_shop}
     and province_code !='34'
+    and a.customer_no not in ${hiveconf:no_cust}
 group by 
         classify_middle_code,
         province_code,province_name,city_group_code,city_group_name,
@@ -71,6 +69,7 @@ where sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate}
     and business_type_code='1'
     and dc_code not in  ${hiveconf:no_shop}
     and province_code !='34'
+    and a.customer_no not in ${hiveconf:no_cust}
 group by 
         classify_middle_code,
         province_code,
@@ -260,7 +259,7 @@ from csx_tmp.temp_sale_cl_03
 
 ;
 
---猪肉入库平均成本
+--猪肉入库平均成本 按照23条码统计入库
 drop table csx_tmp.pig_cost ;
 create temporary table csx_tmp.pig_cost as 
 select city_group_code,
@@ -276,16 +275,23 @@ select city_group_code,
     sum(receive_amt) /sum(receive_qty) avg_cost
 from (
 select a.receive_location_code dc_code,
-    a.classify_middle_code,
-    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate} then   a.receive_qty end ) as last_receive_qty,
-    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:l_edate} then a.amount end) last_receive_amt,
+    b.classify_middle_code,
+    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:last_month} then   a.receive_qty end ) as last_receive_qty,
+    sum(case when sdt>=${hiveconf:l_sdate} and sdt<=${hiveconf:last_month} then a.amount end) last_receive_amt,
     sum(case when sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate} then   a.receive_qty end ) as receive_qty,
     sum(case when sdt>=${hiveconf:sdate} and sdt<=${hiveconf:edate} then a.amount end) receive_amt
-from csx_dw.dws_wms_r_d_entry_batch a 
+from csx_dw.dws_wms_r_d_entry_detail a 
+join 
+(select goods_id,classify_middle_code 
+from csx_dw.dws_basic_w_a_csx_product_m 
+where sdt='current' 
+    and bar_code like '23%'
+    and classify_middle_code='B0302'
+)b on a.goods_code=b.goods_id
 where sdt>=${hiveconf:l_sdate}  
     and sdt<=${hiveconf:edate} 
+	and receive_status in ('1','2')
     and a.receive_location_code in ${hiveconf:pig_shop}
-    and a.classify_middle_code='B0302'
 group by a.receive_location_code,
         classify_middle_code
 ) a 
@@ -589,7 +595,9 @@ SELECT a.province_code,
     all_qg_p_rate ,              -- 全国渗透率
       -- 销售环比高于或等于全国销售增长
      diff_qg_sale_rate,
-    if(diff_qg_sale_rate>=0,5,0) diff_qg_sale_rate_integral,  
+    case when sales_growth_rate<0 then 0 
+        when diff_qg_sale_rate>=0 and sales_growth_rate>=0 then 5 
+        else 0 end diff_qg_sale_rate_integral,  
     sales_growth_rate_rank,      --销售环比增长率排名
     case when sales_growth_rate_rank=1 then 15
          when sales_growth_rate_rank=2 then 10
@@ -618,13 +626,15 @@ SELECT a.province_code,
          --OEM全国占比
     diff_oem_sale_rate,
     case when diff_oem_sale_rate>=0 and oem_sales >0 then 10 else 0 end as diff_oem_sale_rate_integral, -- OEM占比高于全国
-    case when oem_sale_rate_rank=1 then 10
+    case when oem_sales<=0 then 0 
+         when oem_sale_rate_rank=1 then 10
          when oem_sale_rate_rank=2 then 7
          else 5 end oem_sale_rate_rank_integral,    -- 组内OEM排名10、7、5
     ring_cost_rate_rank,
     case when ring_cost_rate_rank=1 and a.classify_middle_code='B0302' then 20
-         when ring_cost_rate_rank=2 and a.classify_middle_code='B0302' then 10    
-         else 5 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
+         when ring_cost_rate_rank=2 and a.classify_middle_code='B0302' then 10  
+         when a.classify_middle_code='B0302' then 5
+         else 0 end ring_cost_rate_rank_integral,            --猪肉平均成本比增长率排名
      diff_qg_sale_rate_rank,
      diff_qg_cust_rate_rank,
     diff_qg_oem_rate_rank,
@@ -645,75 +655,3 @@ SELECT a.province_code,
     last_pig_avg_cost
 FROM csx_tmp.temp_rank_01 a 
 ) a ;
-select * from csx_tmp.temp_rank_01 ;
-
-
-
-create table csx_tmp.report_scm_r_d_category_rating 
-(
-province_code	string comment '省区',
-province_name	string comment '省区名称',
-group_aa	string comment '考核组',
-city_group_code	string comment '城市组编码',
-city_group_name	string comment '城市组名称',
-classify_middle_code	string comment '管理二级编码',
-classify_middle_name	string comment '管理二级名称',
-total_integral	int comment '总分',
-diff_qg_sale_rate_integral	int comment '销售环比高于或等于全国环比',
-sales_growth_rate_rank_intrgral	int comment '销售环比增长率',
-diff_qg_profit_rate_rank_integral	int comment '毛利率高于或等于全国环比',
-diff_profit_rate_rank_intrgral	int comment '毛利率环比增长率',
-diff_cust_r_rate_integral	int comment '客户渗透率高于全国',
-cust_p_rate_rank_intrgral	int comment '组内客户渗透率',
-diff_oem_sale_rate_integral	int comment 'OEM高于或等于全国',
-oem_sale_rate_rank_integral	int comment 'OEM组内',
-ring_cost_rate_rank_integral	int comment '猪肉平均成本环比',
-sales_cost	decimal(26,6) comment '销售成本',
-sales_qty	decimal(26,6) comment '销量',
-sales_value	decimal(26,6) comment '销售额',
-profit	decimal(26,6) comment '毛利额',
-profit_rate	decimal(26,6) comment '毛利率',
-oem_sales	decimal(26,6) comment 'OEM销售额',
-oem_sale_rate	decimal(26,6) comment 'OEM销售占比',
-oem_profit	decimal(26,6) comment 'OEM销售毛利',
-last_sales_cost	decimal(26,6) comment '环比销售成本',
-last_sales_qty	decimal(26,6) comment '环期销量',
-last_sales_value	decimal(26,6) comment '环期销售额',
-last_profit	decimal(26,6) comment '环期毛利额',
-last_profit_rate	decimal(26,6) comment '环期毛利率',
-last_oem_sales	decimal(26,6) comment '环期OEM销售额',
-last_oem_profit	decimal(26,6) comment '环期OEM毛利额',
-class_cust_num	decimal(26,6) comment '客户成交数',
-last_class_cust_num	decimal(26,6) comment '环期客户成交数',
-all_cust_num	decimal(26,6) comment 'B端客户成交数',
-last_all_cust_num	decimal(26,6) comment '环期B端客户成交数',
-sales_growth_rate	decimal(26,6) comment '销售额环比增长率',
-all_sales_growth_rate	decimal(26,6) comment '全国销售增长率',
-diff_profit_rate	decimal(26,6) comment '毛利率环比',
-all_profit_rate	decimal(26,6) comment '全国毛利率',
-all_oem_sale_ratio	decimal(26,6) comment '全国OEM占比',
-cust_p_rate	decimal(26,6) comment '客户渗透率',
-all_qg_p_rate	decimal(26,6) comment '全国客户渗透率',
-sales_growth_rate_rank	int comment '销售环比排名',
-diff_profit_rate_rank	int comment '毛利率排名',
-cust_p_rate_rank	int comment '客户渗透率排名',
-oem_sale_rate_rank	int comment 'OEM销售占比排名',
-ring_cost_rate_rank	int comment '猪肉平均成本排名',
-diff_qg_profit_rate	int comment '全国毛利率差',
-diff_qg_profit_rate_rank	int comment '全国毛利率差排名',
-diff_qg_sale_rate	int comment '全国销售环比率差',
-diff_qg_sale_rate_rank	int comment '全国销售环比率差排名',
-diff_cust_r_rate	int comment '全国客户渗透率差',
-diff_qg_cust_rate_rank	int comment '全国客户渗透率差排名',
-diff_oem_sale_rate	int comment '全国OEM占比差',
-diff_qg_oem_rate_rank	int comment '全国OEM占比差排名',
-qg_class_num	int comment '	全国管理二级成交客户数',
-qg_cust_num	int comment '全国客户数',
-ring_cost_rate	decimal(26,6) comment '猪肉入库平均成本环比增长率',
-pig_avg_cost	decimal(26,6) comment '猪肉入库平均成本',
-last_pig_avg_cost	decimal(26,6) comment '环期猪肉入库平均成本',
-update_time	timestamp comment '更新时间'
-) comment '供应链品类评比'
-partitioned by (sdt string comment '日期分区')
-stored as parquet
-;
