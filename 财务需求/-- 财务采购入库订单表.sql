@@ -1,6 +1,6 @@
 -- 财务采购入库订单表
 -- 需要增加采购订单状态
-drop table csx_tmp. ;
+drop table csx_tmp.report_fr_r_m_financial_purchase_detail ;
 CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   `sdt` string COMMENT '收货日期(包含出库日期)', 
   `purchase_org` string COMMENT '采购组织', 
@@ -8,10 +8,17 @@ CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   `order_code` string COMMENT '采购订单号',
    receive_code string comment '入库/出库单号',
    batch_code string COMMENT '批次单号',
+   province_code string COMMENT '物理省区编码', 
+  `province_name` string COMMENT '物理省区名称', 
+   city_code string comment '物理城市',
+   city_name string comment '物理城市名称',
   `sales_province_code` string COMMENT '省区编码', 
   `sales_province_name` string COMMENT '省区名称', 
+   sales_city_code string comment '销售归属城市',
+   sales_city_name string comment '销售归属城市名称',
   `source_type_code` string COMMENT '来源采购订单类型', 
   `source_type_name` string COMMENT '来源采购订单名称', 
+  `super_class_code` string COMMENT '订单类型编码',
   `super_class_name` string COMMENT '订单类型', 
   `dc_code` string COMMENT 'DC编码',  
   `shop_name` string COMMENT 'DC名称', 
@@ -35,7 +42,9 @@ CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   `vendor_name` string COMMENT '供应商名称', 
   `send_dc_code` string COMMENT '发货DC编码', 
   `send_dc_name` string COMMENT '发货DC名称', 
-   settle_location_code string COMMENT '结算DC',
+   settle_dc_code string COMMENT '结算DC',
+   settle_dc_name string COMMENT '结算DC名称',
+   settle_company_code string comment '结算公司编码',
   `local_purchase_flag` string COMMENT '是否地采', 
   `business_type_name` string COMMENT '业务类型名称', 
   `order_qty` decimal(30,6) comment '订单数量', 
@@ -71,7 +80,6 @@ CREATE TABLE `csx_tmp.report_fr_r_m_financial_purchase_detail`(
   order_goods_status string COMMENT '订单商品状态 状态(1-已创建,2-已发货,3-入库中,4-已完成,5-已取消)',
   `purpose` string COMMENT 'DC类型编码', 
   `purpose_name` string COMMENT 'DC类型名称',
-   
    update_time string COMMENT '数据更新时间'
   )comment '财务采购入库订单表(供应商配送、供应商退货)'
   partitioned by (months string COMMENT '月分区、统计月')
@@ -92,8 +100,8 @@ set hive.exec.dynamic.partition.mode        =nonstrict;--设置为非严格模�
 set hive.exec.max.dynamic.partitions        =10000;    --在所有执行MR的节点上，最大一共可以创建多少个动态分区。
 set hive.exec.max.dynamic.partitions.pernode=100000;   --源数据中包含了一年的数据，即day字段有365个值，那么该参数就需要设置成大于365，如果使用默认值100，则会报错
 
-set s_date='20210601';
-set e_date='20211231';
+set s_date='20220101';
+set e_date='20220614';
 
 
 -- select sum(receive_amt) from csx_tmp.temp_entry_00 where dc_code='W0A5' and supplier_code='20031166' and receive_sdt>='20211001';
@@ -152,12 +160,12 @@ select origin_order_code order_no,
     0 no_tax_shipped_amt,
     regexp_replace( to_date(receive_time ),'-','') receive_sdt
 from csx_dw.dws_wms_r_d_entry_batch a 
-where (sdt>=${hiveconf:s_date} or sdt='19990101')
-    and regexp_replace( to_date(receive_time ),'-','')<= ${hiveconf:e_date}
-    and  regexp_replace( to_date(receive_time ),'-','')>=${hiveconf:s_date}
+where (sdt>=${hiveconf:s_date} and  sdt<=${hiveconf:e_date})
+  --  and regexp_replace( to_date(receive_time ),'-','')<= ${hiveconf:e_date}
+  --  and  regexp_replace( to_date(receive_time ),'-','')>=${hiveconf:s_date}
     and order_type_code like 'P%'
     -- and business_type !='02'
-    and receive_status in ('1','2')
+    and receive_status in ('2')
 union all 
 select origin_order_no order_no, 
     shipped_location_code  as dc_code,
@@ -211,8 +219,10 @@ where substr(dc_code,1,1) !='L'
 
 drop table csx_tmp.temp_order_table ;
 create temporary table csx_tmp.temp_order_table as 
-select sales_province_code,
-    sales_province_name,
+select performance_province_code,
+    performance_province_name,
+    performance_city_code,
+    performance_city_name,
     purchase_org,
     purchase_org_name,
     sales_region_code,
@@ -301,6 +311,7 @@ left join
     when source_type = 16 then '永辉生活'
     when source_type = 17 then 'RDC调拨'
     when source_type = 18 then '城市服务商'
+    when source_type = 19 then '日采补货'
     else '其他' end as source_type_name      , --订单来源名称 source_type_name,
     a.goods_code,
     a.order_qty,                                --订单数量
@@ -312,9 +323,9 @@ left join
     urgency_flag,      --紧急补货
     has_change  ,---有无变更 
     entrust_outside,   --委外标识 
-    '0' order_business_type ,    --业务类型 基地订单标识
+    business_type order_business_type ,    --业务类型 基地订单标识
     to_date(a.create_time) as order_create_date,              --订单创建时间
-    order_type ,         -- 订单类型
+    order_type ,                             -- 订单类型
     extra_flag,
     timeout_cancel_flag,
     a.items_status as order_goods_status
@@ -349,7 +360,11 @@ left join
         when province_name LIKE '%江苏%' and city_name !='南京市' then '昆山市' 
     else  province_name  end province_name,
     purpose,
-    purpose_name
+    purpose_name,
+    performance_province_code ,
+    performance_province_name ,
+    performance_city_code , 
+    performance_city_name 
 from csx_dw.dws_basic_w_a_csx_shop_m
  where sdt='current'    
     and  table_type=1
@@ -369,9 +384,13 @@ select receive_sdt  as sdt,
     j.order_code,
     receive_no,
     batch_code,
-    sales_province_code,
-    sales_province_name,
+    performance_province_code,
+    performance_province_name,
+    performance_city_code,
+    performance_city_name,
+    source_type as source_type_code,
     source_type_name,
+    super_class super_class_code,
     CASE
             WHEN j.super_class='1'
                 THEN '供应商订单'
@@ -463,10 +482,14 @@ select  sdt,
     order_code,
     receive_no,
     batch_code,
-    sales_province_code,
-    sales_province_name,
+    performance_province_code as sales_province_code,
+    performance_province_name as sales_province_name,
+    performance_city_code as sales_city_code,
+    performance_city_name as  sales_city_name,
+    source_type_code,
     source_type_name,
-   super_class_name  ,
+    super_class_code,
+    super_class_name  ,
     dc_code,
     shop_name,
     goods_code,
@@ -549,6 +572,14 @@ group by  supplier_code,
 
 -- SHOW CREATE TABLE  csx_tmp.temp_order_dtl;
 
+select distinct sales_province_code,
+    sales_province_name,
+    sales_city_code,
+    sales_city_name,
+    dc_code,
+    shop_name
+    from csx_tmp.temp_order_dtl
+    where sales_province_name='';
 
 insert overwrite table  csx_tmp.report_fr_r_m_financial_purchase_detail partition(months)
 select 
@@ -560,7 +591,11 @@ select
     batch_code,
     sales_province_code,
     sales_province_name,
+    sales_city_code,
+    sales_city_name,
+    source_type_code,
     source_type_name,
+    super_class_code,
     super_class_name  ,
     dc_code,
     shop_name,

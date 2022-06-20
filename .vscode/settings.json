@@ -1,6 +1,10 @@
 {
     "git.autofetch": true,
     "sql-formatter.dialect": "",
-    "editor.quickSuggestions": true,
+    "editor.quickSuggestions": {
+        "comments": "on",
+        "strings": "on",
+        "other": "on"
+    },
     "editor.suggest.snippetsPreventQuickSuggestions": false
 }

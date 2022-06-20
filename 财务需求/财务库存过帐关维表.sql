@@ -1,4 +1,4 @@
---财务库存过帐数据关联维表【20220406】
+--财务库存过帐数据关联维表【20220601】
 -- 导入数据时，注意将商品名称清空及中间有空白行
 -- csx_tmp.temp_inv_sale_01 ;-- 操作记录
 -- csx_tmp.temp_inv_cost_05; --结存库存
@@ -106,9 +106,12 @@ left join
 (select code,name,parent_code from csx_dw.dws_wms_w_a_basic_warehouse_reservoir where level='3') d on a.dc_code=d.parent_code and a.receive_are_code=d.code
 where (inv_qty !=0 or inv_amt!=0);
 
- 
+  set hive.exec.dynamic.partition.mode=nonstrict;
   INSERT OVERWRITE table csx_tmp.report_wms_r_m_post_inventory PARTITION(months)
-  select * ,current_timestamp(),'202204' from  csx_tmp.temp_inve_01
+  select * ,current_timestamp(),'202205' from  csx_tmp.temp_inve_01
+  ;
+  
+  
 --导出数据
 select * from  csx_tmp.temp_inve_01;
 

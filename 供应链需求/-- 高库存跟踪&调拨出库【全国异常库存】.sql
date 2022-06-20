@@ -1,4 +1,4 @@
--- 高库存跟踪&调拨出库
+-- 高库存跟踪&调拨出库【全国异常库存】
 set edate='${enddate}'  ;
 set dc_uses=('寄售门店','城市服务商','合伙人物流','');
 set edt=regexp_replace(${hiveconf:edate},'-','');
@@ -306,6 +306,61 @@ a.total_qty,
   csx_tmp.temp_01 b on a.dc_code=b.dc_code and a.goods_id=b.goods_id
   where b.goods_id is null and b.dc_code is null
   ;
+ 
   
-  select * from csx_tmp.temp_00 where classify_middle_name !='酒' and province_name in ('重庆市','四川省','贵州省') and goods_id='1350631';
+  select note,dc_uses,
+  sales_region_code,
+  sales_region_name,
+  performance_province_name,
+  performance_city_name,
+  a.dc_code,
+ a.dc_name,
+ a.classify_large_code ,
+ a.classify_large_name ,
+ a.classify_middle_code,
+ a.classify_middle_name ,
+ a.goods_id,
+ a.goods_name,
+ a.unit_name,
+a.qualitative_period,
+a.product_status_name,
+a.total_qty,
+ a.final_amt ,
+  a.days_turnover_30 ,
+  days_turnover_30_transfer,
+ a.no_sale_days , 
+ a.max_sale_sdt ,
+ a.entry_days ,
+ a.entry_qty,
+ a.entry_value,
+ a.entry_sdt,
+  receipt_m_amt,
+  receipt_m_qty,
+ max_receipt_sdt,
+ contain_transfer_entry_qty , 
+ contain_transfer_entry_value ,
+ contain_transfer_entry_sdt , 
+ contain_transfer_entry_days 
+from csx_tmp.temp_00 a 
+  join 
+  (select sales_province_code,
+    sales_province_name,
+    purchase_org,
+    purchase_org_name,
+    case when performance_province_name like'平台%' then '00' else   sales_region_code end sales_region_code,
+    case when performance_province_name like'平台%' then '平台' else  sales_region_name end sales_region_name,
+    shop_id ,
+    shop_name ,
+    company_code ,
+    company_name ,
+    purpose,
+    purpose_name,
+    performance_city_code,
+    performance_city_name,
+    performance_province_code,
+    performance_province_name
+from csx_dw.dws_basic_w_a_csx_shop_m
+ where sdt='current'    
+    and  table_type=1 ) b on a.dc_code=b.shop_id
+  where classify_middle_name !='酒' ;
   
