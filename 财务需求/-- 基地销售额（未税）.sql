@@ -16,3 +16,16 @@ concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) ,
 goods_code,
 goods_name,
 substr(sdt,1,6) 
+
+-- 基地商品入库平均成本
+select months, province_name,goods_code,goods_name,sum(receive_amt)/sum(receive_qty) price from  csx_tmp.report_fr_r_m_financial_purchase_detail 
+where  1=1
+and province_name in ( '四川省' )
+and business_type_name !='云超配送'
+and source_type_code  not in ('4','18')
+and goods_code in ('3695','1330713','262352','2230','1330712','153890',
+    '1065513','1251396','576','263859','2112','562','538','883188','620',
+    '1134244','1356734','317132','1374480')
+and months>='202106'
+group by months, province_name,goods_code,goods_name
+;
