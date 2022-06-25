@@ -1,5 +1,5 @@
 -- 财务采购入库订单表
--- 需要增加采购订单状态省区
+-- 需要增加采购订单状态增加销售省区
 drop table csx_tmp.report_fr_r_m_financial_purchase_detail ;
 CREATE TABLE csx_tmp.report_fr_r_m_financial_purchase_detail(
   sdt string COMMENT '收货日期(包含出库日期)', 
