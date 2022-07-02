@@ -204,6 +204,9 @@ GROUP BY  dept_name,
        classify_middle_name,
        months
 ;
+
+
+-- 集采入库 剔除蔬果B02
 drop table   csx_tmp.temp_join_entry ;
 create table csx_tmp.temp_join_entry as 
 SELECT dept_name,
@@ -240,7 +243,7 @@ SELECT d.dept_name,
        classify_large_name,
        a.classify_middle_code,
        a.classify_middle_name,
-       case when  a.classify_small_code IS NOT NULL then '1' end group_purchase_tag,
+       case when  a.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
        coalesce(sum(case when joint_purchase_flag=1 and a.classify_small_code IS NOT NULL then receive_amt-shipped_amt end ),0) as group_purchase_amount,
        sum(receive_amt-shipped_amt) AS net_entry_amount,
        months
@@ -332,7 +335,7 @@ SELECT dept_name,
        classify_large_name,
        a.classify_middle_code,
        a.classify_middle_name,
-       case when  a.classify_small_code IS NOT NULL then '1' end group_purchase_tag,
+       case when  a.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
        sum(a.sales_value) AS sales_value,
        sum(a.profit) profit,
        sum( case when  a.classify_small_code IS NOT NULL then sales_value end ) group_purchase_sales_value,
@@ -385,7 +388,7 @@ GROUP BY dept_name,
        classify_middle_code,
        classify_middle_name,
        group_purchase_tag  ,      -- 集采标签
-      sum(group_purchase_amount)  group_purchase_amount,
+       sum(group_purchase_amount)  group_purchase_amount,
        sum(net_entry_amount)  net_entry_amount,  
        sum(sales_value) sales_value,
        sum(profit) profit,
@@ -461,3 +464,65 @@ FROM csx_tmp.temp_join_sale a
        classify_middle_name,
        months
      ;  
+     
+CREATE TABLE `csx_tmp.report_r_m_group_purchase_analysis`(
+  year string comment '年',
+  quarter string comment '季度',
+  `dept_name` string comment '营运部门 平台、大区', 
+  `region_code` string comment '大区编码', 
+  `region_name` string comment '大区名称', 
+  `province_code` string comment '省区编码', 
+  `province_name` string comment '省区名称', 
+  `city_code` string ccomment '城市编码', 
+  `city_name` string ccomment '城市名称', 
+  `bd_id` string comment '采购部门编码', 
+  `bd_name` string comment '采购部门名称', 
+  `short_name` string comment '集采分级简称', 
+  `classify_large_code` string comment '管理大类', 
+  `classify_large_name` string comment '管理大类', 
+  `classify_middle_code` string comment '管理中类', 
+  `classify_middle_name` string comment '管理中类', 
+  `group_purchase_tag` string comment '集采标签 1', 
+  `group_purchase_amount` decimal(38,6) comment '集采净入库额', 
+  `net_entry_amount` decimal(38,6) comment '类别净入库额', 
+  `sales_value` decimal(38,6) comment '类别销售额', 
+  `profit` decimal(38,6) comment '类别毛利额', 
+  `profit_rate` decimal(38,6) comment '类别毛利率', 
+  `group_purchase_sales_value` decimal(38,6) comment '集采销售额', 
+  `group_purchase_profit` decimal(38,6) comment '集采毛利额', 
+  `group_purchase_profit_rate` decimal(38,6) comment '集采毛利率', 
+   update_time timestamp comment '数据插入时间'
+   )comment '采购分析-集采分析'
+partitioned by(months string c  '月分区')
+STORED AS parquet 
+ ;
+
+ 
+CREATE TABLE `csx_tmp.report_r_m_purchase_analysis`(
+  year string comment '年',
+  quarter string comment '季度',
+  `dept_name` string comment '营运部门 平台、大区', 
+  `region_code` string comment '大区编码', 
+  `region_name` string comment '大区名称', 
+  `province_code` string comment '省区编码', 
+  `province_name` string comment '省区名称', 
+  `city_code` string ccomment '城市编码', 
+  `city_name` string ccomment '城市名称', 
+  `bd_id` string comment '采购部门编码', 
+  `bd_name` string comment '采购部门名称', 
+  `short_name` string comment '集采分级简称', 
+  `classify_large_code` string comment '管理大类', 
+  `classify_large_name` string comment '管理大类', 
+  `classify_middle_code` string comment '管理中类', 
+  `classify_middle_name` string comment '管理中类', 
+  `group_purchase_tag` string comment '集采标签 1', 
+  `net_entry_amount` decimal(38,6) comment '类别净入库额', 
+  `B02_entry_amount` decimal(38,6) comment '蔬果净入库额(大客户+工厂)', 
+  `base_entry_amount` decimal(38,6) comment '基地净入库额(大客户+工厂)', 
+  `cash_entry_amount` decimal(38,6) comment '现金采购', 
+  `yh_entry_amount` decimal(38,6) comment '云超采购'
+   update_time timestamp comment '数据插入时间'
+   )comment '采购分析-整体分析-基地分析'
+partitioned by(months string c  '月分区')
+STORED AS parquet 
+;
