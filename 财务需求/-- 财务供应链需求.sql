@@ -101,9 +101,7 @@ SELECT sales_region_code,
        bd_name,
        classify_middle_name,
        sum(net_amt) AS net_amt,
-       sum(coalesce(case when order_business_type=1 then net_amt end     ,0 )  ) jd_amt,
-       sum(coalesce(case when supplier_classify_code=2 then net_amt end  ,0  ) ) xj_amt,
-       sum(coalesce(case when business_type_name='云超配送' then net_amt end,0)) yc_amt
+       sum(coalesce(case when order_business_type=1 then net_amt end,0 )  ) jd_amt
 FROM
 (
 SELECT d.sales_region_code,
@@ -162,7 +160,6 @@ WHERE months='202205'
            ELSE '供应商配送' end ,
     case when a.division_code in ('10','11') then '11' else '12' end ,
     case when a.division_code in ('10','11') then '生鲜' else '食百' end
-
 ) a 
 GROUP BY sales_region_code,
        sales_region_name,
@@ -175,9 +172,9 @@ GROUP BY sales_region_code,
        classify_middle_name
 ;
 
+
 -- 剔除城市服务商、合伙人仓 集采品类销售
 set purpose= ('01','02','03','05','07','08');
-
 SELECT sales_region_code,
        sales_region_name,
        province_code,
@@ -246,6 +243,8 @@ WHERE a.sdt >='20220501' and sdt<='20220531'
 ) a 
 
 ;
+
+
 -- 日配销售额
 SELECT sales_region_code,
        sales_region_name,
@@ -370,7 +369,7 @@ WHERE months='202205'
 --  AND joint_purchase_flag=1 -- 集采供应商
    and source_type_name not in ('城市服务商','联营直送','项目合伙人')
    and super_class_name in ('供应商订单','供应商退货订单')
-  AND d.purpose IN ('01','02','03','05','07','08')
+  AND d.purpose IN ('01','03')
    and dc_code in ${hiveconf:shop_id}
   AND ((classify_middle_name IN ('蛋','米','家禽','猪肉','食用油类','常温乳品饮料','调味品类','香烟饮料')
   and a.classify_small_code !='B040207')
