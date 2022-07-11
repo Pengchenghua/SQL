@@ -35,9 +35,11 @@ select substr(sdt,1,6) as sales_months,
     classify_middle_name,
     sum(sales_value)sales_value,
     sum(profit) profit,
-    sum(case when business_type_code='1' and  dc_code not in ('W0Z7','W0K4','WB26','WB38') then sales_value end ) as daliy_sales_value,
-    sum(case when business_type_code='1' AND dc_code not in ('W0Z7','W0K4','WB26','WB38') then profit end ) as  daliy_profit
+    sum(case when business_type_code='1' and c.dc_code is null then sales_value end ) as daliy_sales_value,
+    sum(case when business_type_code='1' AND c.dc_code is null then profit end ) as  daliy_profit
 from csx_dw.dws_sale_r_d_detail a
+left join 
+(SELECT * FROM csx_dw.dws_basic_w_a_normal_default_reject_warehouse) c on a.dc_code=c.dc_code  	-- 剔除日配剔除联营仓
 where sdt>=${hiveconf:s_dt}
     and sdt<=${hiveconf:e_dt}
     and channel_code in ('1')

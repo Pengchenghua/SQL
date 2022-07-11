@@ -25,6 +25,8 @@ sqoop import \
  --columns 'id,province_code,province_name,city_group_code,city_group_name,customer_code,customer_name,customer_child_code,customer_child_name,customer_site_code,customer_site_name,update_time,create_time,update_by,create_by'\
 
 ;
+
+-- MYSQL 导入HIVE
 sqoop import \
  --connect jdbc:mysql://10.0.74.77:7477/data_analysis_prd?tinyInt1isBit=false \
   --username "$username" \

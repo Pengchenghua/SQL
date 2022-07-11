@@ -1,4 +1,5 @@
--- 高库存跟踪&调拨出库
+-- 高库存跟踪&调拨出库【华西】20220706
+-- 异常库存统计 高库存&未销售
 set edate='${enddate}'  ;
 set dc_uses=('寄售门店','城市服务商','合伙人物流','');
 set edt=regexp_replace(${hiveconf:edate},'-','');
@@ -52,11 +53,11 @@ group by
 ;
 
 
-create temporary table if not exists csx_tmp.p_shipp_date as
+create temporary table if not exists csx_tmp.p_shipped_date as
 select
 	a.shipped_location_code                          ,
 	a.goods_code                                     ,
-	max(sdt) max_shpp_date
+	max(sdt) max_shipped_date
 from
 	csx_dw.dws_wms_r_d_ship_batch a
     where 1=1
@@ -68,6 +69,9 @@ group by
 	a.goods_code           
 ;
 
+select * from csx_tmp.p_contain_transfer_trunc where dc_code='W0A6' and goods_id='899540';
+
+select * from csx_tmp.p_shipped_date where shipped_location_code='W0A6' and goods_code='899540';
 
 drop table  csx_tmp.p_contain_transfer_trunc;
 create temporary table if not exists csx_tmp.p_contain_transfer_trunc as
@@ -78,10 +82,14 @@ coalesce(case when (business_division_code='11' and (cost_30day+receipt_amt+mate
 		              when (business_division_code !='12' and cost_30day+coalesce(b.contain_transfer_entry_value,0)  <=0 and period_inv_amt_30day<=0) then 0 
 					  when business_division_code ='11' then  period_inv_amt_30day/(cost_30day+receipt_amt+material_take_amt+coalesce(b.contain_transfer_entry_value,0))
 		              else period_inv_amt_30day/(cost_30day+coalesce(b.contain_transfer_entry_value,0)) 
-		        end,0)	as days_turnover_30_transfer 
+		        end,0)	as days_turnover_30_transfer ,
+			datediff(to_date(date_sub(current_timestamp(),1)),from_unixtime(unix_timestamp(max_shipped_date,'yyyyMMdd'),'yyyy-MM-dd')) as no_shipped_days,
+			max_shipped_date
 from csx_tmp.ads_wms_r_d_goods_turnover a 
 left join
  csx_tmp.p_contain_transfer_cost b on a.dc_code=b.shipped_location_code and a.goods_id=b.goods_code
+ left join 
+ csx_tmp.p_shipped_date c on a.dc_code=c.shipped_location_code and a.goods_id=c.goods_code
  where sdt=regexp_replace(${hiveconf:edate},'-' ,'')  
  ;
  
@@ -109,6 +117,7 @@ product_status_name,
   days_turnover_30 ,
   days_turnover_30_transfer,
  no_sale_days , 
+
  max_sale_sdt ,
  entry_days ,
  entry_qty,
@@ -120,7 +129,9 @@ product_status_name,
  contain_transfer_entry_qty , 
  contain_transfer_entry_value ,
  contain_transfer_entry_sdt , 
- contain_transfer_entry_days 
+ contain_transfer_entry_days ,
+ no_shipped_days,
+ max_shipped_date
 -- sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
 --          when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
 --           when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
@@ -195,7 +206,9 @@ product_status_name,
  contain_transfer_entry_qty , 
  contain_transfer_entry_value ,
  contain_transfer_entry_sdt , 
- contain_transfer_entry_days 
+ contain_transfer_entry_days ,
+  no_shipped_days,
+ max_shipped_date
 -- sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
 --          when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
 --           when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
@@ -229,7 +242,7 @@ where sdt=${hiveconf:edt}
     and division_code in ('11','10','12','13','14')
    -- AND final_qty>0
     and classify_large_code in('B02','B03','B01','B04','B05','B06','B08','B07','B09')
-    and (a.no_sale_days>30 and a.final_qty>0.1 and a.contain_transfer_entry_days>7 )
+    and (a.no_shipped_days>30 and a.final_qty>0.1 and a.contain_transfer_entry_days>7 )
  ) a 
   ;
   
@@ -266,7 +279,9 @@ a.total_qty,
  contain_transfer_entry_qty , 
  contain_transfer_entry_value ,
  contain_transfer_entry_sdt , 
- contain_transfer_entry_days 
+ contain_transfer_entry_days ,
+  no_shipped_days,
+ max_shipped_date
  from csx_tmp.temp_01 a
   union all 
   select '未销售' note,
@@ -300,7 +315,9 @@ a.total_qty,
  a.contain_transfer_entry_qty , 
  a.contain_transfer_entry_value ,
  a.contain_transfer_entry_sdt , 
- a.contain_transfer_entry_days 
+ a.contain_transfer_entry_days ,
+ a.no_shipped_days,
+ a.max_shipped_date
  from csx_tmp.temp_02  a 
   left join 
   csx_tmp.temp_01 b on a.dc_code=b.dc_code and a.goods_id=b.goods_id
