@@ -42,7 +42,6 @@ from csx_tmp.dws_basic_w_a_performance_region_province_city_tomysql a
   --    and table_type=1 
     ;  
 
--- 采集对标永辉
 drop table csx_tmp.temp_group_goods;
 CREATE temporary table csx_tmp.temp_group_goods as 
 SELECT d.dept_name,
@@ -66,7 +65,8 @@ SELECT d.dept_name,
        case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
        coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then receive_amt-shipped_amt  end ),0) as group_purchase_amount,
        coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.receive_qty-shipped_qty  end ),0) as group_purchase_qty,
-    --   coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then (receive_amt-shipped_amt)/(a.receive_qty-shipped_qty ) end ),0) as group_purchase_cost,
+       coalesce(sum(receive_amt-shipped_amt  ),0) as net_amount,
+       coalesce(sum(a.receive_qty-shipped_qty),0) as net_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -79,8 +79,6 @@ WHERE months <= '202206'
    -- AND d.purpose IN ('01','03')
    and a.dc_code in ${hiveconf:group_shop}
   and a.classify_middle_code !='B0202'
-  and joint_purchase_flag=1 
-  and b.classify_small_code IS NOT NULL
   GROUP BY d.sales_region_code,
       d.sales_region_name,
     --   performance_city_code,
@@ -130,38 +128,17 @@ group by substr(a.sdt,1,6) ,
     goodsid
 
 ;
-
- -- 关联永辉进价      
-select a.dept_name,
-       region_code,
-       region_name,
-       sales_province_code,
-       sales_province_name,
-       province_code,
-       province_name,
-       bd_id,
-       bd_name,
-       short_name,
-       goods_code,
-       goods_name,
-       classify_large_code,
-       classify_large_name,
-       classify_middle_code,
-       classify_middle_name,
-       group_purchase_tag,
-       group_purchase_amount,
-       group_purchase_qty,
-       group_purchase_amount/(group_purchase_qty)as group_purchase_cost,
-       months,b.qty,amt,yc_cost 
-from  csx_tmp.temp_group_goods a 
+       
+select a.*,b.qty,amt,yc_cost from  csx_tmp.temp_group_goods a 
 left join
 csx_tmp.temp_yc_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
 where group_purchase_tag=1;
 
 
+;
 
 -- 基地采购
-   drop table csx_tmp.temp_jd_goods;
+drop table csx_tmp.temp_jd_goods;
 CREATE temporary table csx_tmp.temp_jd_goods as 
 SELECT d.dept_name,
        d.region_code,
@@ -181,9 +158,10 @@ SELECT d.dept_name,
        classify_large_name,
        a.classify_middle_code,
        a.classify_middle_name,
-       coalesce(sum(receive_amt-shipped_amt   ),0) as group_purchase_amount,
-       coalesce(sum(a.receive_qty-shipped_qty   ),0) as group_purchase_qty,
-       coalesce(sum((receive_amt-shipped_amt)/sum(a.receive_qty-shipped_qty )  ),0) as group_purchase_cost,
+       coalesce(sum( case when  order_business_type=1 then receive_amt-shipped_amt  end),0) as group_purchase_amount,
+       coalesce(sum( case when  order_business_type=1 then a.receive_qty-shipped_qty end ),0) as group_purchase_qty,
+       coalesce(sum( receive_amt-shipped_amt   ),0) as net_amount,
+       coalesce(sum( a.receive_qty-shipped_qty   ),0) as net_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -198,8 +176,6 @@ WHERE months <= '202206'
   and a.classify_large_code ='B02'
   GROUP BY d.sales_region_code,
       d.sales_region_name,
-    --   performance_city_code,
-    --   performance_city_name,
       performance_province_code,
        performance_province_name,
        a.classify_middle_code,
@@ -218,8 +194,7 @@ WHERE months <= '202206'
         goods_code,
        goods_name
 ;
-   
--- 云超入库基地商品
+   -- 云超入库基地商品
 
 drop table csx_tmp.temp_yc_jd_entry;
 create temporary table csx_tmp.temp_yc_jd_entry as 
@@ -233,7 +208,7 @@ from b2b.ord_orderflow_t a
 join 
 (select * from  csx_dw.ads_sale_r_d_purprice_globaleye_shop where shop_channel='yc' and sdt='current') b on a.shop_id_in =b.shop_id
 join 
-(select distinct goods_code from  csx_tmp.temp_jd_goods   ) c on a.goodsid=c.goods_code
+(select distinct goods_code from  csx_tmp.temp_jd_goods where  group_purchase_amount>0 or group_purchase_amount<0  ) c on a.goodsid=c.goods_code
 
 where a.sdt>='20220101' and a.sdt<='20220630' 
     and  delivery_finish_flag='X'
@@ -244,17 +219,44 @@ group by substr(a.sdt,1,6) ,
 
 ;
        
-select a.*,b.qty,amt,yc_cost from  csx_tmp.temp_jd_goods a 
+select dept_name,
+       region_code,
+       region_name,
+       sales_province_code,
+       sales_province_name,
+       province_code,
+       a.province_name,
+       bd_id,
+       bd_name,
+       short_name,
+       goods_code,
+       goods_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_amount,
+       group_purchase_qty,
+       net_amount,
+       net_qty,
+       a.months,
+       b.qty,
+       amt,
+       yc_cost 
+from  csx_tmp.temp_jd_goods a 
 left join
 csx_tmp.temp_yc_jd_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
+where  group_purchase_amount>0 or group_purchase_amount<0
 
 
 ;
 
 
 -- 现金采购明细对标永辉
-show create table b2b.ord_orderflow_t ;
-CREATE temporary table csx_tmp.temp_basc_goods as 
+
+
+drop table csx_tmp.temp_cash_goods ;
+CREATE temporary table csx_tmp.temp_cash_goods as 
 SELECT d.dept_name,
        d.region_code,
        d.region_name,
@@ -262,8 +264,6 @@ SELECT d.dept_name,
        d.performance_province_name sales_province_name,
        a.province_code,
        a.province_name,
-    --   d.performance_city_code city_code,
-    --   d.performance_city_name city_name,
        case when a.division_code in ('10','11') then '11' else '12' end bd_id,
        case when a.division_code in ('10','11') then '生鲜' else '食百' end bd_name,
        b.short_name,
@@ -273,9 +273,12 @@ SELECT d.dept_name,
        classify_large_name,
        a.classify_middle_code,
        a.classify_middle_name,
-       coalesce(sum(receive_amt-shipped_amt   ),0) as group_purchase_amount,
-       coalesce(sum(a.receive_qty-shipped_qty   ),0) as group_purchase_qty,
-       coalesce(sum((receive_amt-shipped_amt)/sum(a.receive_qty-shipped_qty )  ),0) as group_purchase_cost,
+       if(supplier_classify_code=2,'1','0') as tage,
+       coalesce(sum(case when supplier_classify_code=2 then receive_amt-shipped_amt  end ),0) as group_purchase_amount,
+       coalesce(sum(case when supplier_classify_code=2 then a.receive_qty-shipped_qty end  ),0) as group_purchase_qty,
+       coalesce(sum(receive_amt-shipped_amt)/sum(a.receive_qty-shipped_qty )  ,0) as group_purchase_cost,
+       coalesce(sum(receive_amt-shipped_amt  ),0) as net_amount,
+       coalesce(sum(a.receive_qty-shipped_qty ),0) as net_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -285,14 +288,11 @@ WHERE months <= '202206'
     and months>='202201'
    and source_type_name not in ('城市服务商','联营直送','项目合伙人')
    and super_class_name in ('供应商订单','供应商退货订单')
-   -- AND d.purpose IN ('01','03')
    and a.dc_code in ${hiveconf:group_shop}
-  and a.classify_large_code ='B02'
-  and order_business_type=1 
+ -- and a.classify_large_code ='B02'
+ --  and supplier_classify_code=2
   GROUP BY d.sales_region_code,
       d.sales_region_name,
-    --   performance_city_code,
-    --   performance_city_name,
       performance_province_code,
        performance_province_name,
        a.classify_middle_code,
@@ -309,13 +309,14 @@ WHERE months <= '202206'
        a.classify_large_code,
        classify_large_name,
        goods_code,
-       goods_name
+       goods_name,
+       if(supplier_classify_code=2,'1','0')
 ;
 
-   -- 云超入库现金商品
+   -- 云超入库现金采买商品
 
-drop table csx_tmp.temp_yc_basc_entry;
-create temporary table csx_tmp.temp_yc_basc_entry as 
+drop table csx_tmp.temp_yc_cash_entry;
+create temporary table csx_tmp.temp_yc_cash_entry as 
 select substr(a.sdt,1,6) months,
     b.province_name,
     goodsid,
@@ -326,7 +327,7 @@ from b2b.ord_orderflow_t a
 join 
 (select * from  csx_dw.ads_sale_r_d_purprice_globaleye_shop where shop_channel='yc' and sdt='current') b on a.shop_id_in =b.shop_id
 join 
-(select distinct goods_code from  csx_tmp.temp_basc_goods   ) c on a.goodsid=c.goods_code
+(select distinct goods_code from  csx_tmp.temp_cash_goods  where tage='1' ) c on a.goodsid=c.goods_code
 
 where a.sdt>='20220101' and a.sdt<='20220630' 
     and  delivery_finish_flag='X'
@@ -334,10 +335,76 @@ where a.sdt>='20220101' and a.sdt<='20220630'
 group by substr(a.sdt,1,6) ,
     province_name,
     goodsid
-
 ;
-       
-select a.*,b.qty,amt,yc_cost from  csx_tmp.temp_basc_goods a 
+
+
+select dept_name,
+       region_code,
+       region_name,
+       sales_province_code,
+       sales_province_name,
+       province_code,
+       a.province_name,
+       bd_id,
+       bd_name,
+       short_name,
+       goods_code,
+       goods_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_amount,
+       group_purchase_qty,
+       net_amount,
+       net_qty,
+       a.months,
+       b.qty,
+       amt,
+       yc_cost 
+from    
+(select dept_name,
+       region_code,
+       region_name,
+       sales_province_code,
+       sales_province_name,
+       province_code,
+       province_name,
+       bd_id,
+       bd_name,
+       short_name,
+       goods_code,
+       goods_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       coalesce(sum(group_purchase_amount),0) as group_purchase_amount,
+       coalesce(sum(group_purchase_qty),0) as group_purchase_qty,
+       coalesce(sum(net_amount),0) as net_amount,
+       coalesce(sum(net_qty),0) as net_qty,
+       months
+from  csx_tmp.temp_cash_goods a 
+ where 1=1
+ group by  dept_name,
+       region_code,
+       region_name,
+       sales_province_code,
+       sales_province_name,
+       province_code,
+       province_name,
+       bd_id,
+       bd_name,
+       short_name,
+       goods_code,
+       goods_name,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       months
+ )a
 left join
-csx_tmp.temp_yc_basc_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
+csx_tmp.temp_yc_cash_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
+where group_purchase_amount>0 or group_purchase_amount<0
 ;
