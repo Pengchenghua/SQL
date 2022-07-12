@@ -63,10 +63,14 @@ SELECT d.dept_name,
        a.classify_middle_code,
        a.classify_middle_name,
        case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then receive_amt-shipped_amt  end ),0) as group_purchase_amount,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.receive_qty-shipped_qty  end ),0) as group_purchase_qty,
-       coalesce(sum(receive_amt-shipped_amt  ),0) as net_amount,
-       coalesce(sum(a.receive_qty-shipped_qty),0) as net_qty,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then receive_amt  end ),0) as group_purchase_receive_amount,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.receive_qty  end ),0) as group_purchase_receive_qty,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then shipped_amt  end ),0) as group_purchase_shipped_amount,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
+       coalesce(sum(receive_amt  ),0) as receive_amt,
+       coalesce(sum(a.receive_qty),0) as receive_qty,
+       coalesce(sum(shipped_amt  ),0) as shipped_amt,
+       coalesce(sum(shipped_qty),0) as   shipped_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -135,7 +139,8 @@ csx_tmp.temp_yc_entry b on a.province_name=b.province_name and a.goods_code=b.go
 where group_purchase_tag=1;
 
 
-;
+
+-- 基地采购
 
 -- 基地采购
 drop table csx_tmp.temp_jd_goods;
@@ -158,10 +163,14 @@ SELECT d.dept_name,
        classify_large_name,
        a.classify_middle_code,
        a.classify_middle_name,
-       coalesce(sum( case when  order_business_type=1 then receive_amt-shipped_amt  end),0) as group_purchase_amount,
-       coalesce(sum( case when  order_business_type=1 then a.receive_qty-shipped_qty end ),0) as group_purchase_qty,
-       coalesce(sum( receive_amt-shipped_amt   ),0) as net_amount,
-       coalesce(sum( a.receive_qty-shipped_qty   ),0) as net_qty,
+       coalesce(sum(case when  order_business_type=1 then receive_amt  end ),0) as group_purchase_receive_amount,
+       coalesce(sum(case when  order_business_type=1 then a.receive_qty  end ),0) as group_purchase_receive_qty,
+       coalesce(sum(case when  order_business_type=1 then shipped_amt  end ),0) as group_purchase_shipped_amount,
+       coalesce(sum(case when  order_business_type=1 then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
+       coalesce(sum(receive_amt  ),0) as receive_amt,
+       coalesce(sum(a.receive_qty),0) as receive_qty,
+       coalesce(sum(shipped_amt  ),0) as shipped_amt,
+       coalesce(sum(shipped_qty),0) as   shipped_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -208,7 +217,7 @@ from b2b.ord_orderflow_t a
 join 
 (select * from  csx_dw.ads_sale_r_d_purprice_globaleye_shop where shop_channel='yc' and sdt='current') b on a.shop_id_in =b.shop_id
 join 
-(select distinct goods_code from  csx_tmp.temp_jd_goods where  group_purchase_amount>0 or group_purchase_amount<0  ) c on a.goodsid=c.goods_code
+(select distinct goods_code from  csx_tmp.temp_jd_goods where  group_purchase_receive_amount>0 or group_purchase_receive_amount<0  ) c on a.goodsid=c.goods_code
 
 where a.sdt>='20220101' and a.sdt<='20220630' 
     and  delivery_finish_flag='X'
@@ -218,7 +227,8 @@ group by substr(a.sdt,1,6) ,
     goodsid
 
 ;
-       
+
+
 select dept_name,
        region_code,
        region_name,
@@ -235,10 +245,14 @@ select dept_name,
        classify_large_name,
        classify_middle_code,
        classify_middle_name,
-       group_purchase_amount,
-       group_purchase_qty,
-       net_amount,
-       net_qty,
+       group_purchase_receive_amount,
+       group_purchase_receive_qty,
+       group_purchase_shipped_amount,
+       group_purchase_shipped_qty, 
+       receive_amt,
+       receive_qty,
+       shipped_amt,
+       shipped_qty,
        a.months,
        b.qty,
        amt,
@@ -246,11 +260,10 @@ select dept_name,
 from  csx_tmp.temp_jd_goods a 
 left join
 csx_tmp.temp_yc_jd_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
-where  group_purchase_amount>0 or group_purchase_amount<0
+where  group_purchase_receive_amount+ group_purchase_shipped_amount >0 or group_purchase_receive_amount+ group_purchase_shipped_amount<0
 
 
 ;
-
 
 -- 现金采购明细对标永辉
 
@@ -274,11 +287,14 @@ SELECT d.dept_name,
        a.classify_middle_code,
        a.classify_middle_name,
        if(supplier_classify_code=2,'1','0') as tage,
-       coalesce(sum(case when supplier_classify_code=2 then receive_amt-shipped_amt  end ),0) as group_purchase_amount,
-       coalesce(sum(case when supplier_classify_code=2 then a.receive_qty-shipped_qty end  ),0) as group_purchase_qty,
-       coalesce(sum(receive_amt-shipped_amt)/sum(a.receive_qty-shipped_qty )  ,0) as group_purchase_cost,
-       coalesce(sum(receive_amt-shipped_amt  ),0) as net_amount,
-       coalesce(sum(a.receive_qty-shipped_qty ),0) as net_qty,
+       coalesce(sum(case when supplier_classify_code=2 then receive_amt  end ),0) as   group_purchase_receive_amount,
+       coalesce(sum(case when supplier_classify_code=2 then a.receive_qty  end ),0) as group_purchase_receive_qty,
+       coalesce(sum(case when supplier_classify_code=2 then shipped_amt  end ),0) as   group_purchase_shipped_amount,
+       coalesce(sum(case when supplier_classify_code=2 then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
+       coalesce(sum(receive_amt  ),0) as receive_amt,
+       coalesce(sum(a.receive_qty),0) as receive_qty,
+       coalesce(sum(shipped_amt  ),0) as shipped_amt,
+       coalesce(sum(shipped_qty),0) as   shipped_qty,
        months
 FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
 left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
@@ -354,10 +370,14 @@ select dept_name,
        classify_large_name,
        classify_middle_code,
        classify_middle_name,
-       group_purchase_amount,
-       group_purchase_qty,
-       net_amount,
-       net_qty,
+       group_purchase_receive_amount,
+       group_purchase_receive_qty,
+       group_purchase_shipped_amount,
+       group_purchase_shipped_qty, 
+       receive_amt,
+       receive_qty,
+       shipped_amt,
+       shipped_qty,
        a.months,
        b.qty,
        amt,
@@ -379,10 +399,14 @@ from
        classify_large_name,
        classify_middle_code,
        classify_middle_name,
-       coalesce(sum(group_purchase_amount),0) as group_purchase_amount,
-       coalesce(sum(group_purchase_qty),0) as group_purchase_qty,
-       coalesce(sum(net_amount),0) as net_amount,
-       coalesce(sum(net_qty),0) as net_qty,
+       coalesce(sum(group_purchase_receive_amount),0) as group_purchase_receive_amount,
+       coalesce(sum(group_purchase_receive_qty),0) as group_purchase_receive_qty,
+       coalesce(sum(group_purchase_shipped_amount),0) as group_purchase_shipped_amount,
+       coalesce(sum(group_purchase_shipped_qty),0) as group_purchase_shipped_qty,
+       coalesce(sum(receive_amt),0) as receive_amt,
+       coalesce(sum(receive_qty),0) as receive_qty,
+       coalesce(sum(shipped_amt),0) as shipped_amt,
+       coalesce(sum(shipped_qty),0) as shipped_qty,
        months
 from  csx_tmp.temp_cash_goods a 
  where 1=1
@@ -406,5 +430,5 @@ from  csx_tmp.temp_cash_goods a
  )a
 left join
 csx_tmp.temp_yc_cash_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
-where group_purchase_amount>0 or group_purchase_amount<0
+where group_purchase_receive_amount+ group_purchase_shipped_amount >0 or group_purchase_receive_amount+ group_purchase_shipped_amount<0
 ;
