@@ -22,7 +22,7 @@ stored as parquet;
 
 
 
--- MYSQL同步HIVE 
+-- MYSQL  同步HIVE 
     hive_database=csx_tmp
     table_name=source_r_m_province_month_category_target
     day='2022-06-30'
