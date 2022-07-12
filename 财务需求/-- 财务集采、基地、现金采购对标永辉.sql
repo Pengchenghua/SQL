@@ -6,6 +6,13 @@ set month = substr(regexp_replace('${enddate}','-',''),1,6);
 set group_shop = ('W0A3','W0Q9','W0P8','W0A7','W0X2','W0Z9','W0A6','W0Q2','W0R9','W0A5','W0N0','W0AT','W0T7','W0AS','W0A8','W0F4','W0L3','W0K1','WB11',
                 'W0G9','WA96','W0AU','W0K6','W0F7','W0BK','W0A2','W0BR','W0BH','W048','W0Q8','W039','W0X1','W0Z8','W079','W0S9','W0R8','W088','W0P3',
                 'W0AR','W053','W080','W0BT','WB04','W0AZ','WB00','W0BZ','WB01','WB03','WA93');
+set purpose = ('01','02','03','05','07','08');
+set edate = regexp_replace('${enddate}','-','');
+set sdate = regexp_replace(trunc('${enddate}','MM'),'-','');
+set month = substr(regexp_replace('${enddate}','-',''),1,6);
+set group_shop = ('W0A3','W0Q9','W0P8','W0A7','W0X2','W0Z9','W0A6','W0Q2','W0R9','W0A5','W0N0','W0AT','W0T7','W0AS','W0A8','W0F4','W0L3','W0K1','WB11',
+                'W0G9','WA96','W0AU','W0K6','W0F7','W0BK','W0A2','W0BR','W0BH','W048','W0Q8','W039','W0X1','W0Z8','W079','W0S9','W0R8','W088','W0P3',
+                'W0AR','W053','W080','W0BT','WB04','W0AZ','WB00','W0BZ','WB01','WB03','WA93');
                 
  
 drop table csx_tmp.temp_dc_new ;
@@ -63,10 +70,10 @@ SELECT d.dept_name,
        a.classify_middle_code,
        a.classify_middle_name,
        case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then receive_amt  end ),0) as group_purchase_receive_amount,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.receive_qty  end ),0) as group_purchase_receive_qty,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then shipped_amt  end ),0) as group_purchase_shipped_amount,
-       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL and a.months>= substr(regexp_replace(start_date,'-',''),1,6) and is_flag='0' then receive_amt  end ),0) as group_purchase_receive_amount,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL and a.months>= substr(regexp_replace(start_date,'-',''),1,6) and is_flag='0' then a.receive_qty  end ),0) as group_purchase_receive_qty,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL and a.months>= substr(regexp_replace(start_date,'-',''),1,6) and is_flag='0' then shipped_amt  end ),0) as group_purchase_shipped_amount,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL and a.months>= substr(regexp_replace(start_date,'-',''),1,6) and is_flag='0' then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
        coalesce(sum(receive_amt  ),0) as receive_amt,
        coalesce(sum(a.receive_qty),0) as receive_qty,
        coalesce(sum(shipped_amt  ),0) as shipped_amt,
