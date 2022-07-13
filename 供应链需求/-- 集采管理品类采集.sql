@@ -1,4 +1,4 @@
--- 集采管理品类采集
+-- 集采管理品类采集导入
 drop table source_scm_w_a_group_purchase_classily;
 create table csx_tmp.source_scm_w_a_group_purchase_classily
 (

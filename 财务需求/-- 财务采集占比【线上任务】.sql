@@ -85,6 +85,7 @@ SELECT dept_name,
        classify_large_name,
        a.classify_middle_code,
        classify_middle_name,
+       supplier_name,
        case when a.supplier_name like '%永辉%' then '云超配送'
             when business_type_name like '云超配送%' then '云超配送'
        else '供应商配送' end business_type_name,
