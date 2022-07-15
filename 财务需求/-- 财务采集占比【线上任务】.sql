@@ -167,7 +167,9 @@ substr(months,1,4) year
 ,yh_entry_amount,
 current_timestamp,
 months
-from csx_tmp.temp_purchase_01;  
+from csx_tmp.temp_purchase_01
+;
+
 
 
 
