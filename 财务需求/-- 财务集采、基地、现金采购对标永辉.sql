@@ -6,14 +6,7 @@ set month = substr(regexp_replace('${enddate}','-',''),1,6);
 set group_shop = ('W0A3','W0Q9','W0P8','W0A7','W0X2','W0Z9','W0A6','W0Q2','W0R9','W0A5','W0N0','W0AT','W0T7','W0AS','W0A8','W0F4','W0L3','W0K1','WB11',
                 'W0G9','WA96','W0AU','W0K6','W0F7','W0BK','W0A2','W0BR','W0BH','W048','W0Q8','W039','W0X1','W0Z8','W079','W0S9','W0R8','W088','W0P3',
                 'W0AR','W053','W080','W0BT','WB04','W0AZ','WB00','W0BZ','WB01','WB03','WA93');
-set purpose = ('01','02','03','05','07','08');
-set edate = regexp_replace('${enddate}','-','');
-set sdate = regexp_replace(trunc('${enddate}','MM'),'-','');
-set month = substr(regexp_replace('${enddate}','-',''),1,6);
-set group_shop = ('W0A3','W0Q9','W0P8','W0A7','W0X2','W0Z9','W0A6','W0Q2','W0R9','W0A5','W0N0','W0AT','W0T7','W0AS','W0A8','W0F4','W0L3','W0K1','WB11',
-                'W0G9','WA96','W0AU','W0K6','W0F7','W0BK','W0A2','W0BR','W0BH','W048','W0Q8','W039','W0X1','W0Z8','W079','W0S9','W0R8','W088','W0P3',
-                'W0AR','W053','W080','W0BT','WB04','W0AZ','WB00','W0BZ','WB01','WB03','WA93');
-                
+
  
 drop table csx_tmp.temp_dc_new ;
 create TEMPORARY TABLE csx_tmp.temp_dc_new as 
@@ -439,3 +432,309 @@ left join
 csx_tmp.temp_yc_cash_entry b on a.province_name=b.province_name and a.goods_code=b.goodsid and a.months=b.months
 where group_purchase_receive_amount+ group_purchase_shipped_amount >0 or group_purchase_receive_amount+ group_purchase_shipped_amount<0
 ;
+
+
+
+
+
+
+
+drop table csx_tmp.temp_cash_goods ;
+CREATE temporary table csx_tmp.temp_cash_goods as 
+SELECT d.dept_name,
+       d.region_code,
+       d.region_name,
+       d.performance_province_code sales_province_code,
+       d.performance_province_name sales_province_name,
+       a.province_code,
+       a.province_name,
+       case when a.division_code in ('10','11') then '11' else '12' end bd_id,
+       case when a.division_code in ('10','11') then '生鲜' else '食百' end bd_name,
+       b.short_name,
+       dc_code,
+       goods_code,
+       goods_name,
+       a.classify_large_code,
+       classify_large_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       a.classify_small_code,
+       if(supplier_classify_code=2,'1','0') as tage,
+       coalesce(sum(case when supplier_classify_code=2 then receive_amt  end ),0) as   group_purchase_receive_amount,
+       coalesce(sum(case when supplier_classify_code=2 then a.receive_qty  end ),0) as group_purchase_receive_qty,
+       coalesce(sum(case when supplier_classify_code=2 then shipped_amt  end ),0) as   group_purchase_shipped_amount,
+       coalesce(sum(case when supplier_classify_code=2 then a.shipped_qty  end ),0) as group_purchase_shipped_qty,
+       coalesce(sum(receive_amt  ),0) as receive_amt,
+       coalesce(sum(a.receive_qty),0) as receive_qty,
+       coalesce(sum(shipped_amt  ),0) as shipped_amt,
+       coalesce(sum(shipped_qty),0) as   shipped_qty,
+       months
+FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
+left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
+ join 
+  csx_tmp.temp_dc_new d on a.dc_code=d.shop_id 
+WHERE months <= '202206'
+    and months>='202201'
+   and source_type_name not in ('城市服务商','联营直送','项目合伙人')
+   and super_class_name in ('供应商订单','供应商退货订单')
+   and a.dc_code in ${hiveconf:group_shop}
+ -- and a.classify_large_code ='B02'
+ --  and supplier_classify_code=2
+  GROUP BY d.sales_region_code,
+      d.sales_region_name,
+      performance_province_code,
+       performance_province_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       case when a.division_code in ('10','11') then '11' else '12' end ,
+       case when a.division_code in ('10','11') then '生鲜' else '食百' end ,
+       b.short_name,
+       d.dept_name,
+       d.region_code,
+       d.region_name,
+       months,
+       a.province_code,
+       a.province_name,
+       a.classify_large_code,
+       classify_large_name,
+       goods_code,
+       goods_name,
+       dc_code,
+       if(supplier_classify_code=2,'1','0'),
+       a.classify_small_code
+;
+
+-- 现金采购关联销售
+
+drop table csx_tmp.temp_yc_cash_entry;
+create temporary table csx_tmp.temp_yc_cash_entry as 
+select  a.months,
+    a.province_code,
+    a.province_name,
+    a.classify_middle_code,
+    a.classify_middle_name,
+    a.classify_small_name,
+    a.classify_small_code,
+    (no_tax_sales_value ) no_tax_sales_value,
+    (no_tax_profit  ) as no_tax_profit,
+    (sales_qty) sales_qty,
+    (sales_value  ) sales_value,
+    (profit) profit,
+    (group_purchase_receive_amount)  group_purchase_receive_amount,
+    (group_purchase_receive_qty) group_purchase_receive_qty,
+    (group_purchase_shipped_amount)  group_purchase_shipped_amount,
+    (group_purchase_shipped_qty) group_purchase_shipped_qty
+from
+(select substr(a.sdt,1,6) months,
+    a.province_code,
+    a.province_name,
+    dc_code,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_name,
+    classify_small_code,
+    sum(excluding_tax_sales ) no_tax_sales_value,
+    sum( excluding_tax_profit  ) as no_tax_profit,
+    sum(sales_qty) sales_qty,
+    sum( sales_value  ) sales_value,
+    sum(profit) profit
+from csx_dw.dws_sale_r_d_detail a 
+where a.sdt>='20220101' and a.sdt<='20220630' 
+   and channel_code in ('1','7','9')
+   and business_type_code !='4'
+group by substr(a.sdt,1,6) ,
+    a.province_code,
+    a.province_name,
+    dc_code,
+    classify_small_name,
+    classify_small_code,
+    classify_middle_code,
+    classify_middle_name
+    )a
+join 
+(select dc_code,
+        months,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        sum(group_purchase_receive_amount)  group_purchase_receive_amount,
+        sum(group_purchase_receive_qty)     group_purchase_receive_qty,
+        sum(group_purchase_shipped_amount)  group_purchase_shipped_amount,
+        sum(group_purchase_shipped_qty)     group_purchase_shipped_qty
+from  csx_tmp.temp_cash_goods  
+    where tage='1' 
+group by dc_code,
+        months,
+         classify_middle_code,
+        classify_middle_name,
+        classify_small_code
+    ) c on a.classify_small_code=c.classify_small_code and a.dc_code=c.dc_code and a.months=c.months
+
+;
+
+select   b.months,
+        b.region_code,
+        b.region_name,
+        b.sales_province_code,
+        b.sales_province_name,
+        b.province_code,
+        b.province_name,
+        b.bd_id,
+        b.bd_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+    (no_tax_sales_value ) no_tax_sales_value,
+    (no_tax_profit  ) as no_tax_profit,
+    (sales_qty) sales_qty,
+    (sales_value  ) sales_value,
+    (profit) profit,
+    (group_purchase_receive_amount)  group_purchase_receive_amount,
+    (group_purchase_receive_qty) group_purchase_receive_qty,
+    (group_purchase_shipped_amount)  group_purchase_shipped_amount,
+    (group_purchase_shipped_qty) group_purchase_shipped_qty
+from
+
+(select months,
+        region_code,
+        region_name,
+        sales_province_code,
+        sales_province_name,
+        province_code,
+        province_name,
+        bd_id,
+        bd_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        sum(group_purchase_receive_amount)  group_purchase_receive_amount,
+        sum(group_purchase_receive_qty)     group_purchase_receive_qty,
+        sum(group_purchase_shipped_amount)  group_purchase_shipped_amount,
+        sum(group_purchase_shipped_qty)     group_purchase_shipped_qty
+from  csx_tmp.temp_cash_goods  
+    where tage='1' 
+group by months,
+        region_code,
+        region_name,
+        sales_province_code,
+        sales_province_name,
+        province_code,
+        province_name,
+        bd_id,
+        bd_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code
+)b
+left join 
+(select substr(a.sdt,1,6) months,
+    d.performance_province_code sales_province_code,
+    d.performance_province_name sales_province_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_name,
+    classify_small_code,
+    sum(excluding_tax_sales ) no_tax_sales_value,
+    sum( excluding_tax_profit  ) as no_tax_profit,
+    sum(sales_qty) sales_qty,
+    sum( sales_value  ) sales_value,
+    sum(profit) profit
+from csx_dw.dws_sale_r_d_detail a 
+ join 
+  csx_tmp.temp_dc_new d on a.dc_code=d.shop_id 
+where a.sdt>='20220101' and a.sdt<='20220630' 
+   and channel_code in ('1','7','9')
+   and business_type_code ='1'
+group by substr(a.sdt,1,6) ,
+    d.performance_province_code ,
+       d.performance_province_name ,
+    classify_small_name,
+    classify_small_code,
+    classify_middle_code,
+    classify_middle_name
+    )a on a.classify_small_code=b.classify_small_code and a.sales_province_code=b.sales_province_code and a.months=b.months
+    ;
+
+
+-- 现金采买销售管理三级分类
+    select a.months,
+       a.sales_province_code,
+       a.sales_province_name,
+        a.classify_middle_code,
+       a.classify_middle_name,
+       a.classify_small_code,
+        a.classify_middle_name,
+    (no_tax_sales_value ) no_tax_sales_value,
+    (no_tax_profit  ) as no_tax_profit,
+    (sales_qty) sales_qty,
+    (sales_value  ) sales_value,
+    (profit) profit,
+    (group_purchase_receive_amount)  group_purchase_receive_amount,
+    (group_purchase_receive_qty) group_purchase_receive_qty,
+    (group_purchase_shipped_amount)  group_purchase_shipped_amount,
+    (group_purchase_shipped_qty) group_purchase_shipped_qty
+from
+(select substr(a.sdt,1,6) months,
+    d.performance_province_code sales_province_code,
+    d.performance_province_name sales_province_name,
+    classify_middle_code,
+    classify_middle_name,
+    classify_small_name,
+    a.classify_small_code,
+    sum(excluding_tax_sales ) no_tax_sales_value,
+    sum( excluding_tax_profit  ) as no_tax_profit,
+    sum(sales_qty) sales_qty,
+    sum( sales_value  ) sales_value,
+    sum(profit) profit
+from csx_dw.dws_sale_r_d_detail a 
+ join 
+  csx_tmp.temp_dc_new d on a.dc_code=d.shop_id 
+  join 
+  (select  distinct 
+        classify_small_code from  csx_tmp.temp_cash_goods  
+    where tage='1' 
+) c on a.classify_small_code=c.classify_small_code
+where a.sdt>='20220101' and a.sdt<='20220630' 
+   and channel_code in ('1','7','9')
+   and business_type_code ='1'
+group by substr(a.sdt,1,6) ,
+    d.performance_province_code ,
+    d.performance_province_name ,
+    classify_small_name,
+    a.classify_small_code,
+    classify_middle_code,
+    classify_middle_name
+    )a
+left join 
+(select months,
+        region_code,
+        region_name,
+        sales_province_code,
+        sales_province_name,
+        province_code,
+        province_name,
+        bd_id,
+        bd_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code,
+        sum(group_purchase_receive_amount)  group_purchase_receive_amount,
+        sum(group_purchase_receive_qty)     group_purchase_receive_qty,
+        sum(group_purchase_shipped_amount)  group_purchase_shipped_amount,
+        sum(group_purchase_shipped_qty)     group_purchase_shipped_qty
+from  csx_tmp.temp_cash_goods  
+    where tage='1' 
+group by months,
+        region_code,
+        region_name,
+        sales_province_code,
+        sales_province_name,
+        province_code,
+        province_name,
+        bd_id,
+        bd_name,
+        classify_middle_code,
+        classify_middle_name,
+        classify_small_code
+)b
+on a.classify_small_code=b.classify_small_code and a.sales_province_code=b.sales_province_code and a.months=b.months
