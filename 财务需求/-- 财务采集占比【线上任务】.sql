@@ -667,3 +667,37 @@ COMMENT '采购周分析-集采分析'
 PARTITIONED BY ( 
   `week` string COMMENT '周分区')
 STORED AS parquet 
+;
+
+
+
+drop table `csx_tmp.report_r_w_purchase_entry_analysis`
+;
+	CREATE TABLE `csx_tmp.report_r_w_purchase_entry_analysis`(
+	  `year` string COMMENT '年', 
+	  `dept_name` string COMMENT '营运部门:平台、大区', 
+	  `region_code` string COMMENT '大区编码', 
+	  `region_name` string COMMENT '大区名称', 
+	  `province_code` string COMMENT '省区编码', 
+	  `province_name` string COMMENT '省区名称', 
+	  `city_code` string COMMENT '城市编码', 
+	  `city_name` string COMMENT '城市名称', 
+	  `bd_id` string COMMENT '采购部门编码', 
+	  `bd_name` string COMMENT '采购部门名称', 
+	  `classify_large_code` string COMMENT '管理大类', 
+	  `classify_large_name` string COMMENT '管理大类', 
+	  `classify_middle_code` string COMMENT '管理中类', 
+	  `classify_middle_name` string COMMENT '管理中类', 
+	  `net_entry_amount` decimal(38,6) COMMENT '类别净入库额', 
+	  `b02_entry_amount` decimal(38,6) COMMENT '蔬果净入库额(大客户+工厂)', 
+	  `base_entry_amount` decimal(38,6) COMMENT '基地净入库额(大客户+工厂)', 
+	  `cash_entry_amount` decimal(38,6) COMMENT '现金采购', 
+	  `yh_entry_amount` decimal(38,6) COMMENT '云超采购', 
+       date_interval string comment '日期区间',
+	  `update_time` timestamp COMMENT '数据插入时间')
+	COMMENT '采购周分析-整体分析&基地分析'
+	PARTITIONED BY ( 
+	  `week` string COMMENT '周分区')
+	STORED as parquet
+;
+ 
