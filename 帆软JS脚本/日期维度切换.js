@@ -1,9 +1,10 @@
 // 日期维度js代码
 //获取supplierID控件
-var mon = this.options.form.getWidgetByName("mon"); //获取class控件
-var quarter = this.options.form.getWidgetByName("quarter"); //获取class控件
-var year = this.options.form.getWidgetByName("year"); //获取supplierID控件
-var week = this.options.form.getWidgetByName("week"); //获取week
+var form = this.options.form;//定义一个变量 form ，将获取到的当前表单对象赋值给form
+var mon = form.getWidgetByName("mon"); //获取class控件
+var quarter = form.getWidgetByName("quarter"); //获取class控件
+var year = form.getWidgetByName("year"); //获取supplierID控件
+var week = form.getWidgetByName("week"); //获取week
 // var labl1 = this.options.form.getWidgetByName("lable1"); //获取supplierID控件
 var date =new Date();
 var y = date.getFullYear()  ; 
@@ -17,7 +18,6 @@ if (d >= 1 && d <= 10) {
         }
 var  smon = date.getFullYear() + m;
 var  currentdate=y+m+d;
-var form = this.options.form;//定义一个变量 form ，将获取到的当前表单对象赋值给form
 var value = this.getValue(); // 获取控件值
 if (value == "周") {
     //隐藏class控件
@@ -25,12 +25,14 @@ if (value == "周") {
     form.invisible(["mon"]);
     form.invisible(["year"]);
     form.invisible(["quarter"]);
+    week.setEnable(true);      // 周可用
+    quarter.options.allowBlank = true;	//季度选择为空
+    quarter.setEnable(false);   //季度控件不可用
     // 重置控件
     year.reset();
     quarter.reset();
     mon.reset();
-    week.options.allowBlank = false;    //周日期不为空
-    quarter.options.allowBlank = true;	//季度选择为空
+    week.options.allowBlank = false;    //周日期不为空    
 }else if (value == "月") {
 //隐藏class控件
     form.visible(["mon"]);
@@ -40,6 +42,8 @@ if (value == "周") {
     year.reset();
     quarter.reset();
     week.reset();
+    week.setEnable(false);      //周日期不可用
+    quarter.setEnable(false);   //季度控件不可用
     week.options.allowBlank = true;
     quarter.options.allowBlank = true;	
     this.options.form.getWidgetByName("mon").setValue(smon);
@@ -51,6 +55,8 @@ if (value == "周") {
     mon.reset();  //重置supplierID控件
     year.reset();
     week.reset();
+    week.setEnable(false);      //周日期不可用
+    quarter.setEnable(true);   //季度控件不可用
     week.options.allowBlank = true;
     quarter.options.allowBlank = false;	
 } else if (value == "年") {
@@ -61,6 +67,8 @@ if (value == "周") {
     mon.reset();
     quarter.reset();
     week.reset();
+    week.setEnable(false);      //周日期不可用
+    quarter.setEnable(false);   //季度控件不可用
     quarter.options.allowBlank = true;	
     week.options.allowBlank = true;
     this.options.form.getWidgetByName("year").setValue(y);
