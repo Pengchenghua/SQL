@@ -505,12 +505,12 @@ select date_m,
        all_num,
        cash_entry_num,
        yh_entry_num,
-       net_entry_amount/sum(net_entry_amount)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as net_entry_amount_ratio,
-       yh_entry_amount/sum(yh_entry_amount)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as yh_entry_amount_ratio,
-       cash_entry_amount/sum(cash_entry_amount)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as cash_entry_amount_ratio,
-       all_num/sum(all_num)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as                 all_num_ratio,
-       cash_entry_num/sum(cash_entry_num)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as   cash_entry_num_ratio,
-       yh_entry_num/sum(yh_entry_num)over(partition by dept_name,region_name,province_name,city_name,sdt,date_m)*2 as       yh_entry_num_ratio,
+       net_entry_amount/sum(net_entry_amount)over(partition by dept_name,region_name,province_name,city_name,bd_name,sdt,date_m)*2 as net_entry_amount_ratio,
+       yh_entry_amount/sum(yh_entry_amount)over(partition by dept_name,region_name,province_name,city_name,bd_name,sdt,date_m)*2 as yh_entry_amount_ratio,
+       cash_entry_amount/sum(cash_entry_amount)over(partition by dept_name,region_name,province_name,city_name,bd_name,sdt,date_m)*2 as cash_entry_amount_ratio,
+       all_num/sum(all_num)over(partition by dept_name,region_name,province_name,city_name,sdt,bd_name,date_m)*2 as                 all_num_ratio,
+       cash_entry_num/sum(cash_entry_num)over(partition by dept_name,region_name,province_name,city_name,bd_name,sdt,date_m)*2 as   cash_entry_num_ratio,
+       yh_entry_num/sum(yh_entry_num)over(partition by dept_name,region_name,province_name,city_name,bd_name,sdt,date_m)*2 as       yh_entry_num_ratio,
         sdt 
 FROM (   
 select 
@@ -1392,9 +1392,376 @@ from  csx_tmp.temp_bash_m1
 ;
 
 
+
+-- 集采入库 剔除蔬果B0202
+drop table   csx_tmp.temp_join_entry ;
+create table csx_tmp.temp_join_entry as 
+SELECT dept_name,
+       region_code,
+       region_name,
+       coalesce(province_code,'')province_code,
+       coalesce(province_name,'')province_name,
+       coalesce(city_code,'')city_code,
+       coalesce(city_name,'')city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag,      -- 集采标签
+       sum(group_purchase_amount) group_purchase_amount,
+       sum(net_entry_amount) net_entry_amount,       
+       sdt
+FROM 
+(
+SELECT d.dept_name,
+       d.region_code,
+       d.region_name,
+       d.performance_province_code province_code,
+       d.performance_province_name province_name,
+       d.performance_city_code city_code,
+       d.performance_city_name city_name,
+       case when a.division_code in ('10','11') then '11' else '12' end bd_id,
+       case when a.division_code in ('10','11') then '生鲜' else '食百' end bd_name,
+       b.short_name,
+       a.classify_large_code,
+       classify_large_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
+       coalesce(sum(case when joint_purchase_flag=1 and b.classify_small_code IS NOT NULL and a.months>= substr(regexp_replace(start_date,'-',''),1,6) and is_flag='0' then receive_amt-shipped_amt end ),0) as group_purchase_amount,
+       sum(receive_amt-shipped_amt) AS net_entry_amount,
+       sdt
+FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
+left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
+ join 
+  csx_tmp.temp_dc_new d on a.dc_code=d.shop_id 
+WHERE months <= ${hiveconf:month}
+    and months>='202201'
+   and source_type_name not in ('城市服务商','联营直送','项目合伙人')
+   and super_class_name in ('供应商订单','供应商退货订单')
+   -- AND d.purpose IN ('01','03')
+   and d.is_purchase_dc='1'
+  and a.classify_middle_code !='B0202'
+  GROUP BY d.sales_region_code,
+      d.sales_region_name,
+      performance_city_code,
+      performance_city_name,
+      performance_province_code,
+       performance_province_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       case when a.division_code in ('10','11') then '11' else '12' end ,
+       case when a.division_code in ('10','11') then '生鲜' else '食百' end ,
+       b.short_name,
+       d.dept_name,
+       d.region_code,
+       d.region_name,
+       sdt,
+       a.classify_large_code,
+       classify_large_name,
+        case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end 
+    ) a
+GROUP BY dept_name,
+        region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       classify_middle_code,
+       classify_middle_name,
+       sdt,
+       group_purchase_tag,
+       a.classify_large_code,
+       classify_large_name
+
+       ;
+
+
+
+-- 集采销售 剔除蔬菜 B0202
+drop table   csx_tmp.temp_join_sale ;
+create table csx_tmp.temp_join_sale as 
+SELECT dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       group_purchase_tag,
+       sales_value,
+       profit,
+       group_purchase_sales_value,
+       group_purchase_profit,
+       sdt 
+FROM
+(
+SELECT dept_name,
+        d.region_code,
+       d.region_name,
+       d.performance_province_code province_code,
+       d.performance_province_name province_name,
+       d.performance_city_code city_code,
+       d.performance_city_name city_name,
+       case when   a.division_code in ('10','11') then '11' else '12' end bd_id,
+       case when   a.division_code in ('10','11') then '生鲜' else '食百' end bd_name,
+       b.short_name,
+       a.classify_large_code,
+       classify_large_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end group_purchase_tag,
+       sum(a.sales_value) AS sales_value,
+       sum(a.profit) profit,
+       sum( case when  b.classify_small_code IS NOT NULL and a.sdt>= regexp_replace(start_date,'-','') and is_flag='0' then sales_value end ) group_purchase_sales_value,
+       sum( case when  b.classify_small_code IS NOT NULL and a.sdt>= regexp_replace(start_date,'-','') and is_flag='0' then profit end ) group_purchase_profit,
+       sdt 
+FROM csx_dw.dws_sale_r_d_detail a 
+left join  csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
+join  csx_tmp.temp_dc_new d on a.dc_code=d.shop_id 
+WHERE a.sdt >= '20220101'
+    and sdt<= ${hiveconf:edate}
+    and a.channel_code in ('1','7','9')
+    and a.business_type_code='1'
+    and a.classify_middle_code !='B0202'
+    and d.is_purchase_dc='1'
+GROUP BY dept_name,
+        d.region_code,
+       d.region_name,
+       performance_city_code,
+       performance_city_name,
+       performance_province_code,
+       performance_province_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       case when a.division_code in ('10','11') then '11' else '12' end ,
+       case when a.division_code in ('10','11') then '生鲜' else '食百' end,
+       b.short_name,
+       sdt,
+       case when  b.classify_small_code IS NOT NULL and short_name is not NULL then '1' end,
+       a.classify_large_code,
+       classify_large_name
+
+) a 
+
+;
+ 
+ drop table  csx_tmp.temp_group_purchase_analysis_report;
+ CREATE  temporary  table csx_tmp.temp_group_purchase_analysis_report as 
+ SELECT dept_name,
+       region_code,
+       region_name,
+       coalesce(province_code,'')province_code,
+       coalesce(province_name,'')province_name,
+       coalesce(city_code,'')city_code,
+       coalesce(city_name,'')city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag  ,      -- 集采标签
+       sum(group_purchase_amount)  group_purchase_amount,
+       sum(net_entry_amount)  net_entry_amount,  
+       sum(sales_value) sales_value,
+       sum(profit) profit,
+       sum(profit)/sum(sales_value) as profit_rate,
+       sum(group_purchase_sales_value) group_purchase_sales_value,
+       sum(group_purchase_profit) group_purchase_profit,
+       sum(group_purchase_profit)/sum(group_purchase_sales_value) as group_purchase_profit_rate,
+       sdt
+FROM 
+ (SELECT dept_name,
+       region_code,
+       region_name,
+       coalesce(province_code,'')province_code,
+       coalesce(province_name,'')province_name,
+       coalesce(city_code,'')city_code,
+       coalesce(city_name,'')city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag,      -- 集采标签
+       group_purchase_amount,
+       net_entry_amount,  
+       0 sales_value,
+       0 profit,
+       0 group_purchase_sales_value,
+       0 group_purchase_profit,
+       sdt
+FROM csx_tmp.temp_join_entry a
+union all 
+SELECT dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       a.classify_middle_code,
+       a.classify_middle_name,
+       group_purchase_tag,
+       0 group_purchase_amount,
+       0 net_entry_amount, 
+       sales_value,
+       profit,
+       group_purchase_sales_value,
+       group_purchase_profit,
+       sdt
+FROM csx_tmp.temp_join_sale a
+ ) a 
+ group by dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       group_purchase_tag,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       sdt
+     ;  
+     
+ insert overwrite table csx_tmp.report_r_m_group_purchase_analysis partition(months)
+select 
+        substr(sdt,1,4) year,
+       concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1) quarter  ,
+       dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag  ,      -- 集采标签
+       sum(group_purchase_amount)   group_purchase_amount,
+       sum(net_entry_amount )   net_entry_amount,  
+       sum(sales_value) sales_value,
+       sum(profit)  profit,
+       sum(profit)/sum(sales_value) profit_rate,
+       sum(group_purchase_sales_value)  group_purchase_sales_value,
+       sum(group_purchase_profit)   group_purchase_profit,
+       sum(group_purchase_profit)/sum(group_purchase_sales_value)  group_purchase_profit_rate,
+       current_timestamp,
+       substr(sdt,1,6) as months
+    from csx_tmp.temp_group_purchase_analysis_report a
+    group by substr(sdt,1,4) ,
+       concat(substr(sdt,1,4),'Q',floor(substr(sdt,5,2)/3.1)+1)   ,
+       dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag ,
+       substr(sdt,1,6)
+
+;
+
+ insert overwrite table csx_tmp.report_r_w_group_purchase_analysis partition(week)
+select 
+        substr(sdt,1,4) year,
+       dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag  ,      -- 集采标签
+       sum(group_purchase_amount)   group_purchase_amount,
+       sum(net_entry_amount )   net_entry_amount,  
+       sum(sales_value) sales_value,
+       sum(profit)  profit,
+       sum(profit)/sum(sales_value) profit_rate,
+       sum(group_purchase_sales_value)  group_purchase_sales_value,
+       sum(group_purchase_profit)   group_purchase_profit,
+       sum(group_purchase_profit)/sum(group_purchase_sales_value)  group_purchase_profit_rate,
+       date_interval,
+       current_timestamp,
+       week_of_year
+    from csx_tmp.temp_group_purchase_analysis_report a
+    left join 
+(select calday,week_of_year,concat( week_begin,'-',week_end) date_interval from csx_dw.dws_basic_w_a_date where calday>='20210101' and calday<= ${hiveconf:edate}) b on a.sdt=b.calday
+    group by substr(sdt,1,4) ,
+       dept_name,
+       region_code,
+       region_name,
+       province_code,
+       province_name,
+       city_code,
+       city_name,
+       bd_id,
+       bd_name,
+       short_name,
+       a.classify_large_code,
+       a.classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       group_purchase_tag ,
+       date_interval,
+       week_of_year
+
+;
+
+
+
 show create table  csx_tmp.temp_purchase_05;
 
-CREATE TABLE `csx_tmp.temp_purchase_05`(
+CREATE TABLE `csx_tmp.report_r_d_purchase_entry_analysis`(
   `rank_id` string comment '层级1整体分析，2基地采购', 
   `level_id` string comment '层级 1 合计，2 平台、大区，3大区，4省区5城市',  
   `dept_name` string comment '运营部门平台、大区', 
@@ -1433,3 +1800,6 @@ CREATE TABLE `csx_tmp.temp_purchase_05`(
  partitioned by (sdt string comment '日期分区',date_m string comment '日期维度:周、月、季、年')
 STORED AS parquet 
   
+  
+  
+  ;

@@ -11,12 +11,7 @@ set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');
 set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
 set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
-set shopid=('W0A3','W0Q9','W0P8','W0A7','W0X2','W0Z9','W0A6','W0Q2','W0R9','W0A5','W0N0','W0AS','W0A8','W0F4','W0L3','W0K1',
-'WB11','W0G9','WA96','W0AU','W0K6','W0F7','W0BK','W0A2','W0BR','W0BH','W048','W0Q8','W039','W0X1','W0Z8','W079','W0S9','W0R8',
-'W088','W0P3','W0AR','W053','W080','W0BT','WB04','W0AZ','WB00','W0BZ','WB01','WB03','WA93','W0AT','W0T7');
--- 蔬菜基地
--- SET sc_shop=('W080','WA93','WB04','W048','WB03','W0G9','W0BK','W0S9','W0Q9','W0BH','W0BR','W0BT','W0BZ',
--- 'W088','WB00','W0P8','WA99','W0AR','W0AS','W079','W0N0','W0W7','W039','W0AZ');
+ 
 --上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
 set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
 set parquet.compression=snappy;
@@ -44,8 +39,7 @@ where sdt>=${hiveconf:s_dt}
     and sdt<=${hiveconf:e_dt}
     and channel_code in ('1')
     and business_type_code!='4'
---    and a.dc_code in ${hiveconf:shopid}
---    AND dc_code not in ('W0Z7','W0K4','WB26')
+ 
 group by  classify_large_code,
     classify_large_name,
     classify_middle_code,
@@ -73,11 +67,15 @@ select substr(sdt,1,6) sales_months,
 from csx_dw.dws_wms_r_d_entry_batch as a
 left join 
 (select vendor_id,joint_purchase from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current') b on a.supplier_code=b.vendor_id
+join 
+(select dc_code,regexp_replace(to_date(enable_time),'-','') enable_date 
+    from csx_ods.source_basic_w_a_conf_supplychain_location where sdt=regexp_replace(date_sub(current_date(),1),'-','')
+) s on a.receive_location_code=s.dc_code
 where sdt>=${hiveconf:s_dt}
     and sdt<=${hiveconf:e_dt}
     and a.order_type_code like 'P%'
     and a.business_type ='01'
-    and a.receive_location_code in   ${hiveconf:shopid}
+   -- and a.receive_location_code in   ${hiveconf:shopid}
     and supplier_code !='C05013'
     and receive_status='2'
 group by  supplier_code,
@@ -112,7 +110,6 @@ left join
         classify_middle_management,
         province_name
  FROM csx_tmp.report_scm_r_d_classify_performance_person
-   -- WHERE sdt=substr(${hiveconf:e_dt},1,6) 
     ) b on a.classify_large_code=b.classify_large_code 
         and a.classify_middle_code=b.classify_middle_code  
         and if(a.classify_middle_code !='B0202','',a.province_name)=b.province_name
@@ -213,6 +210,8 @@ group by a.classify_large_code,
     classify_middle_management
     ;
 
+
+    
 ---- 以下旧版本20220620
 set edt='${enddate}';
 set e_dt =regexp_replace(${hiveconf:edt},'-','');

@@ -89,23 +89,31 @@ csx_tmp.p_shipp_date c on a.dc_code=c.shipped_location_code and a.goods_id=c.goo
  where sdt=regexp_replace(${hiveconf:edate},'-' ,'')  
  ;
  
- 
+
+
+
+
+
+
+
+
+
  select
-  performance_province_code,
-  performance_province_name,
-  a.dc_code,
+ performance_province_code,
+ performance_province_name,
+ a.dc_code,
  a.dc_name,
-  a.goods_id,
+ a.goods_id,
  a.goods_name,
  a.unit_name,
  a.classify_large_code ,
  a.classify_large_name ,
  a.classify_middle_code,
  a.classify_middle_name ,
-a.classify_small_code,
-a.classify_small_name,
-qty,
-amt,
+ a.classify_small_code,
+ a.classify_small_name,
+ qty,
+ amt,
 final_qty,
  a.final_amt ,
   days_turnover_30_transfer,
