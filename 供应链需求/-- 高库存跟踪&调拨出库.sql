@@ -69,9 +69,9 @@ group by
 	a.goods_code           
 ;
 
-select * from csx_tmp.p_contain_transfer_trunc where dc_code='W0A6' and goods_id='899540';
+-- select * from csx_tmp.p_contain_transfer_trunc where dc_code='W0A6' and goods_id='899540';
 
-select * from csx_tmp.p_shipped_date where shipped_location_code='W0A6' and goods_code='899540';
+-- select * from csx_tmp.p_shipped_date where shipped_location_code='W0A6' and goods_code='899540';
 
 drop table  csx_tmp.p_contain_transfer_trunc;
 create temporary table if not exists csx_tmp.p_contain_transfer_trunc as
