@@ -1,5 +1,86 @@
 
 
+-- 供应链配置仓
+
+
+drop table csx_tmp.temp_goods_more_01 ;
+create temporary table csx_tmp.temp_goods_more_01 as 
+
+select
+    a.shop_code ,
+    b.product_code ,
+    b.product_bar_code,
+    region_goods_name,
+    root_category_code 
+from(    
+select
+    shop_code ,
+    case when  (regionalized_trade_names ='' or  regionalized_trade_names is null ) then product_name else regionalized_trade_names end  region_goods_name,
+    COUNT(DISTINCT product_bar_code ) as aa 
+from
+    csx_dw.dws_basic_w_a_csx_product_info a
+    join 
+   (select dc_code from  csx_ods.source_basic_w_a_conf_supplychain_location where sdt='20220823') b on a.shop_code=b.dc_code
+where
+    sdt='current'
+  and  des_specific_product_status in ('0','2')
+  and  root_category_code in ('10','11','12','13')
+  and a.product_name!=''
+ -- and shop_code in ${hiveconf:shop}
+group by shop_code ,
+   -- product_code,
+    case when  (regionalized_trade_names ='' or  regionalized_trade_names is null ) then product_name else regionalized_trade_names end 
+)a
+left join 
+    (select shop_code ,
+    	product_code ,
+    case when (regionalized_trade_names ='' or  regionalized_trade_names is null ) then product_name else regionalized_trade_names  end regionalized_trade_names ,
+    product_bar_code,
+    root_category_code
+    from csx_dw.dws_basic_w_a_csx_product_info 
+    where sdt='current') b on trim(a.region_goods_name)=trim(b.regionalized_trade_names) and a.shop_code=b.shop_code
+where aa >1
+;
+-- select * from  csx_tmp.temp_goods_more_01 where root_category_code in ('10','11','12','13') and shop_code in ('W0A2','W0A3', 'W0A5', 'W0A6', 'W0A7', 'W0A8',  'W0F4', 'W0K1');
+-- select * from  csx_tmp.temp_goods_more_01 where root_category_code in ('10','11','12','13') and shop_code in ('W0L3','W0K5');
+-- select count(1) from  csx_tmp.temp_goods_more_01  ;
+-- 插入
+INSERT OVERWRITE DIRECTORY '/tmp/pengchenghua/data/aaa' row FORMAT DELIMITED fields TERMINATED BY '\t'
+select  performance_province_code,performance_province_name,sales_region_code,sales_region_name,shop_id,shop_name,
+        a.product_code ,
+        a.product_bar_code,
+        goods_name,
+        a.region_goods_name ,
+        category_large_code,
+        category_large_name,
+        department_id,
+        department_name,
+        division_code,
+        division_name
+from  csx_tmp.temp_goods_more_01 a
+join 
+( SELECT 
+        goods_id,
+        goods_name,
+        category_large_code,
+        category_large_name,
+        department_id,
+        department_name,
+        division_code,
+        division_name
+    FROM csx_dw.dws_basic_w_a_csx_product_m
+    WHERE sdt='current'
+ ) b on  a.product_code=b.goods_id 
+ join 
+ (select performance_province_code,performance_province_name,sales_region_code,sales_region_name,shop_id,shop_name from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current') c on a.shop_code=c.shop_id
+WHERE a.root_category_code in ('10','11','12','13')
+-- and a.shop_code in  ${hiveconf:shop}
+
+;
+
+
+----------------------------------------------------------------------------------------------------------------------
+
 set shop = ('W0A3','W0Q9','W0N1','W0R9','W0A5','W0N0','W0W7','W0A2','W0F4','W0A8','W0K1','W0K6','W0L3','W0A7','W0A6','W0Q2','W0P8','W0F7');
 
 -- select * from csx_dw.dws_basic_w_a_csx_shop_m where sdt='current' and shop_id in ${hiveconf:shop};

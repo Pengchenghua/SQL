@@ -72,7 +72,7 @@
       "editor.defaultFormatter": "mtxr.sqltools"
     },
     "[sql]": {
-      "editor.defaultFormatter": "mtxr.sqltools"
+      "editor.defaultFormatter": "adpyke.vscode-sql-formatter"
     },
     "python.dataScience.jupyterLaunchTimeout": 240000,
     "[python]": {
