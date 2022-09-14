@@ -336,3 +336,243 @@ WHERE sdt<='20220831'
         sum(distinct case when yh_reuse_tag='是' then  net_amt_no end )reuse_amt
      from  csx_tmp.temp_supplier_reuse_01
      group by yesr,q;   
+
+
+
+
+select q,suppler_code,supplier_name,no_amt,dense_rank()over(partition by q order by no_amt desc) aa
+from 
+(select concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd')/3),2,0))) as q,
+    supplier_code,
+    supplier_name,
+    sum(amount_no_tax) no_amt
+from  csx_dw.dws_wms_r_d_entry_detail 
+where sdt>='20210101' and sdt<='20220630'
+and receive_status=2
+and order_type_code like 'P%'
+AND (business_type!='2' or supplier_name not like '%永辉%')
+group by supplier_code,
+    supplier_name,
+    concat(substr(sdt,1,4),lpad(ceil(month(sdt)/3),2,0)) 
+)a
+
+;
+
+create table csx_tmp.report_fina_po_order_detail as 
+select a.yesr,a.mon,a.purchase_order_code,a.supplier_code,a.supplier_name,classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       goods_code,
+       a.goods_name,
+       a.sales_region_name,
+       a.sales_province_name,
+       a.qty,
+       a.receive_amt,
+       a.no_tax_receive_amt,
+       a.shipped_qty,
+       a.shipped_amt,
+       a.no_tax_shipped_amt
+from   csx_tmp.temp_supplier_fis_01 a 
+left join 
+(SELECT goods_id,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current')b on a.goods_code=goods_id
+left join 
+(select vendor_id,vendor_name,supplier_type 
+    from csx_dw.dws_basic_w_a_csx_supplier_m 
+    where sdt='current')c on a.supplier_code=c.vendor_id
+;
+
+drop table  csx_tmp.supplier_rankt;
+create table csx_tmp.supplier_rankt as 
+select concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0)) as q,
+    supplier_code,
+    supplier_name,
+    sum(amount_no_tax) no_amt
+from  csx_tmp.re 
+where sdt>='20210101' and sdt<='20220630'
+and receive_status=2
+and order_type_code like 'P%'
+AND (business_type!='02' and supplier_name not like '%永辉%')
+group by supplier_code,
+    supplier_name,
+    concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0) )
+
+;
+
+select * from 
+(select *, dense_rank()over(partition by q,supplier_type order by no_amt desc)  aa from csx_tmp.supplier_rankt a 
+left join 
+(select vendor_id,vendor_name,supplier_type 
+    from csx_dw.dws_basic_w_a_csx_supplier_m 
+    where sdt='current') b on a.supplier_code=b.vendor_id
+) a 
+where aa<21;
+
+drop table  csx_tmp.supplier_rank;
+create table csx_tmp.supplier_rank as 
+select concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0)) as q,
+    supplier_code,
+    supplier_name,
+    sum( no_tax_receive_amt ) no_amt,
+    sum( no_tax_shipped_amt ) no_shipped_amt
+from csx_tmp.report_fr_r_m_financial_purchase_detail 
+where sdt>='20210101' and sdt<='20220630'
+-- and status=2
+and  source_type_code  not in ('8')
+AND ( business_type_name not in ('云超配送退货','云超配送') and supplier_name not like '%永辉%')
+group by supplier_code,
+    supplier_name,
+    concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0) )
+
+;
+ 
+select * 
+from 
+(select *, 
+    dense_rank()over(partition by supplier_type order by no_amt desc)  aa 
+from csx_tmp.supplier_rank a 
+left join 
+(select vendor_id,vendor_name,supplier_type 
+    from csx_dw.dws_basic_w_a_csx_supplier_m 
+    where sdt='current') b on a.supplier_code=b.vendor_id
+) a 
+where aa<21
+
+;
+
+
+select supplier_code,supplier_name,sum(amount) 
+from csx_dw.dws_wms_r_d_entry_detail 
+where sdt>='20220101' and supplier_name like '%易丰%'
+group by supplier_code,supplier_name
+
+;
+
+select customer_no,customer_name,sum(sales_value) sale
+from csx_dw.dws_sale_r_d_detail where sdt>='20220901'
+and customer_no='123629' 
+group by
+customer_no,customer_name;
+
+
+drop table csx_tmp.supplier_entry_top ;
+create table csx_tmp.supplier_entry_top as 
+SELECT 
+       a.supplier_code,
+       a.supplier_name,
+       supplier_type_name,
+       (qty) qty,
+       (receive_amt) receive_amt,
+       (no_tax_receive_amt) no_tax_receive_amt,
+       (shipped_qty) shipped_qty,
+       (shipped_amt) shipped_amt,
+       (no_tax_shipped_amt) no_tax_shipped_amt,
+       rank()over(partition by supplier_type_name order by receive_amt desc) aa
+FROM (
+SELECT 
+       a.supplier_code,
+       a.supplier_name,
+       b.supplier_type_name,
+       sum(receive_qty) qty,
+       sum(receive_amt) receive_amt,
+       sum(no_tax_receive_amt) no_tax_receive_amt,
+       sum(shipped_qty) shipped_qty,
+       sum(shipped_amt) shipped_amt,
+       sum(no_tax_shipped_amt) no_tax_shipped_amt
+FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a
+ join 
+csx_tmp.vendor b on a.supplier_code=b.supplier_code
+WHERE sdt<='20220630'
+  AND sdt>='20210101'
+  and (business_type_name not in ('云超配送','云超配送退货') 
+  and a.supplier_name not like '%永辉%')
+  and source_type_name !='云超物流采购'
+ GROUP BY a.supplier_code,
+       a.supplier_name,
+       b.supplier_type_name
+     )a
+       ;
+
+drop table csx_tmp.supplier_entry_top20;
+create table csx_tmp.supplier_entry_top20 as 
+SELECT 
+       q,
+       a.supplier_code,
+       a.supplier_name,
+       a.supplier_type_name,
+       (a.qty) qty,
+       (a.receive_amt) receive_amt,
+       (a.no_tax_receive_amt) no_tax_receive_amt,
+       (a.shipped_qty) shipped_qty,
+       (a.shipped_amt) shipped_amt,
+       (a.no_tax_shipped_amt) no_tax_shipped_amt,
+       aa
+FROM (
+SELECT 
+       concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0)) as q,
+       a.supplier_code,
+       a.supplier_name,
+       sum(receive_qty) qty,
+       sum(receive_amt) receive_amt,
+       sum(no_tax_receive_amt) no_tax_receive_amt,
+       sum(shipped_qty) shipped_qty,
+       sum(shipped_amt) shipped_amt,
+       sum(no_tax_shipped_amt) no_tax_shipped_amt,
+       aa
+FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a 
+ join 
+ (select * from csx_tmp.supplier_entry_top where aa<21) b on a.supplier_code=b.supplier_code 
+WHERE sdt<='20220630'
+  AND sdt>='20210101'
+  and (business_type_name not in ('云超配送','云超配送退货') 
+  and supplier_name not like '%永辉%')
+  and source_type_name !='云超物流采购'
+ GROUP BY a.supplier_code,
+       a.supplier_name,
+       b.supplier_type_name,
+        concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0))
+       ) a 
+   join 
+ (select * from csx_tmp.supplier_entry_top where aa<21) b on a.supplier_code=b.supplier_code  ;
+  
+  
+  select * from csx_tmp.supplier_entry_top20;
+  
+  
+  
+SELECT 
+       concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0)) as q,
+       a.supplier_code,
+       a.supplier_name,
+       supplier_type_name,
+       sum(receive_qty) qty,
+       sum(receive_amt) receive_amt,
+       sum(no_tax_receive_amt) no_tax_receive_amt,
+       sum(shipped_qty) shipped_qty,
+       sum(shipped_amt) shipped_amt,
+       sum(no_tax_shipped_amt) no_tax_shipped_amt,
+       aa
+FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a 
+ join 
+ (select supplier_code,supplier_name,supplier_type_name,aa from csx_tmp.supplier_entry_top where aa<21) b on a.supplier_code=b.supplier_code 
+WHERE sdt<='20220630'
+  AND sdt>='20210101'
+  and (business_type_name not in ('云超配送','云超配送退货') 
+  and a.supplier_name not like '%永辉%')
+  and source_type_name !='云超物流采购'
+ GROUP BY a.supplier_code,
+       a.supplier_name,
+       b.supplier_type_name,
+       aa,
+        concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0))
+       
