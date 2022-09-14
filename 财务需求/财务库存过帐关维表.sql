@@ -46,7 +46,7 @@ group by
 -- 关联维度
 drop table if exists  csx_tmp.temp_inve_01;
 
-create temporary table csx_tmp.temp_inve_01 as 
+create  table csx_tmp.temp_inve_01 as 
 select a.dc_code,b.shop_name,company_code,company_name,a.receive_are_code,
     d.name,
     a.goods_code,
