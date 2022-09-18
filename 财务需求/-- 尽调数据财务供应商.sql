@@ -6,7 +6,7 @@ select distinct a.source_type_name,a.business_type_name FROM   csx_tmp.report_fr
 select 
     order_no,
     sdt,
-    a.goods_code,
+    a.goods_code, 
     b.goods_name,
     b.unit_name,
     b.classify_large_code,
@@ -95,8 +95,8 @@ WHERE sdt<='20220630'
        ;
        
        
-       
-CREATE temporary table csx_tmp.temp_supplier_fis_02 as 
+ drop table       csx_tmp.temp_supplier_fis_02 ;
+CREATE  table csx_tmp.temp_supplier_fis_02 as 
 SELECT 
        substr(receive_sdt,1,4) yesr,
        substr(receive_sdt,1,6) mon,
@@ -104,31 +104,61 @@ SELECT
        purchase_order_code,
        supplier_code,
        supplier_name,
+       b.classify_large_code,
+       b.classify_large_name,
+       b.classify_middle_code,
+       b.classify_middle_name,
+       b.classify_small_code,
+       b.classify_small_name,
        goods_code,
        goods_name,
        sales_region_name,
        sales_province_name,
        sum(receive_qty) qty,
        sum(receive_amt) receive_amt,
+       sum(no_tax_receive_amt) no_tax_receive_amt,
        sum(shipped_qty) shipped_qty,
-       sum(shipped_amt) shipped_amt
-FROM   csx_tmp.report_fr_r_m_financial_purchase_detail
-WHERE sdt<='20220831'
+       sum(shipped_amt) shipped_amt,
+       sum(no_tax_shipped_amt) no_tax_shipped_amt,
+       b.department_id,
+       b.department_name
+FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a
+join 
+(SELECT goods_id,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       department_id,
+       department_name
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current') b on a.goods_code=goods_id
+WHERE sdt<='20220630'
   AND sdt>='20200101'
-  and (business_type_name  in ('云超配送','云超配送退货') 
+  and (source_type_name  in ('云超物流采购') 
          or supplier_name  like '%永辉%')
-  and source_type_name !='云超物流采购'
- GROUP BY purchase_order_code,
-       receive_sdt,
+  -- and source_type_name ='云超物流采购'
+ GROUP BY receive_sdt,
+       purchase_order_code,
        supplier_code,
        supplier_name,
+      b.classify_large_code,
+      b.classify_large_name,
+      b.classify_middle_code,
+      b.classify_middle_name,
+      b.classify_small_code,
+      b.classify_small_name,
        goods_code,
        goods_name,
        sales_region_name,
        sales_province_name,
        substr(receive_sdt,1,4),
-substr(receive_sdt,1,6)
-        distribute by 1
+        substr(receive_sdt,1,6),
+        b.department_id,
+        b.department_name
+        
        ;
        
 select * from csx_tmp.temp_supplier_fis_01 distribute by 1;
@@ -279,7 +309,7 @@ group by substr(regexp_replace(settle_date,'-',''),1,6) ,supplier_code,supplier_
 
 ;
 
-
+-- 外部供应商
  insert overwrite directory '/tmp/pengchenghua/bb' row format delimited fields terminated by ','     
 select yesr `年份`,
        mon `月份`,
@@ -300,6 +330,8 @@ distribute by 1
 
 
 ;
+
+
 
 
 -- 供应商复用统计
@@ -337,7 +369,24 @@ WHERE sdt<='20220831'
      from  csx_tmp.temp_supplier_reuse_01
      group by yesr,q;   
 
+insert overwrite directory '/tmp/pengchenghua/aa' row format delimited fields terminated by ',' 
+select yesr	
+,q	
+,supplier_code
+,vendor_name
+,yh_reuse_tag	
+,qty	
+,receive_amt	
+,no_tax_receive_amt	
+,shipped_qty	
+,shipped_amt	
+,no_tax_shipped_amt	
+,net_amt	
+,net_amt_no	
 
+from csx_tmp.temp_supplier_reuse_01 a 
+left join
+(select vendor_id,vendor_name from csx_dw.dws_basic_w_a_csx_supplier_m where sdt='current')b on a.supplier_code=b.vendor_id;
 
 
 select q,suppler_code,supplier_name,no_amt,dense_rank()over(partition by q order by no_amt desc) aa
@@ -359,7 +408,12 @@ group by supplier_code,
 ;
 
 create table csx_tmp.report_fina_po_order_detail as 
-select a.yesr,a.mon,a.purchase_order_code,a.supplier_code,a.supplier_name,classify_large_code,
+select a.yesr,
+       a.mon,
+       a.purchase_order_code,
+       a.supplier_code,
+       a.supplier_name,
+       classify_large_code,
        classify_large_name,
        classify_middle_code,
        classify_middle_name,
@@ -374,7 +428,9 @@ select a.yesr,a.mon,a.purchase_order_code,a.supplier_code,a.supplier_name,classi
        a.no_tax_receive_amt,
        a.shipped_qty,
        a.shipped_amt,
-       a.no_tax_shipped_amt
+       a.no_tax_shipped_amt,
+       department_id,
+       department_name
 from   csx_tmp.temp_supplier_fis_01 a 
 left join 
 (SELECT goods_id,
@@ -383,7 +439,9 @@ left join
        classify_middle_code,
        classify_middle_name,
        classify_small_code,
-       classify_small_name
+       classify_small_name,
+       department_id,
+       department_name
 FROM csx_dw.dws_basic_w_a_csx_product_m
 WHERE sdt='current')b on a.goods_code=goods_id
 left join 
@@ -576,3 +634,153 @@ WHERE sdt<='20220630'
        aa,
         concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0))
        
+
+
+       SELECT 
+       a.supplier_code,
+       a.supplier_name,
+       supplier_type_name,
+       (qty) qty,
+       (receive_amt) receive_amt,
+       (no_tax_receive_amt) no_tax_receive_amt,
+       (shipped_qty) shipped_qty,
+       (shipped_amt) shipped_amt,
+       (no_tax_shipped_amt) no_tax_shipped_amt,
+       rank()over(order by receive_amt desc) aa
+FROM 
+csx_tmp.supplier_entry_top a
+;
+
+
+
+
+-- 供应商TOP20
+SELECT 
+       concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0)) as q,
+       a.supplier_code,
+       a.supplier_name,
+       supplier_type_name,
+       sum(receive_qty) qty,
+       sum(receive_amt) receive_amt,
+       sum(no_tax_receive_amt) no_tax_receive_amt,
+       sum(shipped_qty) shipped_qty,
+       sum(shipped_amt) shipped_amt,
+       sum(no_tax_shipped_amt) no_tax_shipped_amt,
+       aa
+FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a 
+ join 
+ (select supplier_code,supplier_name,aa,supplier_type_name from 
+ (SELECT 
+       a.supplier_code,
+       a.supplier_name,
+       supplier_type_name,
+       (receive_amt) receive_amt,
+       rank()over(order by receive_amt desc) aa
+FROM 
+csx_tmp.supplier_entry_top a) a where aa<21) b on a.supplier_code=b.supplier_code 
+WHERE sdt<='20220630'
+  AND sdt>='20210101'
+  and (business_type_name not in ('云超配送','云超配送退货') 
+  and a.supplier_name not like '%永辉%')
+  and source_type_name !='云超物流采购'
+ GROUP BY a.supplier_code,
+       a.supplier_name,
+       b.supplier_type_name,
+       aa,
+        concat(substr(sdt,1,4),lpad(ceil(month(from_unixtime(unix_timestamp(sdt,'yyyyMMdd'),'yyyy-MM-dd'))/3),2,0))
+;
+
+
+-- 集采商品入库明细
+-- 大区处理
+drop table csx_tmp.temp_dc_new ;
+create  TABLE csx_tmp.temp_dc_new as 
+select case when region_code!='10' then '大区'else '平台' end dept_name,
+    region_code,
+    region_name,
+    sales_province_code,
+    sales_province_name,
+    purchase_org,
+    purchase_org_name,
+    case when performance_province_name like'平台%' then '00' else   sales_region_code end sales_region_code,
+    case when performance_province_name like'平台%' then '平台' else  sales_region_name end sales_region_name,
+    shop_id ,
+    shop_name ,
+    company_code ,
+    company_name ,
+    purpose,
+    purpose_name,
+    performance_city_code,
+    performance_city_name,
+    performance_province_code,
+    performance_province_name,
+    case when c.dc_code is not null then '1' else '0' end as is_purchase_dc ,
+    enable_date
+from csx_dw.dws_basic_w_a_csx_shop_m a 
+left join 
+(select a.code as province_code,a.name as province_name,b.code region_code,b.name region_name 
+from csx_tmp.dws_basic_w_a_performance_region_province_city_tomysql a 
+ left join 
+(select code,name,parent_code from csx_tmp.dws_basic_w_a_performance_region_province_city_tomysql where level=1)  b on a.parent_code=b.code
+ where level=2) b on a.performance_province_code=b.province_code
+ left join 
+ (select dc_code,regexp_replace(to_date(enable_time),'-','') enable_date from csx_ods.source_basic_w_a_conf_supplychain_location where sdt='20220718') c on a.shop_id=c.dc_code
+ where sdt='current'    
+      and table_type=1 
+    ;
+    
+    
+
+drop table  csx_tmp.temp_purchase_01 ;
+create  table csx_tmp.temp_purchase_01 as 
+SELECT substr(receive_sdt,1,4) yesr,
+       substr(receive_sdt,1,6) mon,
+       receive_sdt,
+       purchase_order_code,
+       supplier_code,
+       supplier_name,
+       c.classify_large_code,
+       c.classify_large_name,
+       c.classify_middle_code,
+       c.classify_middle_name,
+       c.classify_small_code,
+       c.classify_small_name,
+       goods_code,
+       goods_name,
+       a.sales_region_name,
+       a.sales_province_name,
+       (receive_qty) qty,
+       (receive_amt) receive_amt,
+       (no_tax_receive_amt) no_tax_receive_amt,
+       (shipped_qty) shipped_qty,
+       (shipped_amt) shipped_amt,
+       (no_tax_shipped_amt) no_tax_shipped_amt,
+       c.department_id,
+       c.department_name
+FROM csx_tmp.report_fr_r_m_financial_purchase_detail a 
+ join 
+ csx_tmp.source_scm_w_a_group_purchase_classily b on a.classify_small_code=b.classify_small_code
+join csx_tmp.temp_dc_new  d on a.dc_code=d.shop_id 
+join 
+(SELECT goods_id,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       department_id,
+       department_name
+FROM csx_dw.dws_basic_w_a_csx_product_m
+WHERE sdt='current') c on a.goods_code=c.goods_id
+WHERE months <= '202208'
+    and months >= '202201'
+    and is_purchase_dc=1
+    and joint_purchase_flag=1 
+    and b.classify_small_code IS NOT NULL
+  and source_type_name not in  ('城市服务商','联营直送','项目合伙人')
+ ;
+  insert overwrite directory '/tmp/pengchenghua/aa' row format delimited fields terminated by ','     
+
+  select * from csx_tmp.temp_purchase_01 
+  ;
