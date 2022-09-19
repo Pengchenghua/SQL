@@ -14,7 +14,7 @@ join
 (
 select DISTINCT  regexp_replace(to_date(last_day(from_unixtime(unix_timestamp(calday,'yyyyMMdd'),'yyyy-MM-dd'))),'-','') sdt
 from csx_dw.dws_basic_w_a_date  
-where calday >='20220101'  and calday <'20220401'
+where calday >='20220401'  and calday <'20220701'
 ) b on a.sdt=b.sdt
 join 
 (select shop_id,province_code,province_name from csx_dw.dws_basic_w_a_csx_shop_m
@@ -28,7 +28,7 @@ and purpose IN (  '01',
                 --  '05' --彩食鲜小店
                 --  '04' --寄售小店
                   )
-and shop_id not in('W0G1','W0H4','W0H1','W0S1','W0AQ')
+and shop_id not in('W0G1','W0H4','W0H1','W0S1','W0AQ','W0J8','W0R0','W0AI','W0AY','W0BW','WB09','WB29','WB31','WB41','WB42','W0S0')
 ) c on a.dc_code=c.shop_id
 where reservoir_area_code  not in ('PD01','PD02','TS01')
 group by province_code,province_name, substr(a.sdt,1,6),a.classify_large_code ,classify_large_name,
@@ -52,13 +52,11 @@ SUM(excluding_tax_cost)/10000 no_tax_amt,
 sum(sales_cost)/10000 cost_amt
 from csx_dw.dws_sale_r_d_detail  a 
 where business_type_code !='4'
-and sdt >='20210701'  and sdt <'20211001'
- and a.dc_code not in ('W0G1','W0H4','W0H1','W0S1','W0AQ')
-
+and sdt >='20220401'  and sdt <'20220701'
+ and a.dc_code not in ('W0G1','W0H4','W0H1','W0S1','W0AQ','W0J8','W0R0','W0AI','W0AY','W0BW','WB09','WB29','WB31','WB41','WB42','W0S0')
 group by a.dc_province_code,a.dc_province_name,substr(a.sdt,1,6),a.classify_large_code ,classify_large_name,classify_middle_code,
 classify_middle_name
  ;
- 
 
 
  -- 重庆DC
