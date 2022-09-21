@@ -693,6 +693,9 @@ WHERE sdt<='20220630'
 
 -- 集采商品入库明细
 -- 大区处理
+
+-- 集采商品入库明细
+-- 大区处理
 drop table csx_tmp.temp_dc_new ;
 create  TABLE csx_tmp.temp_dc_new as 
 select case when region_code!='10' then '大区'else '平台' end dept_name,
@@ -731,8 +734,8 @@ from csx_tmp.dws_basic_w_a_performance_region_province_city_tomysql a
     
     
 
-drop table  csx_tmp.temp_purchase_01 ;
-create  table csx_tmp.temp_purchase_01 as 
+drop table  csx_tmp.jd_temp_purchase_01 ;
+create  table csx_tmp.jd_temp_purchase_01 as 
 SELECT substr(receive_sdt,1,4) yesr,
        substr(receive_sdt,1,6) mon,
        receive_sdt,
