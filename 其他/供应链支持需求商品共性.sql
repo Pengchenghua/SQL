@@ -229,7 +229,7 @@ group by
   
   
   
-  --求省区一品多码
+  -- 求省区一品多码
   
     select province_code,
     province_name,

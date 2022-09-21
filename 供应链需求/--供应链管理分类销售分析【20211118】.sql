@@ -1,23 +1,22 @@
 --供应链管理分类销售分析【20211118】
 --迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4'),2、自营大客户渠道 business_type_code not in('4','9')
 set edt='${enddate}';
-set e_dt =regexp_replace(${hiveconf:edt},'-','');
-set s_dt=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
-set last_sdt=regexp_replace(add_months(trunc(${hiveconf:edt},'MM'),-1),'-','');
+set e_dt =regexp_replace('${edate}','-','');
+set s_dt=regexp_replace(trunc('${edate}','MM'),'-','');
+set last_sdt=regexp_replace(add_months(trunc('${edate}','MM'),-1),'-','');
 
 --上月结束日期，当前日期不等于月末取当前日期，等于月末取上月最后一天
-set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_day(add_months(${hiveconf:edt},-1)),add_months(${hiveconf:edt},-1)),'-','');
+set last_edt=regexp_replace(if('${edate}'=last_day('${edate}'),last_day(add_months('${edate}',-1)),add_months('${edate}',-1)),'-','');
 set parquet.compression=snappy;
 set hive.exec.dynamic.partition=true; 
 set hive.exec.dynamic.partition.mode=nonstrict;
--- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
-set t_shop=('W0K4','W0Z7','WB26');
+ 
 -- 本期数据
-drop table if exists csx_tmp.tmp_dp_sale;
-create temporary table csx_tmp.tmp_dp_sale
+drop table if exists csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale;
+create  table csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale
 as 
 select 
-    case when channel_code in ('1','9','7') then 'B端'
+    case when channel_code not in ('4','5','6','2')then 'B端'
         when   channel_code ='2' then 'M端'
      end channel_name,
     business_type_code,
@@ -29,19 +28,19 @@ select
     a.classify_small_code,
     a.classify_small_name,
     '' sales_plan,
-    sum(sales_value)as sales_value,
+    sum(sale_amt)as sales_value,
     sum(a.profit)as profit,
-    sum( case when c.dc_code is null  and business_type_code=1 then sales_value end ) as daily_sale_value,
-    sum( case when c.dc_code is null  and business_type_code=1 then profit end ) as daily_profit
-from csx_dw.dws_sale_r_d_detail a 
-left join 
-(SELECT * FROM csx_dw.dws_basic_w_a_normal_default_reject_warehouse) c on a.dc_code=c.dc_code
-where sdt>=${hiveconf:s_dt}
-    and sdt<=${hiveconf:e_dt}
-and a.channel_code  in ('1','2','7','9')
-and a.province_code !='33'
+    sum( case when c.shop_low_profit_flag=0  and business_type_code=1 then sale_amt end ) as daily_sale_value,
+    sum( case when c.shop_low_profit_flag=0  and business_type_code=1 then profit end ) as daily_profit
+from csx_dw.dws_sale_r_d_detail a
+left join  
+(SELECT shop_code,shop_low_profit_flag FROM csx_dim.csx_dim_shop where sdt='current') c on a.inventory_dc_code=c.shop_code  	-- 剔除日配剔除联营仓
+  where sdt>= regexp_replace(trunc('${edate}','MM'),'-','')
+    and sdt <= regexp_replace('${edate}','-','')
+and a.channel_code not in ('4','5','6')
+-- and a.province_code !='33'
 group by 
-    case when channel_code in ('1','9','7') then 'B端'
+    case when channel_code not in ('4','5','6','2') then 'B端'
         when   channel_code ='2' then 'M端' end,
     classify_large_code,
     a.business_type_code ,
@@ -54,34 +53,36 @@ group by
 ;
 
 -- 环期数据
-drop table if exists csx_tmp.tmp_dp_sale_01;
-create temporary table csx_tmp.tmp_dp_sale_01
+drop table if exists csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale_01;
+create  table csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale_01
 as 
 select 
-    case when channel_code in ('1','9','7') then 'B端'
-        when   channel_code ='2' then 'M端' end channel_name,
-    classify_large_code,
+    case when channel_code not in ('4','5','6','2')then 'B端'
+        when   channel_code ='2' then 'M端'
+     end channel_name,
     business_type_code,
     business_type_name,
+    classify_large_code,
     classify_large_name,
     a.classify_middle_code,
     a.classify_middle_name,
     a.classify_small_code,
     a.classify_small_name,
-    '' as sales_plan,
-    sum(sales_value)as last_sales_value,
-    sum(a.profit)as last_profit,
-    sum( case when c.dc_code is null  and business_type_code=1 then sales_value end ) as last_daily_sale_value,
-    sum( case when c.dc_code is null  and business_type_code=1 then profit end ) as last_daily_profit
+    '' sales_plan,
+    sum(sale_amt)as sales_value,
+    sum(a.profit)as profit,
+    sum( case when c.shop_low_profit_flag=0  and business_type_code=1 then sale_amt end ) as daily_sale_value,
+    sum( case when c.shop_low_profit_flag=0  and business_type_code=1 then profit end ) as daily_profit
 from csx_dw.dws_sale_r_d_detail a
-left join 
-(SELECT * FROM csx_dw.dws_basic_w_a_normal_default_reject_warehouse) c on a.dc_code=c.dc_code
-where sdt>=${hiveconf:last_sdt}
-    and sdt<=${hiveconf:last_edt}
-and a.province_code !='33'
-and a.channel_code  in ('1','2','7','9')
+left join  
+(SELECT shop_code,shop_low_profit_flag FROM csx_dim.csx_dim_shop where sdt='current') c on a.inventory_dc_code=c.shop_code  	-- 剔除日配剔除联营仓
+ where sdt>= regexp_replace(add_months(trunc('${edate}','MM'),-1),'-','')
+    and sdt <= regexp_replace(if('${edate}'=last_day('${edate}'),last_day(add_months('${edate}',-1)),add_months('${edate}',-1)),'-','');
+
+-- and a.province_code !='33'
+and a.channel_code not in ('4','5','6')
 group by 
-    case when channel_code in ('1','9','7') then 'B端'
+    case when channel_code not in ('4','5','6','2') then 'B端'
         when   channel_code ='2' then 'M端'
     end,
     a.business_type_code,
@@ -96,8 +97,8 @@ group by
 
 
 -- 本期与环比汇总
-drop table if exists csx_tmp.temp_sale_all;
-create temporary table csx_tmp.temp_sale_all as 
+drop table if exists csx_analyse_tmp.temp_sale_all;
+create  table csx_analyse_tmp.temp_sale_all as 
 select
     channel_name,
     business_type_code,
@@ -137,7 +138,7 @@ from
     0 as last_profit,
     0 as last_daily_sale_value,
     0 as last_daily_profit
-from csx_tmp.tmp_dp_sale a
+from csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale a
 union all
 select channel_name,
     business_type_code,
@@ -157,7 +158,7 @@ select channel_name,
     last_profit,
     last_daily_sale_value,
     last_daily_profit
-from csx_tmp.tmp_dp_sale_01 a
+from csx_analyse_tmp.csx_analyse_tmp_scm_sale_sum_dp_sale_01 a
 ) a
 group by 
     channel_name,
@@ -229,9 +230,9 @@ grouping sets
     )
     ;
     
-
-
-insert overwrite table csx_tmp.report_sale_r_d_manage_sum  partition(months)
+    
+    
+insert overwrite table csx_analyse_tmp.report_sale_r_d_manage_sum  partition(months)
 
 select level_id,
     substr(${hiveconf:e_dt},1,4) as years,
@@ -247,11 +248,11 @@ select level_id,
     sales_plan,
     sales_value      ,
     profit      ,
-    profit_rate,
+    profit/sales_value as profit_rate,
     last_sales_value,
     last_profit,
-    last_profit_rate,
-    ring_sale_rate,
+    last_profit/last_sales_value as last_profit_rate,
+    (sales_value-last_sales_value)/last_sales_value as ring_sale_rate,
     group_id,
     current_timestamp(),
     substr(${hiveconf:e_dt},1,6)
@@ -276,17 +277,17 @@ select
     coalesce(a.classify_small_code, '00')as classify_small_code,
     coalesce(a.classify_small_name, '小计')as classify_small_name,
     sales_plan,
-    sales_value ,
-    profit ,
+    if(a.business_type_code=1 , daily_sale_value,sales_value) sales_value ,
+    if(a.business_type_code=1 , daily_profit,profit)          profit ,
     profit/sales_value as profit_rate,
-    last_sales_value,
-    last_profit,
+    if(a.business_type_code=1 , last_daily_sale_value,last_sales_value)  last_sales_value,
+    if(a.business_type_code=1 , last_daily_profit,last_profit)           last_profit,
     last_profit/last_sales_value as last_profit_rate,
     (sales_value-last_sales_value)/last_sales_value as ring_sale_rate,
     group_id,
     current_timestamp(),
     substr(${hiveconf:e_dt},1,6)
-from csx_tmp.temp_sale_all a 
+from csx_analyse_tmp.temp_sale_all a 
 where 1=1 
 and (a.channel_name !='M端' or a.business_type_code is null )  
 --classify_large_code is not null
@@ -322,8 +323,8 @@ select
     100 as group_id,
     current_timestamp(),
     substr(${hiveconf:e_dt},1,6)
-from csx_tmp.temp_sale_all a 
-where a.business_type_code not in('4','9')  --自营剔除城市服务商&业务代理
+from csx_analyse_tmp.temp_sale_all a 
+where a.business_type_code not in('4','9')  --自营剔除城市服务商&amp;业务代理
 group by 
      case when group_id =0 then 0 
         when group_id =60 then 1 

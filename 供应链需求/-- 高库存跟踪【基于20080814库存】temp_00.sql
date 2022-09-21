@@ -1,5 +1,4 @@
--- 高库存跟踪&调拨出库【华西】20220706
--- 异常库存统计 高库存&未销售
+-- 高库存跟踪【基于20080814库存】temp_00
 set edate='${enddate}'  ;
 set dc_uses=('寄售门店','城市服务商','合伙人物流','');
 set edt=regexp_replace(${hiveconf:edate},'-','');
@@ -53,11 +52,11 @@ group by
 ;
 
 
-create temporary table if not exists csx_tmp.p_shipped_date as
+create temporary table if not exists csx_tmp.p_shipp_date as
 select
 	a.shipped_location_code                          ,
 	a.goods_code                                     ,
-	max(sdt) max_shipped_date
+	max(sdt) max_shpp_date
 from
 	csx_dw.dws_wms_r_d_ship_batch a
     where 1=1
@@ -69,12 +68,9 @@ group by
 	a.goods_code           
 ;
 
--- select * from csx_tmp.p_contain_transfer_trunc where dc_code='W0A6' and goods_id='899540';
-
--- select * from csx_tmp.p_shipped_date where shipped_location_code='W0A6' and goods_code='899540';
 
 drop table  csx_tmp.p_contain_transfer_trunc;
-create temporary table if not exists csx_tmp.p_contain_transfer_trunc as
+create  table if not exists csx_tmp.p_contain_transfer_trunc as
 select a.*,b.contain_transfer_entry_value as contain_transfer_cost_30day,	
 coalesce(case when (business_division_code='11' and (cost_30day+receipt_amt+material_take_amt+coalesce(b.contain_transfer_entry_value,0)) <=0 and period_inv_amt_30day>0) then 9999 
 		              when (business_division_code !='11' and cost_30day +coalesce(b.contain_transfer_entry_value,0) <=0 and period_inv_amt_30day>0) then 9999 
@@ -83,19 +79,19 @@ coalesce(case when (business_division_code='11' and (cost_30day+receipt_amt+mate
 					  when business_division_code ='11' then  period_inv_amt_30day/(cost_30day+receipt_amt+material_take_amt+coalesce(b.contain_transfer_entry_value,0))
 		              else period_inv_amt_30day/(cost_30day+coalesce(b.contain_transfer_entry_value,0)) 
 		        end,0)	as days_turnover_30_transfer ,
-			datediff(to_date(date_sub(current_timestamp(),1)),from_unixtime(unix_timestamp(max_shipped_date,'yyyyMMdd'),'yyyy-MM-dd')) as no_shipped_days,
-			max_shipped_date
+			datediff(to_date(date_sub(current_timestamp(),1)),from_unixtime(unix_timestamp(max_shpp_date,'yyyyMMdd'),'yyyy-MM-dd')) as no_shipped_days,
+			max_shpp_date
 from csx_tmp.ads_wms_r_d_goods_turnover a 
 left join
  csx_tmp.p_contain_transfer_cost b on a.dc_code=b.shipped_location_code and a.goods_id=b.goods_code
  left join 
- csx_tmp.p_shipped_date c on a.dc_code=c.shipped_location_code and a.goods_id=c.goods_code
+ csx_tmp.p_shipp_date c on a.dc_code=c.shipped_location_code and a.goods_id=c.goods_code
  where sdt=regexp_replace(${hiveconf:edate},'-' ,'')  
  ;
  
  
 drop table  csx_tmp.temp_01 ;
-create temporary table csx_tmp.temp_01 as 
+create  table csx_tmp.temp_01 as 
 select * from (
 select 
  a.dc_uses,
@@ -117,7 +113,6 @@ product_status_name,
   days_turnover_30 ,
   days_turnover_30_transfer,
  no_sale_days , 
-
  max_sale_sdt ,
  entry_days ,
  entry_qty,
@@ -129,9 +124,9 @@ product_status_name,
  contain_transfer_entry_qty , 
  contain_transfer_entry_value ,
  contain_transfer_entry_sdt , 
- contain_transfer_entry_days ,
+ contain_transfer_entry_days,
  no_shipped_days,
- max_shipped_date
+ max_shpp_date
 -- sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
 --          when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
 --           when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
@@ -171,6 +166,9 @@ where sdt=${hiveconf:edt}
  ) a 
   ;
   
+  
+ -- select * from csx_tmp.temp_02 ; 
+  
   -- 不动销
    drop table csx_tmp.temp_02 ;
  create temporary table csx_tmp.temp_02 as 
@@ -208,7 +206,7 @@ product_status_name,
  contain_transfer_entry_sdt , 
  contain_transfer_entry_days ,
   no_shipped_days,
- max_shipped_date
+ max_shpp_date
 -- sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
 --          when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
 --           when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
@@ -247,7 +245,7 @@ where sdt=${hiveconf:edt}
   ;
   
   drop table  csx_tmp.temp_00;
-  create temporary table csx_tmp.temp_00 as 
+  create  table csx_tmp.temp_00 as 
   select '高库存' note,
   a.dc_uses,
  a.province_code,
@@ -267,8 +265,8 @@ a.total_qty,
  a.final_amt ,
   a.days_turnover_30 ,
   days_turnover_30_transfer,
- a.no_sale_days , 
- a.max_sale_sdt ,
+  no_shipped_days,
+ max_shpp_date,
  a.entry_days ,
  a.entry_qty,
  a.entry_value,
@@ -279,9 +277,7 @@ a.total_qty,
  contain_transfer_entry_qty , 
  contain_transfer_entry_value ,
  contain_transfer_entry_sdt , 
- contain_transfer_entry_days ,
-  no_shipped_days,
- max_shipped_date
+ contain_transfer_entry_days 
  from csx_tmp.temp_01 a
   union all 
   select '未销售' note,
@@ -303,8 +299,8 @@ a.total_qty,
  a.final_amt ,
   a.days_turnover_30 ,
  a.days_turnover_30_transfer,
- a.no_sale_days , 
- a.max_sale_sdt ,
+ a.no_shipped_days,
+ a.max_shpp_date,
  a.entry_days ,
  a.entry_qty,
  a.entry_value,
@@ -315,14 +311,146 @@ a.total_qty,
  a.contain_transfer_entry_qty , 
  a.contain_transfer_entry_value ,
  a.contain_transfer_entry_sdt , 
- a.contain_transfer_entry_days ,
- a.no_shipped_days,
- a.max_shipped_date
+ a.contain_transfer_entry_days 
  from csx_tmp.temp_02  a 
   left join 
   csx_tmp.temp_01 b on a.dc_code=b.dc_code and a.goods_id=b.goods_id
   where b.goods_id is null and b.dc_code is null
   ;
+ 
+  select * from csx_tmp.temp_00;
   
-  select * from csx_tmp.temp_00 where classify_middle_name !='酒' and province_name in ('重庆市','四川省','贵州省') and goods_id='1350631';
   
+  
+  
+ 
+  
+ select
+ performance_province_code,
+ performance_province_name,
+ c.dc_code,
+ c.dc_name,
+ c.goods_id,
+ c.goods_name,
+ c.unit_name,
+ c.classify_large_code ,
+ c.classify_large_name ,
+ c.classify_middle_code,
+ c.classify_middle_name ,
+ a.classify_small_code,
+ a.classify_small_name,
+ c.total_qty,
+ c.final_amt amt ,
+ a.final_qty,
+ a.final_amt ,
+ a.days_turnover_30_transfer,
+ a.no_shipped_days,
+ a.max_shpp_date , 
+ a.entry_days ,
+ a.entry_qty,
+ a.entry_sdt,
+ a.entry_value,
+ a.contain_transfer_entry_qty , 
+ a.contain_transfer_entry_value ,
+ a.contain_transfer_entry_sdt , 
+ a.contain_transfer_entry_days 
+from csx_tmp.temp_00_0814 c 
+left join
+csx_tmp.p_contain_transfer_trunc a
+  on a.dc_code=c.dc_code and a.goods_id=c.goods_id
+  join 
+  (select sales_province_code,
+    sales_province_name,
+    purchase_org,
+    purchase_org_name,
+    case when performance_province_name like'平台%' then '00' else   sales_region_code end sales_region_code,
+    case when performance_province_name like'平台%' then '平台' else  sales_region_name end sales_region_name,
+    shop_id ,
+    shop_name ,
+    company_code ,
+    company_name ,
+    purpose,
+    purpose_name,
+    performance_city_code,
+    performance_city_name,
+    performance_province_code,
+    performance_province_name
+from csx_dw.dws_basic_w_a_csx_shop_m
+ where sdt='current'    
+    and  table_type=1 ) b on a.dc_code=b.shop_id
+;
+  
+;
+   drop table  csx_tmp.temp_00_0814;
+  create  table csx_tmp.temp_00_0814 as 
+  select '高库存' note,
+  a.dc_uses,
+ a.province_code,
+ a.province_name,
+ a.dc_code,
+ a.dc_name,
+ a.classify_large_code ,
+ a.classify_large_name ,
+ a.classify_middle_code,
+ a.classify_middle_name ,
+ a.goods_id,
+ a.goods_name,
+ a.unit_name,
+a.qualitative_period,
+a.product_status_name,
+a.total_qty,
+ a.final_amt ,
+  a.days_turnover_30 ,
+  days_turnover_30_transfer,
+  no_shipped_days,
+ max_shpp_date,
+ a.entry_days ,
+ a.entry_qty,
+ a.entry_value,
+ a.entry_sdt,
+  receipt_m_amt,
+  receipt_m_qty,
+ max_receipt_sdt,
+ contain_transfer_entry_qty , 
+ contain_transfer_entry_value ,
+ contain_transfer_entry_sdt , 
+ contain_transfer_entry_days 
+ from csx_tmp.temp_01 a
+  union all 
+  select '未销售' note,
+  a.dc_uses,
+ a.province_code,
+ a.province_name,
+ a.dc_code,
+ a.dc_name,
+ a.classify_large_code ,
+ a.classify_large_name ,
+ a.classify_middle_code,
+ a.classify_middle_name ,
+ a.goods_id,
+ a.goods_name,
+ a.unit_name,
+a.qualitative_period,
+a.product_status_name,
+a.total_qty,
+ a.final_amt ,
+  a.days_turnover_30 ,
+ a.days_turnover_30_transfer,
+ a.no_shipped_days,
+ a.max_shpp_date,
+ a.entry_days ,
+ a.entry_qty,
+ a.entry_value,
+ a.entry_sdt ,
+ a.receipt_m_amt,
+ a.receipt_m_qty,
+ a.max_receipt_sdt,
+ a.contain_transfer_entry_qty , 
+ a.contain_transfer_entry_value ,
+ a.contain_transfer_entry_sdt , 
+ a.contain_transfer_entry_days 
+ from csx_tmp.temp_02  a 
+  left join 
+  csx_tmp.temp_01 b on a.dc_code=b.dc_code and a.goods_id=b.goods_id
+  where b.goods_id is null and b.dc_code is null
+  ;
