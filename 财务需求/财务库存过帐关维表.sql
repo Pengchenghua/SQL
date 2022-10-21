@@ -6,7 +6,7 @@
 
 --计算期末库存额，库存余额-期间操作日志
 drop table if exists csx_tmp.temp_inv_01 ;
-create temporary table csx_tmp.temp_inv_01 as 
+create  table csx_tmp.temp_inv_01 as 
 select a.dc_code,
     a.receive_are_code,
     a.goods_code,
@@ -108,7 +108,7 @@ where (inv_qty !=0 or inv_amt!=0);
 
   set hive.exec.dynamic.partition.mode=nonstrict;
   INSERT OVERWRITE table csx_tmp.report_wms_r_m_post_inventory PARTITION(months)
-  select * ,current_timestamp(),'202205' from  csx_tmp.temp_inve_01
+  select * ,current_timestamp(),'202209' from  csx_tmp.temp_inve_01
   ;
   
   

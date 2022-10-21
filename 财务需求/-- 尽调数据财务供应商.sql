@@ -327,6 +327,7 @@ select yesr `年份`,
        shipped_amt as `出库额`
 from csx_tmp.temp_supplier_fis_01
 distribute by 1
+-- 输出一个线程文件
 
 
 ;
