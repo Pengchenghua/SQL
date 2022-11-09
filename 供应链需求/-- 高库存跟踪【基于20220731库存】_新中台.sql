@@ -1,4 +1,3 @@
---高库存跟踪&调拨出库【全国异常库存】_新中台 新规则20221024
 
 drop table if exists csx_analyse_tmp.csx_analyse_tmp_raw_material_01;
 create  table  csx_analyse_tmp.csx_analyse_tmp_raw_material_01 as 
@@ -15,7 +14,7 @@ SELECT location_code AS dc_code,
    FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_di a
    WHERE 1=1 
      and a.in_or_out='-'
-     AND sdt <= '20221023'   
+     AND sdt <= '20221105'   
          and move_type_code in ('118A','119A','202A')   -- 只计算领用与原料转码\转码
 GROUP BY location_code,
          goods_code
@@ -31,6 +30,7 @@ GROUP BY location_code,
 
 
 -- 调拨出库
+drop table  csx_analyse_tmp.csx_analyse_tmp_raw_material_02;
 create  table if not exists  csx_analyse_tmp.csx_analyse_tmp_raw_material_02 as
 select
 	a.send_dc_code                          ,
@@ -40,7 +40,7 @@ select
 from
  	 csx_dws.csx_dws_wms_shipped_detail_di a
     where 1=1
-    and sdt>'20220924'  and sdt<='20221024'
+    and sdt>'20221005'  and sdt<='20221105'
     and a.status!=9
     and a.shipped_type like'T%'
     and a.reservoir_area_code !='CY01'
@@ -50,6 +50,7 @@ group by
 ;
 
 -- 最近出库
+drop table csx_analyse_tmp.csx_analyse_tmp_raw_material_03;
 create  table if not exists csx_analyse_tmp.csx_analyse_tmp_raw_material_03 as
 select
 	a.send_dc_code                          ,
@@ -59,6 +60,7 @@ from
 	  csx_dws.csx_dws_wms_shipped_detail_di a
     where 1=1
     and a.status!=9
+    and sdt<='20221105'
     and substr(a.shipped_type,1,1) in('T','S')
     and a.reservoir_area_code !='CY01'
 group by
@@ -80,12 +82,12 @@ coalesce(case when (business_division_code='11' and (nearly30days_sale_cost+requ
 			datediff(to_date(date_sub(current_timestamp(),1)),from_unixtime(unix_timestamp(max_shpp_date,'yyyyMMdd'),'yyyy-MM-dd')) as no_shipped_days,
 			max_shpp_date
 from
-    desc csx_ads.csx_ads_wms_goods_turnover_df a 
+    csx_ads.csx_ads_wms_goods_turnover_df a 
 left join
  csx_analyse_tmp.csx_analyse_tmp_raw_material_02 b on a.dc_code=b.send_dc_code and a.goods_code=b.goods_code
  left join 
 csx_analyse_tmp.csx_analyse_tmp_raw_material_03  c on a.dc_code=c.send_dc_code and a.goods_code=c.goods_code
- where sdt='20221023'
+ where sdt='20221105'
  ;
  
  
@@ -149,7 +151,7 @@ FROM
 WHERE sdt='current') c on a.goods_code=c.goods_code and a.dc_code=c.dc_code 
 left join 
 csx_analyse_tmp.csx_analyse_tmp_raw_material_01 d on a.goods_code=d.goods_code and a.dc_code=d.dc_code
-where sdt='20221023'
+where sdt='20221105'
     and purpose_name not in ('寄售门店','城市服务商','合伙人物流','')
     and division_code in ('11','10','12','13','14')
    -- AND final_qty>0
@@ -161,11 +163,10 @@ where sdt='20221023'
   ;
   
   
- -- select * from csx_tmp.temp_02 ; 
-  
+
   -- 不动销
-   drop table csx_analyse_tmp.csx_analyse_tmp_raw_material_06 ;
- create  table csx_analyse_tmp.csx_analyse_tmp_raw_material_06 as 
+drop table csx_analyse_tmp.csx_analyse_tmp_raw_material_06 ;
+create  table csx_analyse_tmp.csx_analyse_tmp_raw_material_06 as 
 select * from (
 select 
  a.purpose_name,
@@ -214,7 +215,6 @@ c.goods_status_name	,
 -- sum(stock_amt) as validity_amt,
 -- count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
 from csx_analyse_tmp.csx_analyse_tmp_raw_material_04   a
-
 left join 
 (SELECT dc_code,
        goods_code,
@@ -225,7 +225,7 @@ FROM
 WHERE sdt='current' ) c on a.goods_code=c.goods_code and a.dc_code=c.dc_code 
 left join 
  csx_analyse_tmp.csx_analyse_tmp_raw_material_01 d on a.goods_code=d.goods_code and a.dc_code=d.dc_code
-where sdt='20221023'
+where sdt='20220731'
     and purpose_name not in ('寄售门店','城市服务商','合伙人物流','')
     and division_code in ('11','10','12','13','14')
    -- AND final_qty>0
@@ -309,7 +309,8 @@ a.total_qty,
   ;
  
   
-  
+    drop table   csx_analyse_tmp.csx_analyse_tmp_raw_material_08;
+  create  table  csx_analyse_tmp.csx_analyse_tmp_raw_material_08 as
   select note,
   b.purpose_name,
   sales_region_code,
@@ -364,118 +365,64 @@ from  csx_analyse_tmp.csx_analyse_tmp_raw_material_07 a
 from csx_dim.csx_dim_shop
  where sdt='current'    
      ) b on a.dc_code=b.shop_code
-  where classify_middle_name !='酒' ;
+  where classify_middle_name !='酒'
+  and dc_code not like 'L%';
   
   
   
-  
-  
-drop table csx_tmp.tmp_classify_kanban_fr;
-create table csx_tmp.tmp_classify_kanban_fr as 
-select 
- level_id,
- province_code,
- province_name,
- classify_large_code ,
- classify_large_name ,
- classify_middle_code,
- classify_middle_name ,
- sku,
- total_amt,
- total_turnover_day,
- high_stock_amt,      -- 高库存金额
- high_stock_sku,            -- 高库存SKU
- no_sales_stock_amt,          -- 无销售库存金额
- no_sales_stock_sku,   -- 无销售库存SKU
- validity_amt,
- validity_sku
-from 
-( 
-
-
-select 
- '1' level_id,
- province_code,
- province_name,
- classify_large_code ,
- classify_large_name ,
- classify_middle_code,
- classify_middle_name ,
-count(distinct case when final_qty!=0 then goods_code end) sku,
-sum(final_amt)/10000 total_amt,
-sum(nearly30days_stock_amt  )/ sum(case when division_code in ('11','10') then nearly30days_sale_cost+requisition_amt+material_use_amt+coalesce(contain_transfer_receive_amt,0) else nearly30days_sale_cost+coalesce(contain_transfer_receive_amt,0) end ) total_turnover_day,
- 
-sum(case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.final_amt>500 and a.entry_days>3 then final_amt
-         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
-          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
-        end )/10000 high_stock_amt,      -- 高库存金额
-count(distinct  case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.final_amt>500 and a.entry_days>3 then a.goods_code
-         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.final_amt>2000 and a.entry_days>7 then goods_code
-          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.final_amt>2000 and a.entry_days>7 then goods_code
-        end ) high_stock_sku,            -- 高库存SKU
-sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
-count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
-sum(stock_amt) as validity_amt,
-count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
-from  csx_tmp.p_contain_transfer_trunc  a
-left join 
-(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
-    where sdt='20220810'
-        and validity_type in ('过期','临期')
-        group by  dc_code,goods_code
-        )  b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
-where 1=1
-    and purpose_name not in ${hiveconf:purpose_name}
-    and division_code in ('11','10','12','13','14')
-group by province_name,
-    province_code,
-    classify_large_code ,
-    classify_large_name ,
-    classify_middle_code,
-    classify_middle_name
-
-union all 
-select 
- '0' level_id,
- '000001'province_code
- '全国' province_name,
- classify_large_code ,
- classify_large_name ,
- classify_middle_code,
- classify_middle_name ,
-count(distinct case when final_qty!=0 then goods_code end) sku,
-sum(final_amt)/10000 total_amt,
-sum(nearly30days_stock_amt  )/ sum(case when division_code in ('11','10') then nearly30days_sale_cost+requisition_amt+material_use_amt else nearly30days_sale_cost end ) total_turnover_day,
-sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
-         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
-          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
-        end )/10000 high_stock_amt,      -- 高库存金额
-count(distinct  case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then a.goods_code
-         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then goods_code
-          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then goods_code
-        end ) high_stock_sku,            -- 高库存SKU
-sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
-count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
-sum(stock_amt) as validity_amt,
-count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
-from  csx_tmp.p_contain_transfer_trunc  a
-left join 
-(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
-    where sdt='20220811'
-        and validity_type in ('过期','临期')
-        group by  dc_code,goods_code
-        )  b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
-where 1=1
-   and purpose_name not in ${hiveconf:purpose_name}
-    and division_code in ('11','10','12','13','14')
-group by 
-classify_large_code ,
- classify_large_name ,
- classify_middle_code,
- classify_middle_name 
-) a 
-order by total_amt desc
+ select
+ b.performance_province_code,
+ b.performance_province_name,
+ c.dc_code,
+ c.dc_name,
+ c.goods_code,
+ c.goods_name,
+ c.unit_name,
+ c.classify_large_code ,
+ c.classify_large_name ,
+ c.classify_middle_code,
+ c.classify_middle_name ,
+ a.classify_small_code,
+ a.classify_small_name,
+ c.total_qty,
+ c.final_amt amt ,
+ a.qm_qty,
+ a.qm_amt ,
+ a.nearly30days_turnover_days,
+ a.no_shipped_days,
+ a.max_shpp_date , 
+ a.receive_days ,
+ a.receive_qty,
+ a.receive_date,
+ a.receive_amt,
+ a.contain_transfer_receive_qty , 
+ a.contain_transfer_receive_amt ,
+ a.contain_transfer_receive_sdt , 
+ a.contain_transfer_receive_days 
+from csx_analyse_tmp.csx_analyse_tmp_goods_turnover_20220731 c
+left join
+ csx_analyse_tmp.csx_analyse_tmp_raw_material_04 a
+  on a.dc_code=c.dc_code and a.goods_code=c.goods_code
+   join 
+  (select  
+    purchase_org,
+    purchase_org_name,
+    case when performance_province_name like'平台%' then '00' else    performance_region_code end sales_region_code,
+    case when performance_province_name like'平台%' then '平台' else  performance_region_name end sales_region_name,
+    shop_code ,
+    shop_name ,
+    company_code ,
+    company_name ,
+    purpose,
+    purpose_name,
+    performance_city_code,
+    performance_city_name,
+    performance_province_code,
+    performance_province_name
+from csx_dim.csx_dim_shop
+ where sdt='current'    
+     )b on a.dc_code=b.shop_code
+  where c.classify_middle_name !='酒'
+  and c.dc_code not like 'L%';
 ;
-
-
-select * from  csx_tmp.p_contain_transfer_trunc;
+  
