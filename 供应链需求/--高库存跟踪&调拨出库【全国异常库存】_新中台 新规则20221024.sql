@@ -7,12 +7,12 @@ SELECT location_code AS dc_code,
           coalesce(sum( amt_no_tax*(1+tax_rate/100)),0) AS requisition_amt,
           coalesce(sum( txn_qty ),0) AS receipt_qty,
           sdt max_receipt_sdt
-   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_di a
+   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_view_di a
    join 
   (SELECT location_code AS dc_code,
      goods_code AS goods_code,
      max(sdt) max_receipt_sdt
-   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_di a
+   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_view_di a
    WHERE 1=1 
      and a.in_or_out='-'
      AND sdt <= '20221023'   
@@ -370,8 +370,8 @@ from csx_dim.csx_dim_shop
   
   
   
-drop table csx_tmp.tmp_classify_kanban_fr;
-create table csx_tmp.tmp_classify_kanban_fr as 
+-- drop table csx_analyse_tmp.csx_analyse_tmp_classify_kanban_fr;
+create table csx_analyse_tmp.csx_analyse_tmp_classify_kanban_fr as 
 select 
  level_id,
  province_code,
@@ -391,8 +391,6 @@ select
  validity_sku
 from 
 ( 
-
-
 select 
  '1' level_id,
  province_code,
@@ -401,73 +399,78 @@ select
  classify_large_name ,
  classify_middle_code,
  classify_middle_name ,
-count(distinct case when final_qty!=0 then goods_code end) sku,
-sum(final_amt)/10000 total_amt,
+count(distinct case when qm_qty!=0 then a.goods_code end) sku,
+sum(qm_amt)/10000 total_amt,
 sum(nearly30days_stock_amt  )/ sum(case when division_code in ('11','10') then nearly30days_sale_cost+requisition_amt+material_use_amt+coalesce(contain_transfer_receive_amt,0) else nearly30days_sale_cost+coalesce(contain_transfer_receive_amt,0) end ) total_turnover_day,
  
-sum(case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.final_amt>500 and a.entry_days>3 then final_amt
-         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
-          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
+sum(case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.qm_amt>500 and a.contain_transfer_receive_days>3 then qm_amt
+         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then qm_amt
+          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then qm_amt
         end )/10000 high_stock_amt,      -- 高库存金额
-count(distinct  case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.final_amt>500 and a.entry_days>3 then a.goods_code
-         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.final_amt>2000 and a.entry_days>7 then goods_code
-          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.final_amt>2000 and a.entry_days>7 then goods_code
+count(distinct  case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.qm_amt>500 and a.contain_transfer_receive_days>3 then a.goods_code
+         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then a.goods_code
+          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then a.goods_code
         end ) high_stock_sku,            -- 高库存SKU
-sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
-count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
+sum(case when a.no_sale_days>30 and a.qm_qty>0.1 and a.contain_transfer_receive_days>7 then qm_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
+count( distinct case when a.no_sale_days>30 and a.qm_qty>0.1 and a.contain_transfer_receive_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
 sum(stock_amt) as validity_amt,
 count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
-from  csx_tmp.p_contain_transfer_trunc  a
+from   csx_analyse_tmp.csx_analyse_tmp_raw_material_04 a
 left join 
-(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
+(select dc_code,goods_code,
+    sum(stock_qty) stock_qty,
+    sum(stock_amt) stock_amt 
+from  csx_report.csx_report_wms_validity_goods_df
     where sdt='20220810'
         and validity_type in ('过期','临期')
         group by  dc_code,goods_code
         )  b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
 where 1=1
-    and purpose_name not in ${hiveconf:purpose_name}
     and division_code in ('11','10','12','13','14')
+    and purpose_name not in ('寄售门店','城市服务商','合伙人物流','')
 group by province_name,
     province_code,
     classify_large_code ,
     classify_large_name ,
     classify_middle_code,
     classify_middle_name
-
 union all 
 select 
  '0' level_id,
- '000001'province_code
+ '000001'province_code,
  '全国' province_name,
  classify_large_code ,
  classify_large_name ,
  classify_middle_code,
  classify_middle_name ,
-count(distinct case when final_qty!=0 then goods_code end) sku,
-sum(final_amt)/10000 total_amt,
+count(distinct case when qm_qty!=0 then a.goods_code end) sku,
+sum(qm_amt)/10000 total_amt,
 sum(nearly30days_stock_amt  )/ sum(case when division_code in ('11','10') then nearly30days_sale_cost+requisition_amt+material_use_amt else nearly30days_sale_cost end ) total_turnover_day,
-sum(case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then final_amt
-         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then final_amt
-          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then final_amt
+sum(case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.qm_amt>500 and a.contain_transfer_receive_days>3 then qm_amt
+         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then qm_amt
+          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then qm_amt
         end )/10000 high_stock_amt,      -- 高库存金额
-count(distinct  case when division_code in ('11','10') and a.days_turnover_30>15 and a.final_amt>500 and a.entry_days>3 then a.goods_code
-         when division_code in ('13','14') and a.days_turnover_30>45 and a.final_amt>2000 and a.entry_days>7 then goods_code
-          when division_code in ('12') and a.days_turnover_30>30 and a.final_amt>2000 and a.entry_days>7 then goods_code
+count(distinct  case when division_code in ('11','10') and a.days_turnover_30_transfer>15 and a.qm_amt>500 and a.contain_transfer_receive_days>3 then a.goods_code
+         when division_code in ('13','14') and a.days_turnover_30_transfer>45 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then a.goods_code
+          when division_code in ('12') and a.days_turnover_30_transfer>30 and a.qm_amt>2000 and a.contain_transfer_receive_days>7 then a.goods_code
         end ) high_stock_sku,            -- 高库存SKU
-sum(case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then final_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
-count( distinct case when a.no_sale_days>30 and a.final_qty>0.1 and a.entry_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
+sum(case when a.no_sale_days>30 and a.qm_qty>0.1 and a.contain_transfer_receive_days>7 then qm_amt  end )/10000 no_sales_stock_amt,          -- 无销售库存金额
+count( distinct case when a.no_sale_days>30 and a.qm_qty>0.1 and a.contain_transfer_receive_days>7 then a.goods_code   end ) no_sales_stock_sku,   -- 无销售库存SKU
 sum(stock_amt) as validity_amt,
 count(distinct case when b.goods_code is not null then b.goods_code end ) validity_sku
-from  csx_tmp.p_contain_transfer_trunc  a
+from   csx_analyse_tmp.csx_analyse_tmp_raw_material_04 a
 left join 
-(select dc_code,goods_code,sum(stock_qty) stock_qty,sum(stock_amt) stock_amt from csx_dw.report_wms_r_a_validity_goods
-    where sdt='20220811'
+(select dc_code,goods_code,
+    sum(stock_qty) stock_qty,
+    sum(stock_amt) stock_amt 
+from  csx_report.csx_report_wms_validity_goods_df
+    where sdt='20221130'
         and validity_type in ('过期','临期')
         group by  dc_code,goods_code
         )  b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
 where 1=1
-   and purpose_name not in ${hiveconf:purpose_name}
-    and division_code in ('11','10','12','13','14')
+     and division_code in ('11','10','12','13','14')
+     and purpose_name not in ('寄售门店','城市服务商','合伙人物流','')
 group by 
 classify_large_code ,
  classify_large_name ,
@@ -476,6 +479,3 @@ classify_large_code ,
 ) a 
 order by total_amt desc
 ;
-
-
-select * from  csx_tmp.p_contain_transfer_trunc;

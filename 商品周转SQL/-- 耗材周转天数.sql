@@ -87,7 +87,7 @@ select location_code as dc_code,
     sum(case when move_type_code = '118A' then txn_qty  when  move_type = '118B' then txn_qty*-1 end) receipt_qty,
     sum(case when move_type_code = '119A'  then amt_no_tax*(1+tax_rate/100 ) when  move_type = '119B' then amt_no_tax*(1+tax_rate/100 )*-1  end) material_take_amt,
     sum(case when move_type_code = '119A' then txn_qty  when  move_type = '119B' then txn_qty*-1 end) material_take_qty
-from csx_dwd.csx_dwd_cas_accounting_stock_detail_di
+from csx_dwd.csx_dwd_cas_accounting_stock_detail_view_di
 where sdt> regexp_replace(date_add(trunc('${edate}','MM'),-1),'-','')
     and sdt<= regexp_replace('${edate}','-','')
     group by location_code,

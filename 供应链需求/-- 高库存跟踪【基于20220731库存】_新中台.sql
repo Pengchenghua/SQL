@@ -6,12 +6,12 @@ SELECT location_code AS dc_code,
           coalesce(sum( amt_no_tax*(1+tax_rate/100)),0) AS requisition_amt,
           coalesce(sum( txn_qty ),0) AS receipt_qty,
           sdt max_receipt_sdt
-   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_di a
+   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_view_di a
    join 
   (SELECT location_code AS dc_code,
      goods_code AS goods_code,
      max(sdt) max_receipt_sdt
-   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_di a
+   FROM csx_dwd.csx_dwd_cas_accounting_stock_detail_view_di a
    WHERE 1=1 
      and a.in_or_out='-'
      AND sdt <= '20221105'   
