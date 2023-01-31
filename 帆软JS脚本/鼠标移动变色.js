@@ -1,6 +1,6 @@
-鼠标移动变色
+// 鼠标移动变色
 /*新的背景颜色*/
-var background_color = "#f5f5f5";
+var background_color = "#E0FFFF";
 /*用于保存原始背景色*/
 var frozen_back_color = new Array();
 /*用于保存原始背景色*/
