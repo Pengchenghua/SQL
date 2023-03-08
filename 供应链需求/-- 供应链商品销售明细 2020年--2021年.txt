@@ -10,9 +10,9 @@ SELECT supplier_type_name,
         b.category_middle_code,
         b.category_middle_name,
         count(DISTINCT b.category_small_code) category_cn,
-       count(DISTINCT goods_id) oem_sku,
-       sum(a.amount)/10000 sales_value
-FROM CSX_DW.dws_wms_r_d_entry_batch a 
+       count(DISTINCT goods_code) oem_sku,
+       sum(a.receive_amt)/10000 sales_value
+FROM  CSX_DWs.csx_dws_wms_entry_detail_di a 
 join 
 (select vendor_id,
     supplier_type ,
@@ -27,7 +27,7 @@ from  csx_dw.dws_basic_w_a_csx_supplier_m
 
 )c on a.supplier_code=c.vendor_id
 join 
-(SELECT goods_id,
+(SELECT goods_code,
        goods_name,
        brand_name,
        unit_name,
@@ -42,15 +42,11 @@ join
        category_middle_code,
        category_middle_name,
        category_small_code,
-       category_small_name,
-       product_purchase_level ,
-       product_purchase_level_name 
-       
-FROM csx_dw.dws_basic_w_a_csx_product_m
+       category_small_name
+FROM csx_dim.csx_dim_basic_goods
 WHERE sdt='current'
-   -- and product_purchase_level='03'
-    -- and classify_middle_code ='B0302'
-)b on a.goods_code=b.goods_id
+
+)b on a.goods_code=b.goods_code
 WHERE SDT>='20210101' 
     AND SDT<='20221231'
 GROUP BY   supplier_type_name,

@@ -33,7 +33,7 @@ from csx_dim.csx_dim_shop a
  from csx_dim.csx_dim_csx_data_market_conf_supplychain_location 
  where sdt='current') c on a.shop_code=c.dc_code
  where sdt='20230101'
-    and purpose in  ('01','02','03','05','07','08')    
+    and purpose in   ('01','02','03','05','07','08')    
     ;
     
     

@@ -1,3 +1,4 @@
+-- 北京审计
 select basic_performance_province_name,net_value,dense_rank()over(partition by 1 order by net_value desc ) aa 
 from (
 select b.basic_performance_province_name ,
@@ -254,3 +255,168 @@ from
   net_amt
   from  aa 
   join bb on aa.supplier_code=bb.supplier_code
+
+
+  with aa as (
+ select
+  basic_performance_province_name,
+  case when division_code in ('10','11') then '11'
+   else '12' end division_code,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end division_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  a.supplier_code,
+  supplier_name,
+  c.supplier_tax_code,
+  sum(no_tax_receive_amt-no_tax_shipped_amt) net_amt
+from
+   csx_analyse.csx_analyse_scm_purchase_order_flow_di a
+  join (
+    select
+      basic_performance_province_name,
+      shop_code
+    from
+      csx_dim.csx_dim_shop
+    where
+      sdt = 'current'
+     -- and basic_performance_province_name = '北京'
+  ) b on a.dc_code = b.shop_code
+  join 
+  (select supplier_code,supplier_tax_code from csx_dim.csx_dim_basic_supplier where sdt='current') c on a.supplier_code=c.supplier_code
+  where sdt>='20221001'
+  group by   basic_performance_province_name,
+  case when division_code in ('10','11') then '11'
+   else '12' end  ,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end  ,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  a.supplier_code,
+  supplier_name,
+  c.supplier_tax_code
+  ) ,
+  bb as 
+  (select social_credit_code,a.customer_code,customer_name,classify_middle_code,classify_middle_name,sum(sale_amt_no_tax)sale_amt
+  from  csx_dws.csx_dws_sale_detail_di a 
+    join 
+    (select customer_code,social_credit_code from   csx_dim.csx_dim_crm_customer_info where sdt='current') b on a.customer_code=b.customer_code
+    where sdt>='20221001'
+       and performance_province_name='北京市'
+       and channel_code in ('1','7','9')
+       and social_credit_code!=''
+    group by social_credit_code,a.customer_code,customer_name,classify_middle_code,classify_middle_name)
+    select  social_credit_code,customer_code,customer_name,bb.classify_middle_code,bb.classify_middle_name, sale_amt,
+    basic_performance_province_name,
+  aa.classify_middle_code a_classify_middle_code,
+  aa.classify_middle_name a_classify_middle_name,
+  aa.supplier_code,
+  supplier_name,
+  supplier_tax_code,
+  net_amt from bb 
+    join 
+    aa on bb.social_credit_code=aa.supplier_tax_code 
+    -- and aa.classify_middle_code=bb.classify_middle_code
+
+
+     create table csx_analyse_tmp.temp_entry_sj as 
+ select basic_performance_province_name,supplier_code ,cn , net_amt,
+  dense_rank()over(partition by 1 order by net_amt desc ) bb
+ from (
+ select basic_performance_province_name,supplier_code ,count(distinct division_code) cn ,sum(net_amt) net_amt
+ from (
+ select
+ basic_performance_province_name,
+  case when division_code in ('10','11') then '11'
+   else '12' end division_code,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end division_name,
+  classify_large_code,
+  classify_large_name,
+  supplier_code,
+  supplier_name,
+  sum(no_tax_receive_amt-no_tax_shipped_amt) net_amt
+from
+  csx_analyse.csx_analyse_scm_purchase_order_flow_di a
+  join (
+    select
+      basic_performance_province_name,
+      shop_code
+    from
+      csx_dim.csx_dim_shop
+    where
+      sdt = 'current'
+      and basic_performance_province_name = '北京'
+  ) b on a.dc_code = b.shop_code
+  where sdt>='20221001'
+  group by  basic_performance_province_name,
+   case when division_code in ('10','11') then '11'
+   else '12' end  ,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end,
+  classify_large_code,
+  supplier_code,
+  supplier_name,
+  classify_large_name
+  ) a 
+  group by basic_performance_province_name,supplier_code
+ ) a 
+ where cn>1
+ ;
+ 
+ select * from csx_analyse_tmp.temp_entry_sj
+ where bb<=20
+  
+
+ with aa as (
+ select
+  basic_performance_province_name,
+  case when division_code in ('10','11') then '11'
+   else '12' end division_code,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end division_name,
+  classify_large_code,
+  classify_large_name,
+  supplier_code,
+  supplier_name,
+  sum(no_tax_receive_amt-no_tax_shipped_amt) net_amt
+from
+  csx_analyse.csx_analyse_scm_purchase_order_flow_di a
+  join (
+    select
+      basic_performance_province_name,
+      shop_code
+    from
+      csx_dim.csx_dim_shop
+    where
+      sdt = 'current'
+      and basic_performance_province_name = '北京'
+  ) b on a.dc_code = b.shop_code
+  where sdt>='20221001'
+    and sdt<='20230213'
+  group by  basic_performance_province_name,
+   case when division_code in ('10','11') then '11'
+   else '12' end  ,
+  case when division_code in ('10','11') then '生鲜'
+   else '食百' end,
+  classify_large_code,
+  supplier_code,
+  supplier_name,
+  classify_large_name
+  )
+  select
+  aa.basic_performance_province_name,
+  division_code,
+  division_name,
+  classify_large_code,
+  classify_large_name,
+  aa.supplier_code,
+  supplier_name,
+  aa.net_amt
+  from  aa 
+  join  csx_analyse_tmp.temp_entry_sj bb on aa.supplier_code=bb.supplier_code
+  where bb.bb<=20
