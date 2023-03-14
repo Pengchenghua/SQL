@@ -405,44 +405,23 @@ SELECT
             sale_order_code,
             entrucking_code,
             delivery_date,
-            aa,
-            cn
+            sum(aa) aa,
+            sum(cn) cn
         from (
-        select 
-            shipped_order_code sale_order_code,
-            entrucking_code,
-            regexp_replace(send_date,'-','') delivery_date,
-            aa,
-            cn
-        from  csx_dws.csx_dws_tms_entrucking_order_product_detail_di a
-        left join 
-            (select  order_code,
-                count(b.max_create_time) as cn,
+        select  a.dc_code ,
+	              a.child_customer_code ,
+	              entrucking_code,
+	              shipped_order_code,
+	              regexp_replace(send_date,'-','') delivery_date ,
+                count(max_create_time) as cn,
                 count(a.route_id) aa
-               from  csx_dwd.csx_dwd_tms_route_item_di  a 
-            left  join 
-              (select route_id,
-                      max(update_time) max_create_time
-               from   csx_dwd.csx_dwd_tms_route_carrier_log_di 
-                where operator = '排线确认' 
-                  group by  route_id
-              ) b on a.route_id=b.route_id
-                --  where cn>1
-              where 1=1
-              -- order_code='OM23022100002164'
-              and a.sdt>='20230301'
-              and route_status=3
-                group by order_code
-               )c on a.shipped_order_code=c.order_code
-        where sdt>='20230301'
-        --  and  delivery_type_code = 1 -- 配送
-        group by shipped_order_code,
-          entrucking_code,
-          regexp_replace(send_date,'-',''),
-          aa,
-          cn
-        union all 
-        
+              from  csx_analyse_tmp.csx_analyse_tmp_tms_order_route a
+                group by a.dc_code ,
+	                a.child_customer_code ,
+	                entrucking_code,
+	                shipped_order_code,
+	                regexp_replace(send_date,'-','')
+      union all         
       SELECT
         sale_order_code, 
         entrucking_code, 
@@ -464,13 +443,13 @@ SELECT
     )a 
         group by sale_order_code, 
         entrucking_code, 
-        delivery_date,
-        cn,
-        aa
+        delivery_date
     ) c ON a.sale_order_code = c.sale_order_code 
       AND a.delivery_date = c.delivery_date 
       AND a.entrucking_code = c.entrucking_code
    ;
+
+   
 drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage_01;
 create table csx_analyse_tmp.csx_analyse_tmp_pakcage_01 as 
 
@@ -607,7 +586,8 @@ select a.warehouse_code ,
 	entrucking_code,
 	shipped_order_code,
 	a.send_date  ,
-	route_id
+	route_id,
+  max_create_time
 	from
 (select dc_code ,
 		child_customer_code ,
@@ -617,20 +597,23 @@ select a.warehouse_code ,
     route_id
 	from  csx_dwd.csx_dwd_tms_sign_shipped_order_detail_di 
 	where sdt >='20230301'
-	group by dc_code ,child_customer_code ,send_date,entrucking_code,
+	group by dc_code ,
+    child_customer_code ,
+    send_date,
+    entrucking_code,
 		shipped_order_code
 ) a 
 left join 
-(select
-	route_id ,
-	customer_code ,
-	plan_date,
-	warehouse_code
+( dc_code,
+  select route_id,
+    max(create_time) max_create_time
 from
 	csx_dwd.csx_dwd_tms_route_carrier_log_di
 where
-	plan_date >= '2023-02-01'
-  )b on a.dc_code=b.warehouse_code and a.send_date=b.plan_date and a.child_customer_code=b.customer_code 
+	  sdt >= '20230201'
+  and operator = '排线确认' 
+  group by  route_id,
+        dc_code
+  )b on  a.dc_code=b.dc_code and a.route_id=b.route_id 
 where a.child_customer_code !=''
-	and shipped_order_code='OM23030100000136'
 ;
