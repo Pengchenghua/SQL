@@ -55,7 +55,8 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
       sum(sale_unit_purchase_qty) AS sale_unit_purchase_qty,
       sum(basic_unit_purchase_qty) AS basic_unit_purchase_qty,
       max(is_unit_conversion) AS is_unit_conversion,
-      sum(sale_unit_send_qty) sale_unit_send_qty
+      sum(sale_unit_send_qty) sale_unit_send_qty,
+      sum(send_qty) send_qty
     FROM
     (
       SELECT
@@ -71,8 +72,8 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
         purchase_unit_rate, -- 单位换算比例
         if(purchase_unit_rate <> 1, 1, 0) AS is_unit_conversion, -- 是否单位换算
         unit_name AS basic_unit, -- 基础单位
-        -- purchase_qty * purchase_unit_rate AS basic_unit_purchase_qty, -- 基础单位下单数量
-        send_qty  basic_unit_purchase_qty,             --  基础单位发货数量        
+        purchase_qty * purchase_unit_rate AS basic_unit_purchase_qty, -- 基础单位下单数量
+        send_qty  ,             --  基础单位发货数量        
         sale_unit_send_qty,    -- 销售单位数量
         if(unit_name=purchase_unit_name,1,0) as unit_conversion_flag
       FROM    csx_dwd.csx_dwd_oms_sale_order_detail_di
@@ -107,6 +108,7 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
   ;
   
   
+  
 drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage;
 create table csx_analyse_tmp.csx_analyse_tmp_pakcage as 
 SELECT
@@ -131,7 +133,7 @@ SELECT
         unit_name AS basic_unit, -- 基础单位
         sum(sale_unit_send_qty) AS send_quantity, -- 销售单位出库数量        
         sum(send_qty) send_qty -- 基础单位出库数量
-      FROM     desc csx_analyse_tmp.csx_analyse_tmp_pakcage_00
+      FROM      csx_analyse_tmp.csx_analyse_tmp_pakcage_00
         WHERE sdt >='20230301'
         AND delivery_type_code = 1 -- 配送
         group by sale_order_code, 
@@ -293,7 +295,9 @@ FROM
           else basic_unit_purchase_qty end  AS purchase_qty,
       -- 单位转换 取销售单位订单数量否则取基础单位订单数量
       -- if(is_first_entrucking_code = 1, if(is_unit_conversion = 1  AND send_quantity <> 0, send_quantity, send_qty   ),  0 ) AS send_qty
-      if(is_unit_conversion = 1  AND send_quantity <> 0, send_quantity, send_qty ) AS send_qty
+      case when is_unit_conversion = 1 and send_quantity<>0 then send_quantity
+            when  is_unit_conversion = 0 and basic_unit!=sale_unit and send_quantity<>0 then send_quantity
+            else send_qty end send_qty
       -- basic_unit_purchase_qty AS purchase_qty,
       -- if(is_first_entrucking_code = 1, send_qty, 0) AS send_qty
     FROM
