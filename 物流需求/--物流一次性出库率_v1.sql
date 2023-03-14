@@ -40,7 +40,8 @@ where 1=1
 
 
 
- drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_00;
+
+-- drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_00;
 create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as  
  -- 找出符合条件的销售单
     SELECT
@@ -108,7 +109,9 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
   ;
   
   
-  create table csx_analyse_tmp.csx_analyse_tmp_pakcage as 
+ 
+--drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage;
+create table csx_analyse_tmp.csx_analyse_tmp_pakcage as 
 SELECT
       a.delivery_date, 
       a.sale_order_code, 
@@ -184,6 +187,8 @@ SELECT
       AND a.entrucking_code = c.entrucking_code
    ;
 
+
+
 drop table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 ;
 create table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 AS 
   SELECT
@@ -234,6 +239,9 @@ create table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 AS
         is_first_entrucking_code
     ) t2 ON t1.order_code = t2.sale_order_code
     AND t1.goods_code = t2.goods_code
+    where t2.delivery_date is not null
+;
+
 ;
 
 drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_01;
