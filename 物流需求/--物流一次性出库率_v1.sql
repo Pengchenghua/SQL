@@ -1,4 +1,7 @@
 --物流一次性出库率
+
+-- 单位不一致。销售单位基础出库数量，
+        
 drop table csx_analyse_tmp.csx_analyse_tmp_tms_order_route  ;
 create table csx_analyse_tmp.csx_analyse_tmp_tms_order_route as 
 select a.dc_code ,
@@ -6,21 +9,21 @@ select a.dc_code ,
 	shipped_order_code,
 	a.send_date  ,
 	a.route_id,
-    max_create_time
+   max_create_time
 from
 (select dc_code ,
 		send_date , 
 		entrucking_code,
 		shipped_order_code,
-        route_id
+    route_id
 	from  csx_dwd.csx_dwd_tms_sign_shipped_order_detail_di 
-	where sdt >'20230301'
-	    and shipped_type_code=1
+	where sdt >='20230201'
+	  and shipped_type_code=1
 	group by dc_code ,
 		send_date , 
 		entrucking_code,
 		shipped_order_code,
-        route_id
+    route_id
 ) a 
 left join 
 ( select warehouse_code dc_code,
@@ -37,14 +40,15 @@ where
 where 1=1
  ;
 
+-- select distinct basic_performance_city_name from csx_analyse_tmp.csx_analyse_tmp_pakcage_00
 
-
-
-
--- drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_00;
+drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_00;
 create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as  
  -- 找出符合条件的销售单
     SELECT
+      basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name,
       inventory_dc_code, 
       inventory_dc_name, 
       customer_code, 
@@ -91,14 +95,20 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
     JOIN
     ( -- 外部城市服务商DC，需要过滤
       SELECT
-        shop_code
-      FROM csx_dim.csx_dim_shop
+        shop_code,
+        basic_performance_province_code,
+        basic_performance_province_name,
+        basic_performance_city_name
+      FROM   csx_dim.csx_dim_shop
       WHERE sdt = 'current' 
         AND purpose != '09'
-        and company_code ='2211'
+      --  and company_code ='2211'
     ) b ON a.inventory_dc_code = b.shop_code
     WHERE 1=1
-    GROUP BY  inventory_dc_code, 
+    GROUP BY basic_performance_province_code,
+        basic_performance_province_name,
+        basic_performance_city_name,
+      inventory_dc_code, 
       inventory_dc_name, 
       customer_code, 
       order_code, 
@@ -110,7 +120,7 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
   
   
  
---drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage;
+drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage;
 create table csx_analyse_tmp.csx_analyse_tmp_pakcage as 
 SELECT
       a.delivery_date, 
@@ -153,9 +163,9 @@ SELECT
             (aa) aa,
             (cn) cn
         from (
-        select  shipped_order_code as sale_order_code,
-	            entrucking_code,
-	            regexp_replace(send_date,'-','') delivery_date ,
+        select shipped_order_code as sale_order_code,
+	              entrucking_code,
+	              regexp_replace(send_date,'-','') delivery_date ,
                 count(max_create_time) as cn,
                 count(a.route_id) aa
         from  csx_analyse_tmp.csx_analyse_tmp_tms_order_route a
@@ -187,11 +197,14 @@ SELECT
       AND a.entrucking_code = c.entrucking_code
    ;
 
-
+--SELECT distinct basic_performance_city_name from csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2
 
 drop table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 ;
 create table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 AS 
   SELECT
+    basic_performance_province_code,
+    basic_performance_province_name,
+    basic_performance_city_name,
     t1.inventory_dc_code,
     t1.inventory_dc_name,
     t1.customer_code,
@@ -242,134 +255,8 @@ create table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 AS
     where t2.delivery_date is not null
 ;
 
-;
 
-drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_01;
-create table csx_analyse_tmp.csx_analyse_tmp_pakcage_01 as 
-SELECT
-  performance_region_code,
-  performance_region_name,
-  performance_province_code,
-  performance_province_name,
-  performance_city_code,
-  performance_city_name,
-  order_code,
-  entrucking_code,
-  a.customer_code,
-  customer_name,
-  delivery_date,
-  a.inventory_dc_code,
-  inventory_dc_name,
-  business_division_name,
-  purchase_group_code,
-  purchase_group_name,
-  classify_large_code,
-  classify_large_name,
-  classify_middle_code,
-  classify_middle_name,
-  classify_small_code,
-  classify_small_name,
-  a.goods_code,
-  goods_name,
-  basic_unit,
-  sale_unit,
-  purchase_qty,
-  send_qty,
-  send_qty - purchase_qty as out_of_stock_qty,
-  spec,
-  case
-    when sale_unit in ('市斤','公斤','斤','kg','kG','Kg','KG','g','G','千克','克','两' )  and (send_qty - purchase_qty) / purchase_qty < -0.05 then 1
-    when sale_unit not in ('市斤','公斤','斤','kg','kG','Kg','KG','g','G','千克','克','两' )   and send_qty < purchase_qty then 1
-    else 0
-  end as is_out_of_stock,
-  if(d.inventory_dc_code is not null, 1, 0) as is_base_goods,
-  delivery_date AS sdt
-FROM
-  (
-    SELECT
-      inventory_dc_code,
-      inventory_dc_name,
-      delivery_date,
-      customer_code,
-      order_code,
-      entrucking_code,
-      goods_code,
-      sale_unit,
-      basic_unit,
-      case when is_unit_conversion = 1 then sale_unit_purchase_qty
-          when is_unit_conversion = 0 and basic_unit!=unit_name then sale_unit_purchase_qty
-          else basic_unit_purchase_qty end  AS purchase_qty,
-      -- 单位转换 取销售单位订单数量否则取基础单位订单数量
-      -- if(is_first_entrucking_code = 1, if(is_unit_conversion = 1  AND send_quantity <> 0, send_quantity, send_qty   ),  0 ) AS send_qty
-      case when is_unit_conversion = 1 and send_quantity<>0 then send_quantity
-            when  is_unit_conversion = 0 and basic_unit!=sale_unit and send_quantity<>0 then send_quantity
-            else send_qty end send_qty
-      -- basic_unit_purchase_qty AS purchase_qty,
-      -- if(is_first_entrucking_code = 1, send_qty, 0) AS send_qty
-    FROM
-      csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 
-    WHERE
-      1 = 1
-  ) a
-  left JOIN (
-    -- 只取大客户
-    SELECT
-      customer_code,
-      customer_name,
-      performance_region_code,
-      performance_region_name,
-      performance_province_code,
-      performance_province_name,
-      performance_city_code,
-      performance_city_name
-    FROM
-      csx_dim.csx_dim_crm_customer_info
-    WHERE
-      sdt = 'current'
-      AND customer_code <> ''
-      AND channel_code = '1' -- 大客户
-  ) b ON a.customer_code = b.customer_code
-  left join (
-    SELECT
-      goods_code,
-      goods_name,
-      standard as spec,
-      business_division_name,
-      division_code,
-      division_name,
-      classify_large_code,
-      classify_large_name,
-      classify_middle_code,
-      classify_middle_name,
-      classify_small_code,
-      classify_small_name,
-      purchase_group_code,
-      purchase_group_name
-    FROM
-      csx_dim.csx_dim_basic_goods
-    WHERE
-      sdt = 'current'
-  ) c on a.goods_code = c.goods_code
-  left join (
-    select
-      inventory_dc_code,
-      product_code
-    from
-      csx_ods.csx_ods_b2b_mall_prod_yszx_dc_product_pool_df
-    where
-      sdt = regexp_replace(date_sub(current_date(), 1), '-', '')
-      and base_product_tag = 1
-  ) d on a.inventory_dc_code = d.inventory_dc_code
-  and a.goods_code = d.product_code;
-
-
-
-    select * from csx_analyse_tmp.csx_analyse_tmp_pakcage_01
-
-
-
-
-drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_02;
+ drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_02;
 create table csx_analyse_tmp.csx_analyse_tmp_pakcage_02 as 
 SELECT
   performance_region_code,
@@ -378,6 +265,9 @@ SELECT
   performance_province_name,
   performance_city_code,
   performance_city_name,
+  basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name,
   order_code,
   entrucking_code,
   a.customer_code,
@@ -411,6 +301,9 @@ SELECT
   delivery_date AS sdt
 FROM
   ( SELECT
+  basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name,
       inventory_dc_code,
       inventory_dc_name,
       delivery_date,
@@ -425,29 +318,37 @@ FROM
       sale_unit_purchase_qty,
       basic_unit_purchase_qty,
       send_quantity,
-      send_qty,
-      case when is_unit_conversion = 1 and send_quantity<>0 then sale_unit_purchase_qty
-        
-        --  when is_unit_conversion = 0 and basic_unit!=sale_unit then basic_unit_purchase_qty
-          else basic_unit_purchase_qty end  AS purchase_qty,
+      send_qty send_qty_1,
+      
+     -- case when is_unit_conversion = 1 then sale_unit_purchase_qty
+      --     when is_unit_conversion = 0 and basic_unit!=unit_name then sale_unit_purchase_qty
+      --     else basic_unit_purchase_qty end  AS purchase_qty,
+      case when basic_unit in ('市斤','公斤','斤','kg','kG','Kg','KG','g','G','千克','克','两' ) then sale_unit_purchase_qty
+        when is_unit_conversion = 1 and send_quantity<>0 then sale_unit_purchase_qty
+        else basic_unit_purchase_qty end  AS purchase_qty,
       -- 单位转换 取销售单位订单数量否则取基础单位订单数量
       -- if(is_first_entrucking_code = 1, if(is_unit_conversion = 1  AND send_quantity <> 0, send_quantity, send_qty   ),  0 ) AS send_qty
-       case when is_unit_conversion = 1 and send_quantity<>0 then send_quantity
-             else send_qty end send_qty
-    --   basic_unit_purchase_qty AS purchase_qty,
-    --   send_qty 
-     --  if(is_first_entrucking_code = 1, send_qty, 0) AS send_qty
+    --   case when is_unit_conversion = 1 and send_quantity<>0 then send_quantity
+    --         when  is_unit_conversion = 0 and basic_unit!=sale_unit and send_quantity<>0 then send_quantity
+    --         else send_qty end send_qty
+      case when basic_unit in ('市斤','公斤','斤','kg','kG','Kg','KG','g','G','千克','克','两' ) and send_quantity<>0 then send_quantity
+        when is_unit_conversion = 1 and send_quantity<>0 then send_quantity
+        when  is_unit_conversion = 0 and basic_unit!=sale_unit and send_quantity<>0 then send_quantity
+            else send_qty end send_qty
+      -- basic_unit_purchase_qty AS purchase_qty,
+      -- if(is_first_entrucking_code = 1, send_qty, 0) AS send_qty
     FROM
       csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 
     WHERE
       1 = 1
-    --  and order_code in ('OM23030500004385','OW23030600000514','OM23031200003630','OW23030100000493','OW23030600000443')
+    -- and order_code in ('OM23030500004385','OW23030600000514','OM23031200003630','OW23030100000493','OW23030600000443','OM23030600001724')
     -- and order_code='OW23030600000443'
     -- and goods_code='456'
-      and goods_code in ('801430','1062234','1064012','1456612','456')
-     and is_first_entrucking_code=1
+    -- and goods_code in ('801430','1062234','1064012','1456612','456','1050221')
+    -- and is_first_entrucking_code=1
      -- and send_quantity<>0
-      and sale_unit !='KG') a
+   --  and sale_unit !='KG'
+      ) a
   left JOIN (
     -- 只取大客户
     SELECT
@@ -498,3 +399,101 @@ FROM
       and base_product_tag = 1
   ) d on a.inventory_dc_code = d.inventory_dc_code
   and a.goods_code = d.product_code;
+  
+  
+  select basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name,
+      count(case when is_out_of_stock=1 then goods_code end )/count(goods_code) , 
+      count(case when is_out_of_stock=1 then goods_code end ) ,
+      count(goods_code) 
+from (
+  SELECT
+  basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name,
+  performance_region_code,
+  performance_region_name,
+  performance_province_code,
+  performance_province_name,
+  performance_city_code,
+  performance_city_name,
+  order_code,
+  entrucking_code,
+  a.customer_code,
+  customer_name,
+  delivery_date,
+  a.inventory_dc_code,
+  inventory_dc_name,
+  business_division_name,
+  purchase_group_code,
+  purchase_group_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
+  a.goods_code,
+  goods_name,
+  basic_unit,
+  sale_unit,
+  purchase_qty,
+  send_qty,
+  out_of_stock_qty,
+  spec,
+  is_out_of_stock,
+  is_base_goods,
+  sdt,
+  row_number()over(partition by order_code,goods_code,customer_code order by sdt) as rank_a
+FROM
+csx_analyse_tmp.csx_analyse_tmp_pakcage_02 a
+    where sdt>='20230301' and sdt<'20230315'
+) a where rank_a=1
+group by basic_performance_province_code,
+      basic_performance_province_name,
+      basic_performance_city_name
+      ;
+      
+  
+  SELECT
+  basic_performance_province_code,
+  basic_performance_province_name,
+  basic_performance_city_name,
+  performance_region_code,
+  performance_region_name,
+  performance_province_code,
+  performance_province_name,
+  performance_city_code,
+  performance_city_name,
+  order_code,
+  entrucking_code,
+  a.customer_code,
+  customer_name,
+  delivery_date,
+  a.inventory_dc_code,
+  inventory_dc_name,
+  business_division_name,
+  purchase_group_code,
+  purchase_group_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
+  a.goods_code,
+  goods_name,
+  basic_unit,
+  sale_unit,
+  purchase_qty,
+  send_qty,
+  out_of_stock_qty,
+  spec,
+  is_out_of_stock,
+  is_base_goods,
+  sdt,
+  row_number()over(partition by order_code,goods_code,customer_code order by sdt) as rank_a
+FROM
+csx_analyse_tmp.csx_analyse_tmp_pakcage_02 a
+    where sdt>='20230301' and sdt<'20230315'
