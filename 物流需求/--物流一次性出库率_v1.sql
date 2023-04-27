@@ -1,7 +1,7 @@
 --物流一次性出库率
-
+-- 判断pda\中台
 -- 单位不一致。销售单位基础出库数量，
-        
+-- 排线确定       
 drop table csx_analyse_tmp.csx_analyse_tmp_tms_order_route  ;
 create table csx_analyse_tmp.csx_analyse_tmp_tms_order_route as 
 select a.dc_code ,
@@ -41,11 +41,12 @@ where 1=1
  ;
 
 -- select distinct basic_performance_city_name from csx_analyse_tmp.csx_analyse_tmp_pakcage_00
-
+-- 
 drop table csx_analyse_tmp.csx_analyse_tmp_pakcage_00;
 create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as  
  -- 找出符合条件的销售单
     SELECT
+      sdt,
       basic_performance_province_code,
       basic_performance_province_name,
       basic_performance_city_name,
@@ -65,6 +66,7 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
     FROM
     (
       SELECT
+        sdt,
         inventory_dc_code, 
         inventory_dc_name, 
         customer_code, 
@@ -115,13 +117,25 @@ create table   csx_analyse_tmp.csx_analyse_tmp_pakcage_00 as
       goods_code, 
       sale_unit,
       basic_unit,
-      purchase_unit_rate
+      purchase_unit_rate,
+      sdt
   ;
   
   
  
 drop table  csx_analyse_tmp.csx_analyse_tmp_pakcage;
 create table csx_analyse_tmp.csx_analyse_tmp_pakcage as 
+SELECT
+      a.delivery_date, 
+      a.sale_order_code, 
+      a.entrucking_code, 
+      a.goods_code, 
+      a.send_quantity, 
+      a.basic_unit, 
+      a.send_qty,
+      is_first_entrucking_code -- 是否首次发车单
+    FROM
+    (
 SELECT
       a.delivery_date, 
       a.sale_order_code, 
@@ -154,7 +168,6 @@ SELECT
               unit_name 
     ) a LEFT JOIN
     (
-     
     -- 取TMS销售出库单号根据排线ID，按照更新时间，如果同一时间，未缺货 cn=1且aa>1 属于同单不同车，cn=1且aa=1属于同车同单
     select 
             sale_order_code,
@@ -195,6 +208,16 @@ SELECT
     ) c ON a.sale_order_code = c.sale_order_code 
       AND a.delivery_date = c.delivery_date 
       AND a.entrucking_code = c.entrucking_code
+    ) a 
+    group by 
+      a.delivery_date, 
+      a.sale_order_code, 
+      a.entrucking_code, 
+      a.goods_code, 
+      a.send_quantity, 
+      a.basic_unit, 
+      a.send_qty,
+      is_first_entrucking_code -- 是否首次发车单
    ;
 
 --SELECT distinct basic_performance_city_name from csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2
@@ -252,7 +275,7 @@ create table csx_analyse_tmp.csx_analyse_tmp_tmp_normal_sale_order_item_v2 AS
         is_first_entrucking_code
     ) t2 ON t1.order_code = t2.sale_order_code
     AND t1.goods_code = t2.goods_code
-    where t2.delivery_date is not null
+   -- where t2.delivery_date is not null
 ;
 
 
@@ -497,3 +520,88 @@ group by basic_performance_province_code,
 FROM
 csx_analyse_tmp.csx_analyse_tmp_pakcage_02 a
     where sdt>='20230301' and sdt<'20230315'
+
+;
+
+
+select     
+  basic_performance_province_code,
+  basic_performance_province_name,
+  basic_performance_city_name,
+  performance_region_code,
+  performance_region_name,
+  performance_province_code,
+  performance_province_name,
+  performance_city_code,
+  performance_city_name,
+  order_code,
+  entrucking_code,
+  a.customer_code,
+  customer_name,
+  delivery_date,
+  a.inventory_dc_code,
+  inventory_dc_name,
+  business_division_name,
+  purchase_group_code,
+  purchase_group_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
+  a.goods_code,
+  goods_name,
+  basic_unit,
+  sale_unit,
+  purchase_qty,
+  send_qty,
+  out_of_stock_qty,
+  spec,
+  is_out_of_stock,
+  is_base_goods,
+  sdt
+  from (
+  SELECT
+  basic_performance_province_code,
+  basic_performance_province_name,
+  basic_performance_city_name,
+  performance_region_code,
+  performance_region_name,
+  performance_province_code,
+  performance_province_name,
+  performance_city_code,
+  performance_city_name,
+  order_code,
+  entrucking_code,
+  a.customer_code,
+  customer_name,
+  delivery_date,
+  a.inventory_dc_code,
+  inventory_dc_name,
+  business_division_name,
+  purchase_group_code,
+  purchase_group_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
+  a.goods_code,
+  goods_name,
+  basic_unit,
+  sale_unit,
+  purchase_qty,
+  send_qty,
+  out_of_stock_qty,
+  spec,
+  is_out_of_stock,
+  is_base_goods,
+  sdt,
+  row_number()over(partition by order_code,goods_code,customer_code order by sdt) as rank_a
+FROM
+csx_analyse_tmp.csx_analyse_tmp_pakcage_02 a
+    where sdt>='20230301' and sdt<'20230327'
+    ) a where rank_a=1
+    and performance_region_code  in ('4')
