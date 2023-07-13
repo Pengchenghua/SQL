@@ -102,6 +102,8 @@ from
 -- select count(1) from  csx_tmp.temp_goods_more_01  ;
 -- 插入
 -- INSERT OVERWRITE DIRECTORY '/tmp/pengchenghua/data/aaa' row FORMAT DELIMITED fields TERMINATED BY '\t'
+
+-- 增加进出动销商品关联
 select
   basic_performance_province_code,
   basic_performance_province_name,
@@ -117,10 +119,22 @@ select
   classify_large_name,
   classify_middle_code,
   classify_middle_name,
-  b.division_code,
-  b.division_name
+  d.division_code,
+  d.division_name,
+  max_sdt,
+  receive_amt,
+  max_shipp_sdt,
+  shipped_amt
 from
   csx_analyse_tmp.csx_analyse_tmp_goods_more_code_01 a
+left  join 
+ 
+(select receive_dc_code dc_code,goods_code,max(sdt) max_sdt,sum(receive_amt) receive_amt  from  csx_dws.csx_dws_wms_entry_detail_di where sdt>='20230101' group by receive_dc_code  ,goods_code
+ ) b on a.dc_code=b.dc_code and a.goods_code=b.goods_code
+ left join 
+( select send_dc_code dc_code,goods_code ,max(sdt) max_shipp_sdt,sum(shipped_amt) shipped_amt from   csx_dws.csx_dws_wms_shipped_detail_di where sdt>='20230101' group by  send_dc_code  ,goods_code
+)c 
+ on a.dc_code=c.dc_code and a.goods_code=c.goods_code
   join (
     SELECT
       goods_code,
@@ -135,9 +149,10 @@ from
       csx_dim.csx_dim_basic_goods
     WHERE
       sdt = 'current'
-  ) b on a.goods_code = b.goods_code
+  ) d on a.goods_code = d.goods_code
 WHERE
-  1 = 1;
+  1 = 1;;
+
 select
   coalesce(basic_performance_province_code, '00') as basic_performance_province_code,
   coalesce(basic_performance_province_name, '全国') as basic_performance_province_name,
