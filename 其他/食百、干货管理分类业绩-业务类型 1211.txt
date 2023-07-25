@@ -1,6 +1,6 @@
 --业绩-业务类型 1211
 SET hive.execution.engine=spark; 
--- 相关字段：客户数、总客户数
+-- 相关字段：数、总数
 drop table csx_tmp.sale_01;
 create table csx_tmp.sale_01 as 
 select
@@ -8,10 +8,10 @@ select
 	a.city_group_name,
 	a.customer_no,
 	case when a.channel ='7' then 'BBC'	
-		when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
+		when a.channel in ('1','9') and b.attribute='合伙人' then '城市服务商' 
 		when a.channel in ('1','9') and (b.customer_name like '%内%购%' or b.customer_name like '%临保%') then '批发内购'		
-		when a.channel in ('1','9') and b.attribute='贸易客户' and d.order_profit_rate<=0.015 then '批发内购' 
-		when a.channel in ('1','9') and b.attribute='贸易客户' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
+		when a.channel in ('1','9') and b.attribute='贸易' and d.order_profit_rate<=0.015 then '批发内购' 
+		when a.channel in ('1','9') and b.attribute='贸易' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
 		when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'   
 		else '日配单' end sale_group, 
 	goods_code,
@@ -104,10 +104,10 @@ group by a.province_name,
 	    classify_small_code,
 	    classify_small_name,
 	case when a.channel ='7' then 'BBC'	
-		when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
+		when a.channel in ('1','9') and b.attribute='合伙人' then '城市服务商' 
 		when a.channel in ('1','9') and (b.customer_name like '%内%购%' or b.customer_name like '%临保%') then '批发内购'		
-		when a.channel in ('1','9') and b.attribute='贸易客户' and d.order_profit_rate<=0.015 then '批发内购' 
-		when a.channel in ('1','9') and b.attribute='贸易客户' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
+		when a.channel in ('1','9') and b.attribute='贸易' and d.order_profit_rate<=0.015 then '批发内购' 
+		when a.channel in ('1','9') and b.attribute='贸易' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
 		when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'   
 		else '日配单' end;
 		

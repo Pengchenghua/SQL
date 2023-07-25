@@ -254,7 +254,7 @@ GROUP BY
     second_category_name
 ) a ;
 
--- 预制品分类客户排名
+-- 预制品分类排名
 SELECT cate_name,
        customer_no,
        customer_name,
@@ -317,7 +317,7 @@ rank_a<11
 
 
 
--- 省区客户排名
+-- 省区排名
 SELECT province_code,
         province_name,
        customer_no,

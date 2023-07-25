@@ -1,5 +1,5 @@
 
---客户数/签约客户数
+--数/签约数
  select
 	sales_province_code,
 	sales_province,
@@ -21,7 +21,7 @@ from
 		
 	where
 		sdt = '20200113'
-		and channel = '大客户'
+		and channel = '大'
 		and customer_no != ''
 	group by
 		sales_province_code,
@@ -38,7 +38,7 @@ union ALL
 		csx_dw.customer_m
 	where
 		sdt = '20191213'
-		and channel = '大客户'
+		and channel = '大'
 		and customer_no != ''
 	group by
 		sales_province_code,
@@ -46,7 +46,7 @@ union ALL
 group by
 	sales_province_code,
 	sales_province;
--- 成交客户数
+-- 成交数
  select
 	province_code,
 	province_name,
@@ -105,7 +105,7 @@ group by
 	sales_province_name ;
 
 
---客户类型销售
+--类型销售
  DROP table csx_dw.provinces_attribute_sale;
 
 CREATE table csx_dw.provinces_attribute_sale as
@@ -165,7 +165,7 @@ where
 	sdt >= '20200101'
 	and sdt <= '20200114';
 
--- 应收款逾期客户数'逾期客户数'as note,
+-- 应收款逾期数'逾期数'as note,
 select sales_province,sales_province_code,sum(ac_15d )ac_15d ,sum(ac_30d) as ac_30d,sum(ac_60d)as ac_60d,sum(ac_90d)as ac_90d,sum(ac_120d)as ac_120d,
 sum(ac_180d)as ac_180d,sum(ac_365d)as　ac_365d,sum(ac_2y )as ac_2y ,sum(ac_3y )as ac_3y ,sum(ac_over3y )as ac_over3y 
 from
@@ -178,7 +178,7 @@ on a.customer_no=b.customer_no
 group by sales_province,sales_province_code
 ;
 
--- 应收款逾期客户数'逾期客户数'as note,
+-- 应收款逾期数'逾期数'as note,
 select sales_province,sales_province_code,b.customer_name,a.customer_no,
 from
 (SELECT regexp_replace(kunnr,'(^0*)','')as customer_no,sum(	)ac_all,sum(ac_wdq)ac_wdq,sum(ac_15d )ac_15d ,sum(ac_30d) as ac_30d,sum(ac_60d)as ac_60d,sum(ac_90d)as ac_90d,sum(ac_120d)as ac_120d,
@@ -190,7 +190,7 @@ on a.customer_no=b.customer_no
 group by sales_province,sales_province_code
 ;
 
--- 销售员TOP10 逻辑规则： 负毛利剔除、取日配客户
+-- 销售员TOP10 逻辑规则： 负毛利剔除、取日配
 select
 	sales_name,
 	work_no,
@@ -222,7 +222,7 @@ select
 	where
 		sdt >= '20200101'
 		and province_code = '32'
-		and attribute_name in('日配客户')
+		and attribute_name in('日配')
 	group by
 		sales_name,
 		work_no,
@@ -246,7 +246,7 @@ union all
 		sdt >= '20191201'
 		and sdt <= '20191215'
 		and province_code = '32'
-		and attribute_name in('日配客户')
+		and attribute_name in('日配')
 	group by
 		sales_name,
 		work_no,
@@ -261,7 +261,7 @@ group by
 HAVING SUM(profit)>0
 order by SUM(sale) desc
 ;
--- 客户TO10
+-- TO10
 
 select province_code,sales_name,cust_id,cust_name,cust_num,sale,profit,profit/sale*1.00 prorate,
 rank()over(order by sale desc) as desc_rank,
@@ -285,7 +285,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
-and attribute_name in ('日配客户')
+and attribute_name in ('日配')
 group by customer_no ,
 	customer_name ,
 	attribute_name,
@@ -324,7 +324,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
-and attribute_name in ('日配客户')
+and attribute_name in ('日配')
 group by customer_no ,
 	customer_name ,
 	attribute_name,
@@ -338,7 +338,7 @@ order by sale desc
 limit 10
 ;
 
--- 负毛利客户
+-- 负毛利
 
 select province_code,sales_name,cust_id,cust_name,case when sign_date>=to_date(trunc(date_sub(CURRENT_TIMESTAMP(),1),'MM')) then 'new' else 'old' end note,
 cust_num,sale,profit,profit/sale*1.00 prorate,
@@ -365,7 +365,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
-and attribute_name in ('日配客户')
+and attribute_name in ('日配')
 group by customer_no ,
 	customer_name ,
 	attribute_name,
@@ -413,7 +413,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
--- and attribute_name in ('日配客户')
+-- and attribute_name in ('日配')
 group by goods_code,
 	goods_name,
 	unit,	
@@ -578,7 +578,7 @@ and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-'
 and channel  in ('1','7','3')
 and province_code='32'
 and return_flag!='X'
--- and attribute_name in ('日配客户')
+-- and attribute_name in ('日配')
 group by goods_code,
 	goods_name,
 	unit,	

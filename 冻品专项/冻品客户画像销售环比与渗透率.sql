@@ -93,7 +93,7 @@ group by
 
 
 
--- 客户行业销售额/成交客户数
+-- 行业销售额/成交数
 drop table if exists csx_tmp.tmp_sale_frozen_02;
 create temporary table csx_tmp.tmp_sale_frozen_02 as 
 select
@@ -118,8 +118,8 @@ select
     sum(last_sales_qty) as last_sales_qty,
     sum(last_sales_value) as last_sales_value,
     sum(last_profit) as last_profit,
-    count(distinct case when sales_value>0 then customer_no end ) as sales_cust_number, --商品成交客户数
-    count(distinct case when last_sales_value>0 then customer_no end )as last_sales_cust_number,  --商品环比冻品成交客户数
+    count(distinct case when sales_value>0 then customer_no end ) as sales_cust_number, --商品成交数
+    count(distinct case when last_sales_value>0 then customer_no end )as last_sales_cust_number,  --商品环比冻品成交数
     grouping__id
 from csx_tmp.tmp_sale_frozen_01 a
 where classify_middle_code='B0304'
@@ -220,7 +220,7 @@ grouping sets
 
 
    
--- 总客户数
+-- 总数
 drop table if exists  csx_tmp.tmp_sale_frozen_03;
 create  temporary table csx_tmp.tmp_sale_frozen_03 as 
 select 
@@ -323,14 +323,14 @@ select
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交数
     coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
     coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
+    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
+    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交
     coalesce(small_sales_qty,  0) as small_sales_qty,                                   --小类销量
     coalesce(small_sales_value, 0) as small_sales,                                      --小类销售额
     small_profit ,                                                  --小类毛利额
@@ -417,14 +417,14 @@ CREATE TABLE csx_tmp.report_sale_r_d_frozen_industry_fr (
   last_sales_qty decimal(38,6) COMMENT '环期销量', 
   last_sales_value decimal(38,6) COMMENT '环期销售额', 
   last_profit decimal(38,6) COMMENT '环期毛利额', 
-  sales_cust_number bigint COMMENT '行业成交客户数', 
-  last_sales_cust_number bigint COMMENT '行业成交客户数环期', 
+  sales_cust_number bigint COMMENT '行业成交数', 
+  last_sales_cust_number bigint COMMENT '行业成交数环期', 
   b_sales_value decimal(38,6) COMMENT 'B端总销售额（剔除城市服务商）', 
   b_profit decimal(38,6) COMMENT 'B端总毛利额（剔除城市服务商）', 
-  b_cust_number bigint COMMENT 'B端成交客户数（剔除城市服务商）', 
+  b_cust_number bigint COMMENT 'B端成交数（剔除城市服务商）', 
   last_b_sales_value decimal(38,6) COMMENT '环期B端总销售额（剔除城市服务商）', 
   last_b_profit decimal(38,6) COMMENT '环期B端总毛利额（剔除城市服务商）', 
-  last_b_cust_number bigint COMMENT '环期B端成交客户数（剔除城市服务商）', 
+  last_b_cust_number bigint COMMENT '环期B端成交数（剔除城市服务商）', 
   small_sales_qty decimal(38,6) COMMENT '小类销售量', 
   small_sales_value decimal(38,6) COMMENT '小类销售额', 
   small_profit decimal(38,6) COMMENT '小类毛利额', 
@@ -435,15 +435,15 @@ CREATE TABLE csx_tmp.report_sale_r_d_frozen_industry_fr (
   ring_sales_qty_rate decimal(38,6) COMMENT '行业销量环比增长率', 
   profit_rate decimal(38,6) COMMENT '行业毛利率', 
   diff_profit_rate decimal(38,6) COMMENT '行业环比毛利率差', 
-  cust_penetration_rate decimal(38,6) COMMENT '行业客户渗透率', 
-  last_cust_penetration_rate decimal(38,6) COMMENT '环期客户渗透率', 
+  cust_penetration_rate decimal(38,6) COMMENT '行业渗透率', 
+  last_cust_penetration_rate decimal(38,6) COMMENT '环期渗透率', 
   diff_cust_penetration_rate decimal(38,6) COMMENT '环期渗透率差', 
   b_sales_ratio decimal(38,6) COMMENT '行业销售占比=行业销售额/B端销售额', 
   last_b_sales_ratio decimal(38,6) COMMENT '环期行业销售占比=行业销售额/B端销售额', 
   b_diff_sale_ratio decimal(38,6) COMMENT '行业占省区占比环比差', 
   grouping__id string, 
   update_time timestamp COMMENT '更新日期')
-COMMENT '冻品客户行业销售环比与渗透率'
+COMMENT '冻品行业销售环比与渗透率'
 PARTITIONED BY ( 
   months string COMMENT '月分区')
 ROW FORMAT SERDE 
@@ -485,14 +485,14 @@ select
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交数
     coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
     coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
+    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
+    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交
     coalesce(small_sales_qty,  0) as small_sales_qty,                                   --小类销量
     coalesce(small_sales_value, 0) as small_sales,                                      --小类销售额
     small_profit ,                                                  --小类毛利额
@@ -579,14 +579,14 @@ CREATE TABLE csx_tmp.report_sale_r_d_frozen_industry_fr(
   last_sales_qty decimal(38,6) COMMENT '环期销量', 
   last_sales_value decimal(38,6) COMMENT '环期销售额', 
   last_profit decimal(38,6) COMMENT '环期毛利额', 
-  sales_cust_number bigint COMMENT '行业成交客户数', 
-  last_sales_cust_number bigint COMMENT '行业成交客户数环期', 
+  sales_cust_number bigint COMMENT '行业成交数', 
+  last_sales_cust_number bigint COMMENT '行业成交数环期', 
   b_sales_value decimal(38,6) COMMENT 'B端总销售额（剔除城市服务商）', 
   b_profit decimal(38,6) COMMENT 'B端总毛利额（剔除城市服务商）', 
-  b_cust_number bigint COMMENT 'B端成交客户数（剔除城市服务商）', 
+  b_cust_number bigint COMMENT 'B端成交数（剔除城市服务商）', 
   last_b_sales_value decimal(38,6) COMMENT '环期B端总销售额（剔除城市服务商）', 
   last_b_profit decimal(38,6) COMMENT '环期B端总毛利额（剔除城市服务商）', 
-  last_b_cust_number bigint COMMENT '环期B端成交客户数（剔除城市服务商）', 
+  last_b_cust_number bigint COMMENT '环期B端成交数（剔除城市服务商）', 
   small_sales_qty decimal(38,6) COMMENT '小类销售量', 
   small_sales_value decimal(38,6) COMMENT '小类销售额', 
   small_profit decimal(38,6) COMMENT '小类毛利额', 
@@ -597,15 +597,15 @@ CREATE TABLE csx_tmp.report_sale_r_d_frozen_industry_fr(
   ring_sales_qty_rate decimal(38,6) COMMENT '行业销量环比增长率', 
   profit_rate decimal(38,6) COMMENT '行业毛利率', 
   diff_profit_rate decimal(38,6) COMMENT '行业环比毛利率差', 
-  cust_penetration_rate decimal(38,6) COMMENT '行业客户渗透率', 
-  last_cust_penetration_rate decimal(38,6) COMMENT '环期客户渗透率', 
+  cust_penetration_rate decimal(38,6) COMMENT '行业渗透率', 
+  last_cust_penetration_rate decimal(38,6) COMMENT '环期渗透率', 
   diff_cust_penetration_rate decimal(38,6) COMMENT '环期渗透率差', 
   b_sales_ratio decimal(38,6) COMMENT '行业销售占比=行业销售额/B端销售额', 
   last_b_sales_ratio decimal(38,6) COMMENT '环期行业销售占比=行业销售额/B端销售额', 
   b_diff_sale_ratio decimal(38,6) COMMENT '行业占省区占比环比差', 
   grouping__id string, 
   update_time timestamp COMMENT '更新日期')
-COMMENT '冻品客户行业销售环比与渗透率'
+COMMENT '冻品行业销售环比与渗透率'
 PARTITIONED BY ( 
   months string COMMENT '月分区')
 ROW FORMAT SERDE 

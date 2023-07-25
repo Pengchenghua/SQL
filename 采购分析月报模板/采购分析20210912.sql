@@ -498,7 +498,7 @@ show create table csx_dw.dws_wms_r_d_entry_batch;
 select * from csx_tmp.temp_supplier_type_analysis where type='0';
 -- source_type,source_type_name  
 --1 采购导入
---2 直送客户
+--2 直送
 --3 一键代发
 --4 项目合伙人
 --5 无单入库

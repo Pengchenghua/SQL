@@ -74,7 +74,7 @@ group by
 ;
 
 
--- 计算商品频次、客户数、销售额
+-- 计算商品频次、数、销售额
 drop table csx_dw.temp_goods_sale_01
 ;
 
@@ -120,7 +120,7 @@ from
 			goods_name           ,
 			unit
 		union all
-		-- 统计商品+客户频次
+		-- 统计商品+频次
 		SELECT
 			province_code        ,
 			province_name        ,
@@ -148,7 +148,7 @@ from
 			unit                 ,
 			customer_name
 		union all
-		-- 销售客户数
+		-- 销售数
 		SELECT
 			province_code        ,
 			province_name        ,
@@ -606,7 +606,7 @@ where
 	sdt        >= regexp_replace(${hiveconf:sdate},'-','')
 	and sdt    <= regexp_replace(${hiveconf:edate},'-','')
 	and channel = '1'
-	and attribute !='合伙人客户'
+	and attribute !='合伙人'
 group by
 	province_code ,
 	province_name ,
@@ -642,7 +642,7 @@ group by
 ;
 
 
--- 计算商品频次、客户数、销售额
+-- 计算商品频次、数、销售额
 drop table csx_dw.temp_goods_sale_01
 ;
 
@@ -691,7 +691,7 @@ from
 			goods_name           ,
 			unit
 		union all
-		-- 统计商品+客户频次
+		-- 统计商品+频次
 		SELECT
 			province_code        ,
 			province_name        ,
@@ -721,7 +721,7 @@ from
 			unit                 ,
 			customer_name
 		union all
-		-- 销售客户数
+		-- 销售数
 		SELECT
 			province_code        ,
 			province_name        ,
@@ -859,7 +859,7 @@ from
 			from
 				csx_dw.csx_shop a
 				join
-					(select distinct dc_code from csx_dw.dws_sale_r_d_customer_sale where sdt>=regexp_replace(${hiveconf:sdate},'-','') and sdt<=regexp_replace(${hiveconf:edate},'-','') and channel='1' and `attribute` !='合伙人客户')
+					(select distinct dc_code from csx_dw.dws_sale_r_d_customer_sale where sdt>=regexp_replace(${hiveconf:sdate},'-','') and sdt<=regexp_replace(${hiveconf:edate},'-','') and channel='1' and `attribute` !='合伙人')
 					c
 					on
 						a.location_code=c.dc_code
@@ -964,7 +964,7 @@ from
 			from
 				csx_dw.csx_shop a
 				join
-					(select distinct dc_code from csx_dw.dws_sale_r_d_customer_sale where sdt>=regexp_replace(${hiveconf:sdate},'-','') and sdt<=regexp_replace(${hiveconf:edate},'-','') and channel='1' and `attribute` !='合伙人客户')
+					(select distinct dc_code from csx_dw.dws_sale_r_d_customer_sale where sdt>=regexp_replace(${hiveconf:sdate},'-','') and sdt<=regexp_replace(${hiveconf:edate},'-','') and channel='1' and `attribute` !='合伙人')
 					c
 					on
 						a.location_code=c.dc_code

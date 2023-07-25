@@ -1,5 +1,5 @@
 -- 波总需求（行业、企业属性新）
--- 按照新行业、企业属性查询21年合同、履约客户、成交
+-- 按照新行业、企业属性查询21年合同、履约、成交
 SELECT 
        sales_province_code,
        sales_province_name,

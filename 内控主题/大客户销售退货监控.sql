@@ -1,4 +1,4 @@
--- 帆软 大客户销售退货监控
+-- 帆软 大销售退货监控
 select 
 province_code,
 province_name,

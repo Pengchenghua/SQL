@@ -52,7 +52,7 @@ CREATE TABLE csx_tmp.report_wms_r_d_fresh_goods_turnover(
   purpose_code string COMMENT 'DC用途,空为全部', 
    purpose string COMMENT 'DC用途,空为全部', 
   update_time timestamp COMMENT '更新日期')
-COMMENT '生鲜库存周转按照城市汇总-剔除客户直送、一件代发业务'
+COMMENT '生鲜库存周转按照城市汇总-剔除直送、一件代发业务'
 PARTITIONED BY ( sdt string COMMENT '日期分区')
 STORED AS parquet 
  

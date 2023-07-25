@@ -7,8 +7,8 @@ CREATE TABLE csx_tmp.dws_all_format_plan_sales (
   `city_group_name` string COMMENT '城市组省区',
   `channel_code` string COMMENT '渠道',
   `channel_name` string COMMENT '渠道名称',
-  `attribute_code` string  COMMENT '客户属性及商超业态',
-  `attribute_name` string COMMENT '客户属性及商超业态',
+  `attribute_code` string  COMMENT '属性及商超业态',
+  `attribute_name` string COMMENT '属性及商超业态',
   `plan_sale_value` decimal(26,6) comment '销售计划',
   `plan_profit` decimal(26,6) comment '毛利计划',
   `plan_no_tax_sale` decimal(26,6) COMMENT '未税销售额',
@@ -58,7 +58,7 @@ sqoop import \
 DROP TABLE csx_tmp.dws_daily_sales_plan;
 CREATE TABLE `csx_tmp.dws_daily_sales_plan` (
   `id` string comment '',
-  `plan_type` string comment '计划类型，1 大客户、2 商超',
+  `plan_type` string comment '计划类型，1 大、2 商超',
   `province_code` string comment '省区',
   `province_name` string comment '省区',
   `channel_code` string comment '渠道',

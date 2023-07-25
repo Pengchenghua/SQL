@@ -81,7 +81,7 @@ CREATE external TABLE IF NOT EXISTS csx_analyse.csx_analyse_scm_purchase_order_f
 `supplier_joint` STRING  COMMENT '集采供应商',
 `business_owner_code` STRING  COMMENT '业态归属编码',
 `business_owner_name` STRING  COMMENT '业态归属名称',
-`special_customer` STRING  COMMENT '专项客户',
+`special_customer` STRING  COMMENT '专项',
 `borrow_flag` STRING  COMMENT '是否借用',
 `direct_trans_flag` STRING  COMMENT '是否直供',
 `supplier_classify_code` STRING  COMMENT '供应商类型编码  0：基础供应商   1:农户供应商',

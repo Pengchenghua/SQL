@@ -182,12 +182,12 @@ select
     supervisor_name as manager_name,
     sales_manager_no,  
     sales_manager_name,
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then Md_sales_value end)/10000,0) as old_daily_sale, --老客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000,0) as old_month_sale,  --老客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000,0) as old_month_profit,  --老客-累计毛利额
     coalesce(sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000,0) as old_last_month_sale,  --老客-环比累计销售额
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000,0) as new_daily_sale, --新客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000,0) as new_month_sale,  --新客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000,0) as new_month_profit,  --新客-累计毛利额
@@ -314,7 +314,7 @@ from (SELECT
       WHERE MONTH= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
       and sdt =substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
         and customer_attribute_name!='批发内购'
-       --  AND channel_name='大客户'
+       --  AND channel_name='大'
       GROUP BY b.region_code,
             b.region_name,
             b.province_code,
@@ -505,7 +505,7 @@ select
    coalesce(sum(new_plan_sale_cust_num),0)as new_plan_sale_cust_num,
    coalesce(sum(all_plan_sale),0)as all_plan_sale,
    sum(all_plan_profit)all_plan_profit,
-   sum(sign_cust_num) as new_sign_cust_num,     --新签约客户数
+   sum(sign_cust_num) as new_sign_cust_num,     --新签约数
    sum(sign_amount) as new_sign_amount,  --新签约金额
    sum(daily_sign_cust_num) as daily_sign_cust_num,
    sum(daily_sign_amount) as daily_sign_amount
@@ -521,12 +521,12 @@ from
     sales_manager_name,
     manager_no ,
     manager_name,
-    old_cust_count,  --老客-累计客户数
+    old_cust_count,  --老客-累计数
     old_daily_sale, --老客-昨日销售额
     old_month_sale,  --老客-累计销售额
     old_month_profit,  --老客-累计毛利额
     old_last_month_sale,  --老客-环比累计销售额
-    new_cust_count,  --新客-累计客户数
+    new_cust_count,  --新客-累计数
     new_daily_sale, --新客-昨日销售额
     new_month_sale,  --新客-累计销售额
     new_month_profit,  --新客-累计毛利额
@@ -712,7 +712,7 @@ select
    coalesce(sum(new_plan_sale_cust_num),0)as new_plan_sale_cust_num,
    coalesce(sum(all_plan_sale),0)as all_plan_sale,
    sum(all_plan_profit)all_plan_profit,
-   sum(new_sign_cust_num) as new_sign_cust_num,     --新签约客户数
+   sum(new_sign_cust_num) as new_sign_cust_num,     --新签约数
    sum(new_sign_amount) as new_sign_amount,  --新签约金额
     sum(daily_sign_cust_num) as daily_sign_cust_num,
     sum(daily_sign_amount) as daily_sign_amount,
@@ -786,7 +786,7 @@ SELECT
         coalesce((new_month_sale-new_last_month_sale)/abs(new_last_month_sale),0) as new_mom_sale_growth_rate,
         new_month_profit,
         coalesce(new_month_profit/new_month_sale,0) new_month_profit_rate,
-        new_sign_cust_num,     --新签约客户数
+        new_sign_cust_num,     --新签约数
         new_sign_amount,  --新签约金额
         daily_sign_cust_num,
         daily_sign_amount,

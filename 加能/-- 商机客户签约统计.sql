@@ -1,4 +1,4 @@
- -- 商机客户签约统计
+ -- 商机签约统计
  -- csx_data_market 集市查询 dws_crm_w_a_business_customer
  
  SELECT

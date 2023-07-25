@@ -18,7 +18,7 @@ select * from dws_ssms_province_month_sale_plan dspmsp WHERE sdt='202011';
 
 -- delete from  dws_csms_province_day_sale_plan where  sale_months ='202010';
 
--- 大客户计划
+-- 大计划
 select * from data_analysis_prd.dws_csms_province_month_sale_plan  where sdt ='202102';
 UPDATE data_analysis_prd.dws_csms_province_month_sale_plan set customer_attribute_name='福利业务'  where customer_attribute_name ='福利单业务' and sdt='202101';
 
@@ -86,11 +86,11 @@ CREATE TABLE dws_csms_manager_month_sale_plan (
   `city_manager_name` varchar(64) DEFAULT NULL COMMENT '城市经理名称',
   `manager_job_no` varchar(64) DEFAULT NULL COMMENT '主管工号',
   `manager_name` varchar(64) DEFAULT NULL COMMENT '主管名称',
-  `customer_attribute_code` varchar(8) DEFAULT NULL COMMENT '客户属性编码',
-  `customer_attribute_name` varchar(64) DEFAULT NULL COMMENT '客户属性名称',
+  `customer_attribute_code` varchar(8) DEFAULT NULL COMMENT '属性编码',
+  `customer_attribute_name` varchar(64) DEFAULT NULL COMMENT '属性名称',
   `customer_age_code` varchar(8) DEFAULT NULL COMMENT '客龄编码',
   `customer_age_name` varchar(8) DEFAULT NULL COMMENT '客龄名称：老客 1、 2新客',
-  `customer_count` int(11) DEFAULT '0' COMMENT '客户数',
+  `customer_count` int(11) DEFAULT '0' COMMENT '数',
   `plan_sales_value` decimal(19,6) DEFAULT '0.000000' COMMENT '计划销售额',
   `plan_profit` decimal(19,6) DEFAULT '0.000000' COMMENT '计划毛利',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -117,7 +117,7 @@ CREATE TABLE data_analysis_prd.dws_csms_province_day_sale_plan(
   -- month varchar(64) not null comment'月份',
    PRIMARY KEY (`id`)
 )
-COMMENT '大客户省区日配销售预算';
+COMMENT '大省区日配销售预算';
 
 drop table  data_analysis_prd.dws_ssms_province_month_sale_plan_tmp ;
 CREATE TABLE data_analysis_prd.dws_ssms_province_month_sale_plan(
@@ -152,8 +152,8 @@ CREATE TABLE data_analysis_prd.dws_csms_province_month_sale_plan(
   `province_name`  varchar(64) not null COMMENT '省区名称',
   city_group_code varchar(64)  DEFAULT null COMMENT '城市组', 
   city_group_name varchar(64)  DEFAULT null COMMENT '城市组',
-  `customer_attribute_code` varchar(64)  DEFAULT null COMMENT '客户属性编码', 
-  `customer_attribute_name` varchar(64)  DEFAULT null COMMENT '客户属性名称', 
+  `customer_attribute_code` varchar(64)  DEFAULT null COMMENT '属性编码', 
+  `customer_attribute_name` varchar(64)  DEFAULT null COMMENT '属性名称', 
   `plan_sales_value` decimal(19,6)  DEFAULT '0.000000' COMMENT '计划销售额', 
   `plan_profit` decimal(19,6)  DEFAULT '0.000000' COMMENT '计划毛利', 
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -163,7 +163,7 @@ CREATE TABLE data_analysis_prd.dws_csms_province_month_sale_plan(
 --   month varchar(64) not null comment'月份',
   primary key(id)
   )
-COMMENT '大客户省区月销售预算'
+COMMENT '大省区月销售预算'
 ;
 truncate table data_analysis_prd.dws_ssms_province_month_sale_plan;
 truncate table data_analysis_prd.dws_csms_province_month_sale_plan;
@@ -187,7 +187,7 @@ CREATE TABLE data_analysis_prd.dws_csms_province_day_sale_plan (
   sale_months  varchar(64) not null  COMMENT '销售月份', 
   primary key(id)
   )
-COMMENT '大客户省区日配销售预算'
+COMMENT '大省区日配销售预算'
 ;
 
 

@@ -40,7 +40,7 @@ select
     case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
         end channel_code,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
         end channel_name,
          a.business_type_name ,
@@ -73,7 +73,7 @@ group by
     case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
         end ,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
         end ,
      a.business_type_name,
@@ -85,7 +85,7 @@ select
    case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
         end channel_code,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
         end channel_name,
      a.business_type_name ,
@@ -118,7 +118,7 @@ group by
     case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
         end ,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
         end ,
     a.business_type_name ,
@@ -365,8 +365,8 @@ group by
 	  `performance_province_name` string COMMENT '省区名称', 
 	  `channel_code` string COMMENT '渠道编码', 
 	  `channel_name` string COMMENT '渠道名称', 
-	  `business_type_code` string COMMENT '客户属性编码：1、日配单，2、福利订单(WELFARE)，贸易客户(3)、合伙人客户(5)、BBC (7)', 
-	  `business_type_name` string COMMENT '客户属性名称', 
+	  `business_type_code` string COMMENT '属性编码：1、日配单，2、福利订单(WELFARE)，贸易(3)、合伙人(5)、BBC (7)', 
+	  `business_type_name` string COMMENT '属性名称', 
 	  `business_division_code` string COMMENT '采购部编码', 
 	  `business_division_name` string COMMENT '采购部名称', 
 	  `division_code` string COMMENT '部类编码', 
@@ -384,15 +384,15 @@ group by
 	  `last_month_sale` decimal(26,6) COMMENT '月环比销售额', 
 	  `mom_sale_growth_rate` decimal(26,6) COMMENT '月环比增长率', 
 	  `month_sale_ratio` decimal(26,6) COMMENT '月销售占比', 
-	  `month_avg_cust_sale` decimal(26,6) COMMENT '月客均销售额 销售额/客户数', 
+	  `month_avg_cust_sale` decimal(26,6) COMMENT '月客均销售额 销售额/数', 
 	  `month_plan_profit` decimal(26,6) COMMENT '月度毛利计划', 
 	  `month_profit` decimal(26,6) COMMENT '月至今毛利额', 
 	  `month_profit_fill_rate` decimal(26,6) COMMENT '月度毛利完成率', 
 	  `month_profit_rate` decimal(26,6) COMMENT '月至今毛利率', 
 	  `month_sales_sku` bigint COMMENT '销售SKU数', 
-	  `month_sale_cust_num` bigint COMMENT '课组成交客户数', 
-	  `cust_penetration_rate` decimal(26,6) COMMENT '客户渗透率', 
-	  `all_sale_cust_num` bigint COMMENT '合计客户数', 
+	  `month_sale_cust_num` bigint COMMENT '课组成交数', 
+	  `cust_penetration_rate` decimal(26,6) COMMENT '渗透率', 
+	  `all_sale_cust_num` bigint COMMENT '合计数', 
 	  `row_num` bigint COMMENT '行数', 
 	  `update_time` timestamp COMMENT '更新时间')
 	COMMENT '大区经营看板-课组日配销售表'

@@ -1,15 +1,15 @@
 -- CONNECTION: name=Hadoop - HIVE
-  `qdflag` string COMMENT '客户渠道', 
+  `qdflag` string COMMENT '渠道', 
   `dist` string COMMENT '省区', 
   `diro` int COMMENT '省区序号', 
   `manage` string COMMENT '区总', 
   `city_real` string COMMENT '城市调整', 
   `cityjob` string COMMENT '城市负责人', 
-  `cust_id` string COMMENT '客户编码', 
-  `cust_name` string COMMENT '客户名称', 
+  `cust_id` string COMMENT '编码', 
+  `cust_name` string COMMENT '名称', 
   `xse` decimal(26,4) COMMENT '销额', 
   `mle` decimal(26,4) COMMENT '毛利额')
-COMMENT '客户每日销售，使用发票表数据'
+COMMENT '每日销售，使用发票表数据'
 PARTITIONED BY ( 
   `sdt` string COMMENT '运行日期')
   ;*/

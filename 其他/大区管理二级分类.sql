@@ -57,12 +57,12 @@ select
     case when a.channel in ('1','7','9') then '1'
         else a.channel
     end channel,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
     end channel_name,
     case when a.channel ='7' then 'BBC'
-        when ( a.channel in ('1','9') and b.attribute_code=3) then '贸易客户'
-        when ( a.channel in ('1','9') and b.attribute_code=5) then '合伙人客户'
+        when ( a.channel in ('1','9') and b.attribute_code=3) then '贸易'
+        when ( a.channel in ('1','9') and b.attribute_code=5) then '合伙人'
         when ( a.channel in ('1','9') and order_kind='WELFARE') then '福利单'
     else '日配单'
     --    else  a.channel_name
@@ -109,12 +109,12 @@ sdt,
     case when a.channel in ('1','7','9') then '1'
         else a.channel
     end  ,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
     end  ,
     case when a.channel ='7' then 'BBC'
-        when ( a.channel in ('1','9') and b.attribute_code=3) then '贸易客户'
-        when ( a.channel in ('1','9') and b.attribute_code=5) then '合伙人客户'
+        when ( a.channel in ('1','9') and b.attribute_code=3) then '贸易'
+        when ( a.channel in ('1','9') and b.attribute_code=5) then '合伙人'
         when ( a.channel in ('1','9') and order_kind='WELFARE') then '福利单'
     else '日配单'
     --    else  a.channel_name
@@ -326,21 +326,21 @@ select
     month_profit_fill_rate,  --毛利额完成率
     month_profit_rate,       --毛利率
     month_sales_sku,         --销售SKU   
-    month_sale_cust_num,     --成交客户数
+    month_sale_cust_num,     --成交数
     penetration_rate cust_penetration_rate,  -- 本期渗透率
-    all_sale_cust_num,      --本期成交客户
+    all_sale_cust_num,      --本期成交
     last_month_sale,        --上期销售额
     a.last_month_profit,    --上期毛利额
     a.last_month_profit/last_month_sale as last_profit_rate,    --上期毛利率
     last_month_sale_cust_num/last_all_sale_cust as  last_cust_penetration_rate, --上期渗透率
-    a.last_month_sale_cust_num,  --上期成交客户数
-    last_all_sale_cust,     --上期总成交客户数
+    a.last_month_sale_cust_num,  --上期成交数
+    last_all_sale_cust,     --上期总成交数
     0 as same_period_sale,       --  '同期销售额',
     0 as same_period_profit,         -- '同期毛利额',
     0 as same_period_profit_rate,    --'同期毛利率',
-    0 as same_period_cust_penetration_rate ,     --  '同期客户渗透率',
-    0 as same_period_sale_cust_num ,     -- '同期成交客户数',
-    0 as same_period_all_sale_cust,      --  '同期总成交客户数',
+    0 as same_period_cust_penetration_rate ,     --  '同期渗透率',
+    0 as same_period_sale_cust_num ,     -- '同期成交数',
+    0 as same_period_all_sale_cust,      --  '同期总成交数',
     row_num,    
     current_timestamp(),
     substr(regexp_replace(${hiveconf:edate},'-',''),1,6),
@@ -390,14 +390,14 @@ select
     last_month_profit,
     a.last_month_profit/last_month_sale as last_profit_rate,    --上期毛利率
     last_month_sale_cust_num/last_all_sale_cust as  last_cust_penetration_rate, --上期渗透率
-    a.last_month_sale_cust_num,  --上期成交客户数
-    last_all_sale_cust,     --上期总成交客户数
+    a.last_month_sale_cust_num,  --上期成交数
+    last_all_sale_cust,     --上期总成交数
     0 as same_period_sale,       --  '同期销售额',
     0 as same_period_profit,         -- '同期毛利额',
     0 as same_period_profit_rate,    --'同期毛利率',
-    0 as same_period_cust_penetration_rate ,     --  '同期客户渗透率',
-    0 as same_period_sale_cust_num ,     -- '同期成交客户数',
-    0 as same_period_all_sale_cust,      --  '同期总成交客户数',
+    0 as same_period_cust_penetration_rate ,     --  '同期渗透率',
+    0 as same_period_sale_cust_num ,     -- '同期成交数',
+    0 as same_period_all_sale_cust,      --  '同期总成交数',
     row_number()over(partition by a.zone_id ,a.attribute_code order by month_sale desc) as row_num,
     current_timestamp(),
     substr(regexp_replace(${hiveconf:edate},'-',''),1,6),

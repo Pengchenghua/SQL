@@ -1,4 +1,4 @@
--- 客户毛利率低于10%
+-- 毛利率低于10%
 with aa as (select
   performance_region_name,
   performance_province_name,

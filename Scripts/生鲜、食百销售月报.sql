@@ -2,7 +2,7 @@
 --- 中类销售维度
  SELECT
 	SUBSTRING(sdt, 1, 6) mon ,
-	case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' else channel_name end channel_sale,
+	case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大' else channel_name end channel_sale,
 	if(is_self_sale=1,'自营','联营') is_parter ,
 	province_name,
 	province_code,
@@ -32,7 +32,7 @@ WHERE
 GROUP BY
 	SUBSTRING(sdt, 1, 6),
 	if(is_self_sale=1,'自营','联营'),
-	case when channel in ('5','6') and a.customer_no like 'S%' then '商超'  when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' else channel_name end,
+	case when channel in ('5','6') and a.customer_no like 'S%' then '商超'  when channel in ('5','6') and a.customer_no not like 'S%' then '大' else channel_name end,
 	province_name,
 	province_code,
 	division_code ,
@@ -152,7 +152,7 @@ GROUP BY
     dc_name ,
     perform_dc_code ,
     perform_dc_name ,
-  case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' else channel_name end channel_name,
+  case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大' else channel_name end channel_name,
     city_code ,
     city_name ,
     a.customer_no,
@@ -266,7 +266,7 @@ GROUP BY
     dc_name ,
     perform_dc_code ,
     perform_dc_name ,
-  case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' else channel_name end channel_name,
+  case when channel in ('5','6') and a.customer_no like 'S%' then '商超' when channel in ('5','6') and a.customer_no not like 'S%' then '大' else channel_name end channel_name,
     city_code ,
     city_name ,
     a.customer_no,

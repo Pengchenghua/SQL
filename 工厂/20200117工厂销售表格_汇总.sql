@@ -862,7 +862,7 @@ group by province_name
 
 
 
---工厂_客户数
+--工厂_数
 drop table b2b_tmp.factory_sale_43;
 create temporary table b2b_tmp.factory_sale_43
 as 

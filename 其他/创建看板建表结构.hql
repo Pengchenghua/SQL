@@ -20,9 +20,9 @@ as
   final_amt     decimal(26,6) comment'期末库存额',
   day_turnover  string comment'周转天数',
   receive_amt   decimal(26,6) comment'入库金额',
-  shop_dept_cust string comment'商超客户数',
-  big_dept_cust string comment'大客户客户数',
-  sale_cust_ratio   decimal(26,6) comment'大客户渗透率',
+  shop_dept_cust string comment'商超数',
+  big_dept_cust string comment'大数',
+  sale_cust_ratio   decimal(26,6) comment'大渗透率',
 )
 comment'省区销售日报表'
 partitioned by (sdt string comment'日期分区')
@@ -52,9 +52,9 @@ as
   final_amt     decimal(26,6) comment'期末库存额',
   day_turnover  string comment'周转天数',
   receive_amt   decimal(26,6) comment'入库金额',
-  shop_dept_cust string comment'商超客户数',
-  big_dept_cust string comment'大客户客户数',
-  sale_cust_ratio   decimal(26,6) comment'大客户渗透率',
+  shop_dept_cust string comment'商超数',
+  big_dept_cust string comment'大数',
+  sale_cust_ratio   decimal(26,6) comment'大渗透率',
   fact_qty decimal(26,6) comment'产品量',
   fact_amt decimal(26,6) comment'产品额',
   product_rate decimal(26,6) comment'出品率 plan_user/fact_qty ',

@@ -124,7 +124,7 @@ select
   , case
         when channel   = '1'
             OR channel = ''
-            then '大客户'
+            then '大'
         when channel = '2'
             then '商超(对内)'
         when channel = '3'
@@ -298,7 +298,7 @@ from
                                               , '11')
                     )
                     then '6'
-                when b.channel   = '大客户'
+                when b.channel   = '大'
                     or b.channel = 'B端'
                     then '1'
                 when b.channel      ='M端'
@@ -654,7 +654,7 @@ select
     end province_code
   , case
         when a.province_name='平台-B'
-            then '大客户平台'
+            then '大平台'
             else a.province_name
     end province_name
   , a.city_name
@@ -800,10 +800,10 @@ from
           , case
                 when channel is null
                     or channel     =''
-                    then '大客户'
+                    then '大'
                 when province_name='平台-B'
                     and channel   ='1'
-                    then '大客户'
+                    then '大'
                     else channel_name
             end channel_name
           , case

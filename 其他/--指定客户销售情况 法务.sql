@@ -1,4 +1,4 @@
---指定客户销售情况 法务
+--指定销售情况 法务
 select   years,
         customer_no,
         customer_name,

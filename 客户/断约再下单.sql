@@ -1,6 +1,6 @@
 
 -- ================================================================================================================	
--- 断约再下单客户 激活客户明细 销售明细
+-- 断约再下单 激活明细 销售明细
 drop table if exists csx_analyse_tmp.csx_analyse_tmp_zx_jh_customer_sale;
 create table csx_analyse_tmp.csx_analyse_tmp_zx_jh_customer_sale
 as
@@ -17,7 +17,7 @@ from
 		csx_dws.csx_dws_sale_detail_di
 	where 
 		sdt between '20220101' and '20230228' -- 销售日期
-		and channel_code in('1','7','9') -- 渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
+		and channel_code in('1','7','9') -- 渠道编码(1:大 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
 		and business_type_code in (1) -- 业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)	
 		and order_channel_code !=4 -- 订单来源渠道: 1-b端 2-m端 3-bbc 4-调价返利 -1-sap
 	group by 
@@ -44,7 +44,7 @@ from
 					csx_dws.csx_dws_sale_detail_di
 				where 
 					sdt between '20190101' and '20230228' -- 历史所有数据
-					and channel_code in('1','7','9') -- 渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
+					and channel_code in('1','7','9') -- 渠道编码(1:大 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
 					and business_type_code in (1) -- 业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)	
 					and order_channel_code not in (4,6) -- 订单来源渠道: 1-b端 2-m端 3-bbc 4-调价返利 -1-sap
 				) a 
@@ -58,7 +58,7 @@ from
 					where 
 						sdt = 'current'
 						and channel_code in('1','7','9')
-						and cooperation_mode_code='01' -- 非一次性客户  合作模式编码(01长期客户,02一次性客户)
+						and cooperation_mode_code='01' -- 非一次性  合作模式编码(01长期,02一次性)
 					) b on b.customer_code=a.customer_code	
 			where
 				a.diff_days>90

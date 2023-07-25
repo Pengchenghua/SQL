@@ -1,14 +1,14 @@
 
--- 新建表 合伙人与断约客户 基本信息表
+-- 新建表 合伙人与断约 基本信息表
 --drop table csx_tmp.partner_info;
 CREATE TABLE IF NOT EXISTS `csx_tmp.partner_info` (
   `cust_group` STRING COMMENT '类型',
   `province_name` STRING COMMENT '省区',
   `city_name` STRING COMMENT '城市',  
-  `customer_no` STRING COMMENT '客户编号',
-  `customer_name` STRING COMMENT '客户名称',
+  `customer_no` STRING COMMENT '编号',
+  `customer_name` STRING COMMENT '名称',
   `break_date` STRING COMMENT '断约时间'
-) COMMENT '合伙人与断约客户基本信息表'
+) COMMENT '合伙人与断约基本信息表'
 PARTITIONED BY (sdt string COMMENT '日期分区')
 ROW format delimited fields terminated by ','
 STORED AS TEXTFILE;
@@ -23,7 +23,7 @@ union all
 select distinct customer_no,substr(sdt,1,6) sdt
 				from csx_dw.dws_crm_w_a_customer_m_v1
 				where sdt in('20200731','20200831','20200930')   --月最后一天
-				and attribute='合伙人客户'
+				and attribute='合伙人'
 				and customer_no<>'';
 
 --1、省区、业务类型：销售额、毛利趋势
@@ -80,7 +80,7 @@ from
 	and channel_code in('1','7','9')
 	--and business_type_code in('1','2')			--(1.日配单 2.福利单 3.批发内购 4.城市服务商 5.省区大宗 6.BBC)
 	)a 
---客户最早销售月 新客月、新客季度
+--最早销售月 新客月、新客季度
 left join
 	(select customer_no,
 	substr(min(first_sales_date),1,6) new_month,
@@ -135,7 +135,7 @@ from
 	and channel_code in('1','7','9')
 	--and business_type_code in('1','2')			--(1.日配单 2.福利单 3.批发内购 4.城市服务商 5.省区大宗 6.BBC)
 	)a 
---客户最早销售月 新客月、新客季度
+--最早销售月 新客月、新客季度
 left join
 	(select customer_no,
 	substr(min(first_sales_date),1,6) new_month,

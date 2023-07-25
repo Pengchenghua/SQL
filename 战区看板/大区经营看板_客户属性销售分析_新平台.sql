@@ -1,5 +1,5 @@
 -- ******************************************************************** 
--- @功能描述：大区经营看板客户属性销售分析
+-- @功能描述：大区经营看板属性销售分析
 -- @创建者： 彭承华 
 -- @创建者日期：2022-08-24 16:13:07 
 -- @修改者日期：
@@ -196,7 +196,7 @@ select province_code performance_province_code,
 		and sdt=substr(regexp_replace('${edate}','-',''),1,6) 
 	    and  (weeknum is null or weeknum='')
 		and customer_attribute_code !='00'
-    -- and channel_name='大客户'
+    -- and channel_name='大'
     group by  province_code,
         customer_attribute_code,
         customer_attribute_name,
@@ -294,7 +294,7 @@ grouping sets
        performance_city_code,
        performance_city_name,
        business_type_name,
-       business_type_code),  -- 1 城市客户属性
+       business_type_code),  -- 1 城市属性
        ( performance_region_code,
        performance_region_name ,
        performance_province_code ,
@@ -306,7 +306,7 @@ grouping sets
        performance_province_code ,
        performance_province_name ,
        business_type_name,
-       business_type_code),  -- 3 省区客户属性
+       business_type_code),  -- 3 省区属性
     ( performance_region_code,
        performance_region_name ,
        performance_province_code ,
@@ -314,7 +314,7 @@ grouping sets
       ( performance_region_code,
        performance_region_name,
        business_type_name,
-       business_type_code),  -- 5 大区客户属性
+       business_type_code),  -- 5 大区属性
     ( performance_region_code,
        performance_region_name ),  -- 6 大区汇总
      ()
@@ -364,7 +364,7 @@ grouping sets
        performance_city_code,
        performance_city_name,
        business_type_name,
-       business_type_code),  -- 1 省区客户属性
+       business_type_code),  -- 1 省区属性
     (performance_region_code,
        performance_region_name ,
        performance_province_code ,
@@ -376,7 +376,7 @@ grouping sets
        performance_province_code ,
        performance_province_name ,
        business_type_name,
-       business_type_code),  -- 3 省区客户属性
+       business_type_code),  -- 3 省区属性
     (performance_region_code,
        performance_region_name ,
        performance_province_code ,
@@ -486,8 +486,8 @@ left outer join csx_analyse_tmp.csx_analyse_tmpcity_attribute_01 b
 	  `performance_province_name` string COMMENT '省区名称', 
  	  `performance_city_code` string COMMENT '城市组编码', 
 	  `performance_city_name` string COMMENT '城市组编码',     
-	  `business_type_code` int COMMENT '客户属性编码', 
-	  `business_type_name` string COMMENT '客户属性名称', 
+	  `business_type_code` int COMMENT '属性编码', 
+	  `business_type_name` string COMMENT '属性名称', 
 	  `daily_plan_sale` decimal(26,6) COMMENT '昨日计划销售额', 
 	  `yesterday_sales_value` decimal(26,6) COMMENT '昨日销售额', 
 	  `yesterday_sale_fill_rate` decimal(26,6) COMMENT '昨日销售达成率', 
@@ -502,12 +502,12 @@ left outer join csx_analyse_tmp.csx_analyse_tmpcity_attribute_01 b
 	  `month_profit` decimal(26,6) COMMENT '月至今毛利额', 
 	  `month_profit_fill_rate` decimal(26,6) COMMENT '月度毛利完成率', 
 	  `month_profit_rate` decimal(26,6) COMMENT '月至今毛利率', 
-	  `month_sale_cust_num` bigint COMMENT '月至今成交客户数', 
-	  `mom_diff_sale_cust` bigint COMMENT '月至今成交客户差异数', 
+	  `month_sale_cust_num` bigint COMMENT '月至今成交数', 
+	  `mom_diff_sale_cust` bigint COMMENT '月至今成交差异数', 
 	  `last_month_profit` decimal(26,6) COMMENT '环比毛利额', 
-	  `last_month_sale_cust_num` bigint COMMENT '环比客户数', 
+	  `last_month_sale_cust_num` bigint COMMENT '环比数', 
 	  `update_time` timestamp COMMENT '更新时间')
-	COMMENT '大区经营看板客户属性销售大客户'
+	COMMENT '大区经营看板属性销售大'
 	PARTITIONED BY ( 
 	  `months` string COMMENT '按日分区')
 	

@@ -100,7 +100,7 @@ FROM (
     SELECT
       case
         when stype in ('M端', '商品（对内）') then '商超（对内）'
-        when stype in('B端', '大客户') then '大客户'
+        when stype in('B端', '大') then '大'
         when stype like '%S%' then '供应链'
         when stype in('BBC', '企业购') then '企业购'
         else stype
@@ -304,7 +304,7 @@ FROM (
         SELECT
           case
             when province_name like '平台-B%' then '平台'
-            when channel in ('1', '7') then '大客户'
+            when channel in ('1', '7') then '大'
             else a.channel_name
           end as stype,case
             when channel in ('4', '5', '6') then '-'
@@ -330,7 +330,7 @@ FROM (
         GROUP BY
           case
             when province_name like '平台-B%' then '平台'
-            when channel in ('1', '7') then '大客户'
+            when channel in ('1', '7') then '大'
             else a.channel_name
           end,case
             when channel in ('4', '5', '6') then '-'
@@ -342,7 +342,7 @@ FROM (
         select
           case
             when province_name like '平台-B%' then '平台'
-            when channel in ('1', '7') then '大客户'
+            when channel in ('1', '7') then '大'
             else a.channel_name
           end as stype,case
             when channel in ('4', '5', '6') then '-'
@@ -375,7 +375,7 @@ FROM (
         GROUP BY
           case
             when province_name like '平台-B%' then '平台'
-            when channel in ('1', '7') then '大客户'
+            when channel in ('1', '7') then '大'
             else a.channel_name
           end,case
             when channel in ('4', '5', '6') then '-'
@@ -399,7 +399,7 @@ left join (
   ) b on substr(a.prov_name, 1, LENGTH (prov_name) -3) = substr(b.province_name, 1, LENGTH (b.province_name) -3)
 ORDER BY
   case
-    when qstype = '大客户' then 1
+    when qstype = '大' then 1
     when qstype = '商超(对内)' then 2
     when qstype = '商超(对外)' then 3
     when qstype in('供应链(食百)', '供应链(生鲜)') then 4

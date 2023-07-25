@@ -67,7 +67,7 @@ where 1=1
 left join 
 (select order_code,    
 case when source_type = 1 then '采购导入'
-    when source_type = 2 then '直送客户'
+    when source_type = 2 then '直送'
     when source_type = 3 then '一键代发'
     when source_type = 4 then '项目合伙人'
     when source_type = 5 then '无单入库'

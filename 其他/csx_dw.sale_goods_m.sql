@@ -1,8 +1,8 @@
  set mapreduce.job.queuename=caishixian;
 
--- 从DC W0B6 出去得算BBC，从W0H4出去且客户为门店得算供应链（S端）
+-- 从DC W0B6 出去得算BBC，从W0H4出去且为门店得算供应链（S端）
 --根据战报表逻辑生成近两个月的销售表，添加渠道，省区字段
--- 大客户有包含"平台"
+-- 大有包含"平台"
 drop table b2b_tmp.sale_goods_m_1;
 create temporary table b2b_tmp.sale_goods_m_1
 as
@@ -81,7 +81,7 @@ select
 	sales_type,
 	channel,
 	case
-		when channel = '1'	OR channel = '' then '大客户'
+		when channel = '1'	OR channel = '' then '大'
 		when channel = '2' then '商超（对内）'
 		when channel = '3' then '商超（对外）'
 		when channel = '4' then '大宗'
@@ -181,7 +181,7 @@ select
 			or (b.channel like '供应链%' and category_code in ('12','13','14'))then '5'
 		when (a.shop_id = 'W0H4' and a.customer_no like 'S%' and category_code in ('10','11'))
 			or (b.channel like '供应链%'	and category_code in ('10',	'11'))then '6'	
-		when b.channel = '大客户' or b.channel = 'B端' then '1'
+		when b.channel = '大' or b.channel = 'B端' then '1'
 		when b.channel ='M端' then '2'
 		when b.channel = '商超（对外）' then '3'
 		when b.channel = '大宗' then '4'	
@@ -486,7 +486,7 @@ from
 	sdt,
 	sales_type,
     case when channel is null or channel='' then '1' when province_name='平台-B' and channel='1' then '1' else channel end channel,
-    case when channel is null or channel='' then '大客户' when province_name='平台-B' and channel='1' then '大客户' else channel_name end channel_name,
+    case when channel is null or channel='' then '大' when province_name='平台-B' and channel='1' then '大' else channel_name end channel_name,
     case when province_name ='成都' then '四川省' when channel='7' then '福建省' else province_name end province_name,
     case when channel='2'  then city_name 
       when channel='7' then '福州' 

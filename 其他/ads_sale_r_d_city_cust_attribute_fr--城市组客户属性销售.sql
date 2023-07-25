@@ -4,7 +4,7 @@
 
 DROP table csx_tmp.ads_sale_r_d_city_cust_attribute_fr;
 CREATE TABLE `csx_tmp.ads_sale_r_d_city_cust_attribute_fr`(
-  `level_id` string COMMENT '展示层级，1 明细、2 城市组汇总、3、省区客户属性、4、省区汇总', 
+  `level_id` string COMMENT '展示层级，1 明细、2 城市组汇总、3、省区属性、4、省区汇总', 
   `sales_month` string COMMENT '销售月份', 
   `zone_id` string COMMENT '战区编码', 
   `zone_name` string COMMENT '战区名称', 
@@ -12,8 +12,8 @@ CREATE TABLE `csx_tmp.ads_sale_r_d_city_cust_attribute_fr`(
   `province_name` string COMMENT '省区名称', 
   `city_group_code` string COMMENT '城市组', 
   `city_group_name` string COMMENT '城市组名称', 
-  `attribute_code` int COMMENT '客户属性编码', 
-  `attribute` string COMMENT '客户属性名称', 
+  `attribute_code` int COMMENT '属性编码', 
+  `attribute` string COMMENT '属性名称', 
   `daily_plan_sale` decimal(26,6) COMMENT '昨日计划销售额', 
   `daily_sales_value` decimal(26,6) COMMENT '昨日销售额', 
   `daily_sale_fill_rate` decimal(26,6) COMMENT '昨日销售达成率', 
@@ -28,12 +28,12 @@ CREATE TABLE `csx_tmp.ads_sale_r_d_city_cust_attribute_fr`(
   `month_profit` decimal(26,6) COMMENT '月至今毛利额', 
   `month_profit_fill_rate` decimal(26,6) COMMENT '月度毛利完成率', 
   `month_profit_rate` decimal(26,6) COMMENT '月至今毛利率', 
-  `month_sale_cust_num` bigint COMMENT '月至今成交客户数', 
-  `mom_diff_sale_cust` bigint COMMENT '月至今成交客户差异数', 
+  `month_sale_cust_num` bigint COMMENT '月至今成交数', 
+  `mom_diff_sale_cust` bigint COMMENT '月至今成交差异数', 
   `last_month_profit` decimal(26,6) COMMENT '环比毛利额', 
-  `last_month_sale_cust_num` bigint COMMENT '环比客户数', 
+  `last_month_sale_cust_num` bigint COMMENT '环比数', 
   `update_time` timestamp COMMENT '更新时间')
-COMMENT '城市组客户属性销售大客户'
+COMMENT '城市组属性销售大'
 PARTITIONED BY ( `months` string COMMENT '按月分区')
 STORED AS parquet 
 ;
@@ -61,7 +61,7 @@ SET l_edate=add_months(${hiveconf:edate},-1);
 
 
 
--- 客户属性数据插入
+-- 属性数据插入
 drop table if exists csx_tmp.temp_city_attribute_01;
 create temporary table csx_tmp.temp_city_attribute_01
 as 
@@ -73,9 +73,9 @@ select
         b.city_group_name,
        attribute_code,
        case when attribute_code='7' then 'BBC'
-            when attribute_code='3' then '贸易客户'
+            when attribute_code='3' then '贸易'
             when attribute_code='2' then '福利单'
-            when attribute_code='5' then '合伙人客户'
+            when attribute_code='5' then '合伙人'
             when attribute_code='1' then '日配单'
             else attribute_code
             end attribute,       
@@ -175,9 +175,9 @@ group by zone_id,zone_name ,
         a.province_code ,
         province_name,
         case when attribute_code='7' then 'BBC'
-            when attribute_code='3' then '贸易客户'
+            when attribute_code='3' then '贸易'
             when attribute_code='2' then '福利单'
-            when attribute_code='5' then '合伙人客户'
+            when attribute_code='5' then '合伙人'
             when attribute_code='1' then '日配单'
             else attribute_code
             end ,
@@ -255,7 +255,7 @@ grouping sets
        city_group_code,
        a.city_group_name,
        attribute_code,
-       attribute),   --1 城市组客户属性
+       attribute),   --1 城市组属性
         (zone_id,
        zone_name ,
        a.province_code ,
@@ -267,7 +267,7 @@ grouping sets
        a.province_code ,
        province_name ,
        attribute_code,
-       attribute),  -- 3 省区客户属性
+       attribute),  -- 3 省区属性
        (zone_id,
        zone_name ,
        a.province_code ,
@@ -373,7 +373,7 @@ from csx_tmp.temp_city_attribute_02 a)a;
     from csx_tmp.dws_csms_province_month_sale_plan_tmp
          where month=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
 				and sdt=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
-    -- and channel_name='大客户'
+    -- and channel_name='大'
     group by  province_code,
         customer_attribute_code,
        '' as  city_group_code;

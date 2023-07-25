@@ -1,6 +1,6 @@
 set sdt='20210701';
 set edt='20210731';
--- 来源订单：1 采购导入、10    智能补货、2 直送客户、14    临时地采
+-- 来源订单：1 采购导入、10    智能补货、2 直送、14    临时地采
 drop table if exists  csx_tmp.temp_entry_00 ;
 create table csx_tmp.temp_entry_00 as
 select  sdt,
@@ -450,7 +450,7 @@ join
 
 -- source_type,source_type_name  
 --1 采购导入
---2 直送客户
+--2 直送
 --3 一键代发
 --4 项目合伙人
 --5 无单入库

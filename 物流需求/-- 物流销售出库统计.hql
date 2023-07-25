@@ -12,7 +12,7 @@ SELECT s.province_code,
        -- BBC SSMS CSMS OMS SCM
         CASE
            WHEN source_system='BBC' THEN 'BBC'
-           WHEN source_system in ('CSMS','OMS')  THEN '大客户'
+           WHEN source_system in ('CSMS','OMS')  THEN '大'
            WHEN source_system='SSMS' THEN '商超'
            WHEN source_system='SCM' THEN '供应链'
            WHEN source_system='SAP' THEN 'SAP'
@@ -22,7 +22,7 @@ SELECT s.province_code,
        sys_logistics_mode_name,
        order_business_type_code, --1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超
        order_business_type_name,
-       COUNT(DISTINCT CASE WHEN source_system IN ('BBC','CSMS','OMS') THEN sub_customer_code -- 更改为子客户 B端
+       COUNT(DISTINCT CASE WHEN source_system IN ('BBC','CSMS','OMS') THEN sub_customer_code -- 更改为子 B端
                           WHEN source_system IN ('SSMS') THEN shop_code      -- 商超
                           WHEN source_system IN ('SCM') THEN supplier_code   -- 供应链
                       END)AS cust_num,
@@ -98,7 +98,7 @@ from csx_dw.dws_basic_w_a_csx_shop_m
          sdt,
          CASE
            WHEN source_system='BBC' THEN 'BBC'
-           WHEN source_system in ('CSMS','OMS')  THEN '大客户'
+           WHEN source_system in ('CSMS','OMS')  THEN '大'
            WHEN source_system='SSMS' THEN '商超'
            WHEN source_system='SCM' THEN '供应链'
            WHEN source_system='SAP' THEN 'SAP'
@@ -121,7 +121,7 @@ from csx_dw.dws_basic_w_a_csx_shop_m
 	  `sys_logistics_mode_name` string comment '物流配送模式名称', 
 	  `order_business_type_code` string comment '销售订单业务类型', 
 	  `order_business_type_name` string comment '销售订单业务类型', 
-	  `cust_num` bigint  comment '子客户数',
+	  `cust_num` bigint  comment '子数',
 	  `order_num` bigint comment'单据数', 
 	  `goods_num` bigint comment'SKU数', 
 	  `qty` decimal(30,6) comment '出库数量', 

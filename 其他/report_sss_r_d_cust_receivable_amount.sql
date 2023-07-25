@@ -41,7 +41,7 @@ as
 select
   regexp_replace(substr(a.happen_date,1,7),'-','') smonth,
   a.order_no,	-- 来源单号
-  a.customer_no,	-- 客户编码
+  a.customer_no,	-- 编码
   a.company_code,	-- 签约公司编码
   a.happen_date,	-- 发生时间		
   a.overdue_date,	-- 逾期时间	
@@ -59,7 +59,7 @@ from
 (
   select 
   	source_bill_no as order_no,	-- 来源单号
-  	customer_code as customer_no,	-- 客户编码
+  	customer_code as customer_no,	-- 编码
   	company_code,	-- 签约公司编码
   	happen_date,	-- 发生时间		
   	overdue_date,	-- 逾期时间	
@@ -72,7 +72,7 @@ from
   	'否' as beginning_mark,	--是否期初
   	bad_debt_amount,	--坏账金额
   	if((money_back_status<>'ALL' or (datediff(${hiveconf:current_day1}, overdue_date)+1)>=1),datediff(${hiveconf:current_day1}, overdue_date)+1,0) as over_days	-- 逾期天数
-  from csx_ods.source_sss_r_a_source_bill  --客户对账来源单  -- 全量未处理
+  from csx_ods.source_sss_r_a_source_bill  --对账来源单  -- 全量未处理
   where sdt=${hiveconf:current_day}
   and beginning_mark='1'  	-- 期初标识 0-是 1-否
   --and money_back_status<>'ALL'	
@@ -80,7 +80,7 @@ from
   union all
   select 
   	id as order_no,	-- 来源单号
-  	customer_code as customer_no,	-- 客户编码
+  	customer_code as customer_no,	-- 编码
   	company_code,	-- 签约公司编码		
   	date_sub(from_unixtime(unix_timestamp(overdue_date,'yyyy-MM-dd hh:mm:ss')),coalesce(account_period_val,0)) as happen_date,	-- 发生时间		
   	overdue_date,	-- 逾期时间	
@@ -130,7 +130,7 @@ from
   select
     claim_bill_no,		--认领单号
 	regexp_replace(substr(claim_time,1,7),'-','') smonth,
-	customer_code as customer_no, -- 客户编码
+	customer_code as customer_no, -- 编码
     company_code, -- 公司代码
     sum(claim_amount) as claim_amount,	--回款金额（含核销与未核销的，含补救单）
     sum(paid_amount) as paid_amount,	--回款已核销金额
@@ -160,7 +160,7 @@ left join
 
  
 
---临时表：客户各月金额
+--临时表：各月金额
 drop table csx_tmp.tmp_cust_receivable_amount_1;
 create temporary table csx_tmp.tmp_cust_receivable_amount_1
 as	
@@ -213,10 +213,10 @@ from
     from csx_tmp.tmp_cust_order_overdue_dtl_1
 	group by smonth,customer_no,company_code
     union all
-    -- 获取客户回款金额
+    -- 获取回款金额
     select
       smonth,
-  	  customer_no, -- 客户编码
+  	  customer_no, -- 编码
       company_code, -- 公司代码
   	  '' source_statement_amount,	--源单据对账金额
   	  '' payment_amount,		--已核销金额 
@@ -232,7 +232,7 @@ from
   group by a.smonth,a.customer_no,a.company_code
   )a
 --left join 
---( -- 获取客户+签约公司的详细信息 账期
+--( -- 获取+签约公司的详细信息 账期
 --  select * from csx_dw.dws_crm_w_a_customer_company
 --  where sdt = 'current'
 --)c on a.customer_no = c.customer_no and a.company_code = c.company_code
@@ -248,7 +248,7 @@ left join
 )e on a.customer_no=e.customer_no
 ;
 
---结果表 客户应收账款
+--结果表 应收账款
 insert overwrite table csx_dw.report_sss_r_d_cust_receivable_amount partition(sdt)
 --drop table csx_dw.report_sss_r_d_cust_receivable_amount;
 --create temporary table csx_dw.report_sss_r_d_cust_receivable_amount
@@ -275,22 +275,22 @@ select
   coalesce(d.payment_short_name,f.payment_short_name,'-') payment_short_name, 
   coalesce(d.credit_limit,f.credit_limit,'-') credit_limit,		--固定信控额度
   coalesce(d.temp_credit_limit,f.temp_credit_limit,'-') temp_credit_limit,		--临时信控额度
-  g.first_category_code,		--一级客户分类编码
-  g.first_category_name,		--一级客户分类名称
-  g.second_category_code,		--二级客户分类编码
-  g.second_category_name,		--二级客户分类名称
-  g.third_category_code,		--三级客户分类编码
-  g.third_category_name,		--三级客户分类名称
+  g.first_category_code,		--一级分类编码
+  g.first_category_name,		--一级分类名称
+  g.second_category_code,		--二级分类编码
+  g.second_category_name,		--二级分类名称
+  g.third_category_code,		--三级分类编码
+  g.third_category_name,		--三级分类名称
   g.sales_id,		--主销售员Id
   g.work_no,		--销售员工号
   g.sales_name,		--销售员名称
-  g.first_supervisor_code,		--一级主管编码,B端客户：销售主管,S端：采购总监 大宗：主管
+  g.first_supervisor_code,		--一级主管编码,B端：销售主管,S端：采购总监 大宗：主管
   g.first_supervisor_work_no,		--一级主管工号
   g.first_supervisor_name,		--一级主管姓名
   g.dev_source_code,		--开发来源编码(1:自营,2:业务代理人,3:城市服务商,4:内购)
   g.dev_source_name,		--开发来源名称
-  h.customer_active_status_code,	--客户活跃状态编码
-  h.customer_active_status_name,	--客户活跃状态
+  h.customer_active_status_code,	--活跃状态编码
+  h.customer_active_status_name,	--活跃状态
   a.source_statement_amount,	--源单据对账金额
   a.payment_amount,		--已核销金额 
   a.bad_debt_amount,	--坏账金额
@@ -327,7 +327,7 @@ from
     payment_amount_1		--认领回款中已核销金额  
   from csx_tmp.tmp_cust_receivable_amount_1
   union all 
-  -- 客户小计、省区合计、城市合计
+  -- 小计、省区合计、城市合计
   select 
     region_code,
     region_name,  
@@ -362,7 +362,7 @@ left join -- 结算公司主体
   from csx_dw.dws_basic_w_a_csx_shop_m 
   where sdt='current'
 )c on a.company_code=c.company_code
-left join -- 客户各月信控额度、临时信控额度、账期类型、账期 csx_dw.dws_crm_w_a_customer_company
+left join -- 各月信控额度、临时信控额度、账期类型、账期 csx_dw.dws_crm_w_a_customer_company
 (
   select distinct a.customer_no,
     a.company_code,
@@ -384,7 +384,7 @@ left join -- 客户各月信控额度、临时信控额度、账期类型、账�
     group by customer_no,company_code,substr(if(sdt='current',regexp_replace(current_date,'-',''),sdt),1,6)
   )b on b.customer_no=a.customer_no and b.company_code=a.company_code and b.max_sdt=if(a.sdt='current',regexp_replace(current_date,'-',''),a.sdt)
 ) d on d.customer_no=a.customer_no and d.company_code=a.company_code and d.smonth=a.smonth
-left join -- 客户小计信控额度、临时信控额度、账期类型、账期 
+left join -- 小计信控额度、临时信控额度、账期类型、账期 
 (
   select distinct customer_no customer_no,
     company_code,
@@ -409,12 +409,12 @@ left join
     last_sales_date,
     last_to_now_days,
     customer_active_status_code,
-	case when  customer_active_status_code = 1 then '活跃客户'
-		when customer_active_status_code = 2 then '沉默客户'
-		when customer_active_status_code = 3 then '预流失客户'
-		when customer_active_status_code = 4 then '流失客户'
+	case when  customer_active_status_code = 1 then '活跃'
+		when customer_active_status_code = 2 then '沉默'
+		when customer_active_status_code = 3 then '预流失'
+		when customer_active_status_code = 4 then '流失'
 		else '其他'
-		end  as  customer_active_status_name	--客户活跃状态
+		end  as  customer_active_status_name	--活跃状态
   from csx_dw.dws_sale_w_a_customer_company_active
   where sdt = 'current'
 )h on a.customer_no=h.customer_no and a.company_code = h.sign_company_code
@@ -433,7 +433,7 @@ order by a.province_code,a.province_name,a.city_group_code,a.city_group_name,a.c
 ---------------------------------------------------------------------------------------------------------
 ---------------------------------------------hive 建表语句-----------------------------------------------
 
---客户应收账款-新系统 csx_dw.report_sss_r_d_cust_receivable_amount
+--应收账款-新系统 csx_dw.report_sss_r_d_cust_receivable_amount
 
 drop table if exists csx_dw.report_sss_r_d_cust_receivable_amount;
 create table csx_dw.report_sss_r_d_cust_receivable_amount(
@@ -448,8 +448,8 @@ create table csx_dw.report_sss_r_d_cust_receivable_amount(
   `channel_name` string COMMENT  '渠道名称',
   `smonth` string COMMENT  '年月',
   `grouping_id` string COMMENT  '区域粒度编码',
-  `customer_no` string COMMENT  '客户编号',
-  `customer_name` string COMMENT  '客户名称',
+  `customer_no` string COMMENT  '编号',
+  `customer_name` string COMMENT  '名称',
   `company_code` string COMMENT  '公司代码',
   `company_name` string COMMENT  '公司名称',
   `payment_terms` string COMMENT  '账期类型',
@@ -458,12 +458,12 @@ create table csx_dw.report_sss_r_d_cust_receivable_amount(
   `payment_short_name` string COMMENT  '账期简称',
   `credit_limit` decimal(26,6)  COMMENT '信控额度',
   `temp_credit_limit` decimal(26,6)  COMMENT '临时额度',
-  `first_category_code` string COMMENT  '一级客户分类编码',
-  `first_category_name` string COMMENT  '一级客户分类名称',
-  `second_category_code` string COMMENT  '二级客户分类编码',
-  `second_category_name` string COMMENT  '二级客户分类名称',
-  `third_category_code` string COMMENT  '三级客户分类编码',
-  `third_category_name` string COMMENT  '三级客户分类名称',
+  `first_category_code` string COMMENT  '一级分类编码',
+  `first_category_name` string COMMENT  '一级分类名称',
+  `second_category_code` string COMMENT  '二级分类编码',
+  `second_category_name` string COMMENT  '二级分类名称',
+  `third_category_code` string COMMENT  '三级分类编码',
+  `third_category_name` string COMMENT  '三级分类名称',
   `sales_id` string COMMENT  '销售员Id',
   `work_no` string COMMENT  '销售员工号',
   `sales_name` string COMMENT  '销售员',
@@ -472,8 +472,8 @@ create table csx_dw.report_sss_r_d_cust_receivable_amount(
   `first_supervisor_name` string COMMENT  '销售主管姓名',
   `dev_source_code` string COMMENT  '开发来源编码(1:自营,2:业务代理人,3:城市服务商,4:内购)',
   `dev_source_name` string COMMENT  '开发来源名称',
-  `customer_active_status_code` string COMMENT  '客户活跃状态编码',
-  `customer_active_status_name` string COMMENT  '客户活跃状态',
+  `customer_active_status_code` string COMMENT  '活跃状态编码',
+  `customer_active_status_name` string COMMENT  '活跃状态',
   `source_statement_amount` decimal(26,6)  COMMENT '源单据对账金额',
   `payment_amount` decimal(26,6)  COMMENT '已核销金额',
   `bad_debt_amount` decimal(26,6)  COMMENT '坏账金额',
@@ -485,7 +485,7 @@ create table csx_dw.report_sss_r_d_cust_receivable_amount(
   `create_by` string COMMENT  '创建人',
   `create_time` timestamp comment '创建时间',
   `update_time` timestamp comment '更新时间'
-) COMMENT '客户应收账款-新系统'
+) COMMENT '应收账款-新系统'
 PARTITIONED BY (sdt string COMMENT '日期分区')
 STORED AS TEXTFILE;
 

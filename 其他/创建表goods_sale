@@ -1,8 +1,8 @@
   set mapreduce.job.queuename=caishixian;
 
--- 从DC W0B6 出去得算BBC，从W0H4出去且客户为门店得算供应链（S端）
+-- 从DC W0B6 出去得算BBC，从W0H4出去且为门店得算供应链（S端）
 --根据战报表逻辑生成近两个月的销售表，添加渠道，省区字段
--- 大客户有包含"平台"
+-- 大有包含"平台"
 drop table b2b_tmp.tmp_customer_sale_1;
 create temporary table b2b_tmp.tmp_customer_sale_1
 as
@@ -60,7 +60,7 @@ select
   sdt,
   sales_type,
   channel,
-  case when channel='1' then '大客户'
+  case when channel='1' then '大'
     when channel='2' then '商超（对内）'
     when channel='3' then '商超（对外）'
     when channel='4' then '大宗'
@@ -139,7 +139,7 @@ from
      when (a.origin_shop_id = 'W0H4' and a.customer_no like 'S%' and category_code in ('10','11')) 
      	or (b.channel = '供应链（生鲜）' and category_code in ('10','11'))then '6'
      when b.channel in ('商超（对内）', 'M端') then '2'
-     when b.channel = '大客户' or b.channel='B端' or a.customer_no in ('S9962','S9951','S9952','S9955','S9958','S9961','S9985') then '1'
+     when b.channel = '大' or b.channel='B端' or a.customer_no in ('S9962','S9951','S9952','S9955','S9958','S9961','S9985') then '1'
      when b.channel = '大宗' then '4'
      when b.channel='商超（对外）' then '3'
      when b.channel='其他' then '8'
@@ -380,7 +380,7 @@ from
   sdt,
   sales_type,
     case when channel is null or channel='' then '1' when province_name='平台-B' and channel='1' then '1' else channel end channel,
-    case when channel is null or channel='' then '大客户' when province_name='平台-B' and channel='1' then '大客户' else channel_name end 	channel_name,
+    case when channel is null or channel='' then '大' when province_name='平台-B' and channel='1' then '大' else channel_name end 	channel_name,
    case when province_name ='成都' then '四川省' when channel='7' then '福建省'else province_name end province_name,
     case when channel='2'  then city_name 
       when channel='7' then '福州' 
@@ -447,8 +447,8 @@ left join
   
   -- create table csx_dw.sale_goods_m
   -- (
-  -- channel string comment'渠道: 1 大客户、2 商超（对内）、3商超（对外）、4大宗、5供应链（食百）、6供应链（生鲜）、7企业购 、8其他、-1未定义',
-  -- channel_name string comment'渠道: 1 大客户、2 商超（对内）、3商超（对外）、4大宗、5供应链（食百）、6供应链（生鲜）、7企业购 、8其他、-1未定义',
+  -- channel string comment'渠道: 1 大、2 商超（对内）、3商超（对外）、4大宗、5供应链（食百）、6供应链（生鲜）、7企业购 、8其他、-1未定义',
+  -- channel_name string comment'渠道: 1 大、2 商超（对内）、3商超（对外）、4大宗、5供应链（食百）、6供应链（生鲜）、7企业购 、8其他、-1未定义',
   -- shop_id string comment'门店编码',
   -- shop_name string comment'门店名称',
   -- sales_date string comment'销售日期',
@@ -459,8 +459,8 @@ left join
   -- city_name string comment'城市名称',
   -- city_real string comment'城市组',
   -- cityjob string comment'城市组编码',
-  -- customer_no string comment'客户编码',
-  -- customer_name string comment'客户名称',
+  -- customer_no string comment'编码',
+  -- customer_name string comment'名称',
   -- sales_id string comment'销售员ID',
   -- sales_name string comment'销售员名称',
   -- work_no string comment'销售员工号',
@@ -512,7 +512,7 @@ left join
   -- storage_location string comment'库存地点',
   -- bill_type string comment'开票类型',
   -- return_flag string comment'退货标识X',
-  -- customer_group string comment'客户组',
+  -- customer_group string comment'组',
   -- origin_shop_id string comment'原始门店id',
  
 -- )

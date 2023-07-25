@@ -40,7 +40,7 @@ SELECT a.channel_name,
 FROM 
 (
 SELECT CASE
-           WHEN a.channel IN ('1','7') THEN '大客户'
+           WHEN a.channel IN ('1','7') THEN '大'
            ELSE a.channel_name
        END channel_name,
        a.province_code,
@@ -70,7 +70,7 @@ WHERE sdt>=regexp_replace(${hiveconf:sdate},'-','')
 GROUP BY province_code,
          province_name,
          CASE
-             WHEN a.channel IN ('1', '7') THEN '大客户'
+             WHEN a.channel IN ('1', '7') THEN '大'
              ELSE a.channel_name
          END
 )a 
@@ -106,7 +106,7 @@ FROM
 csx_tmp.temp_war_zone_sale  a 
 join 
 (select CASE
-           WHEN a.channel IN ('1','7') THEN '大客户'
+           WHEN a.channel IN ('1','7') THEN '大'
            ELSE a.channel_name
        END channel_name,
        province_code,
@@ -114,7 +114,7 @@ join
     from csx_dw.dws_sale_r_d_customer_sale a
     where sdt=regexp_replace(date_sub(${hiveconf:edate},7),'-','')
     group by CASE
-           WHEN a.channel IN ('1','7') THEN '大客户'
+           WHEN a.channel IN ('1','7') THEN '大'
            ELSE a.channel_name
        END ,
        province_code
@@ -127,7 +127,7 @@ join
 drop table if exists csx_tmp.temp_ring_war_zone_sale;
 create temporary table csx_tmp.temp_ring_war_zone_sale as
 select case
-           when a.channel in ('1', '7') then '大客户'
+           when a.channel in ('1', '7') then '大'
            else a.channel_name
        end channel_name,
        province_code,
@@ -142,7 +142,7 @@ where sdt>=regexp_replace(${hiveconf:l_sdate},'-', '')
 group by province_code,
          province_name,
          case
-             when a.channel in ('1','7') then '大客户'
+             when a.channel in ('1','7') then '大'
              else a.channel_name
          end ;
 
@@ -155,7 +155,7 @@ drop table if exists csx_tmp.temp_war_zone_sale_02;
 create temporary table csx_tmp.temp_war_zone_sale_02 as
 
 select
-    '大客户' as channel_name,
+    '大' as channel_name,
     province_code ,
     province_name  ,
     count(distinct  goods_code )as sale_sku,
@@ -204,7 +204,7 @@ SELECT '1' level_id,
        substr(regexp_replace(${hiveconf:edate},'-',''),1,6) as  sales_months,
        zone_id,
        zone_name,
-       case when a.channel_name='大客户' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
+       case when a.channel_name='大' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
        a.channel_name,
        a.province_code,
        a.province_name,
@@ -435,7 +435,7 @@ group by
 
 
 
--- 客户属性数据插入
+-- 属性数据插入
 drop table if exists csx_tmp.temp_zone_attribute_01;
 create temporary table csx_tmp.temp_zone_attribute_01
 as 
@@ -461,10 +461,10 @@ from (
    SELECT 
        province_code ,
        case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end attribute,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
@@ -494,10 +494,10 @@ from (
     sdt = 'current') as b on a.customer_no =b.customer_no
    where sdt>=regexp_replace(${hiveconf:sdate},'-','') and sdt<= regexp_replace(${hiveconf:edate},'-','') and a.channel in('1','7')
    group by case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'   end ,
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'   end ,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
             when a.order_kind='WELFARE' then '2'
@@ -509,10 +509,10 @@ from (
    SELECT 
        province_code ,
        case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end attribute,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
@@ -542,10 +542,10 @@ from (
     sdt = 'current') as b on a.customer_no =b.customer_no
    where sdt>= regexp_replace(${hiveconf:l_sdate},'-','') and sdt<= regexp_replace(${hiveconf:l_edate},'-','') and a.channel in('1','7')
    group by case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end ,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
@@ -596,7 +596,7 @@ select '1'as level_id,
 from csx_tmp.temp_zone_attribute_01 a 
 left join 
 (select province_code,channel_name,customer_attribute_code,0 daily_plan_sale,sum(plan_sales_value)plan_sales_value ,sum(plan_profit)plan_profit from csx_tmp.dws_csms_manager_month_sale_plan_tmp
-     where month=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) and channel_name='大客户'
+     where month=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) and channel_name='大'
     group by  province_code,channel_name,customer_attribute_code) b on a.province_code=b.province_code and a.attribute_code=b.customer_attribute_code 
     ;
 
@@ -1161,7 +1161,7 @@ select level_id,
     a.zone_id,
     a.zone_name,
    '1' channel_code,
-    '大客户'as channel,
+    '大'as channel,
     division_code,
     division_name,
     department_code ,
@@ -1281,7 +1281,7 @@ select * from csx_tmp.temp_zone_bd_sale_04 where months=substr(regexp_replace(${
 ----------------------------------------商超销售----------------------------------------------------------------
 
 -------------------------------------------------------------------分割线-------------------------------------------------------------------------------
--- 说明 ：客户 a.customer_no IN ('S9961','S99A0','S9996','SW098','S99A7') 归属云超 ；customer_no in ('103097', '103903','104842') 归属 '红旗/中百'
+-- 说明 ： a.customer_no IN ('S9961','S99A0','S9996','SW098','S99A7') 归属云超 ；customer_no in ('103097', '103903','104842') 归属 '红旗/中百'
 -- set tez.queue.name= mr;
 -- 首页销售省区
 set hive.exec.dynamic.partition.mode=nonstrict;

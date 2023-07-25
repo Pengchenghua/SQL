@@ -33,7 +33,7 @@ where
 ) a  
 order by sale_ratio desc ;
 
--- 客户分类销售占比
+-- 分类销售占比
 select
 	customer_no,
 	customer_name,
@@ -63,5 +63,5 @@ where
 	second_category
 )a order by sale_ratio desc ;
 
--- 逾期客户情况 
+-- 逾期情况 
 select * from csx_dw.receivables_collection where sdt='20191231' and channel='大宗'

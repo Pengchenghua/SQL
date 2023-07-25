@@ -272,7 +272,7 @@ select
     joint_purchase as supplier_joint ,            -- 供应商集采标识
     business_owner_code,        -- 业态归属
     business_owner_name,        -- 业态归属
-    special_customer,           -- 专项客户
+    special_customer,           -- 专项
     supplier_classify_code,     -- 供应商类型
     supplier_classify_name,     -- 供应商类型 
     borrow_flag,                -- 是否借用
@@ -295,7 +295,7 @@ left join
         purchase_org_code,
         business_owner_code,        -- 业态归属
         business_owner_name,        -- 业态归属
-        special_customer,           -- 专项客户
+        special_customer,           -- 专项
         supplier_classify_code,     -- 供应商类型
         supplier_classify_name,     -- 供应商类型 
         borrow_flag,                -- 是否借用

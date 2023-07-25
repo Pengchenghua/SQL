@@ -101,8 +101,8 @@ select
 from 
 (
   select 
-    case when qdflag is null or qdflag = '' then '大客户' 
-      when dist = '平台' and qdflag = '大客户' then '平台' 
+    case when qdflag is null or qdflag = '' then '大' 
+      when dist = '平台' and qdflag = '大' then '平台' 
 	  else qdflag end as qdflag,
     case when dist = 'BB' then '福建' 
 	  else dist end as dist,
@@ -169,7 +169,7 @@ group by x.qdflag, x.dist, b.diro, b.manage, case when x.dist = '福建' then co
   cust_id, cust_name, bd_name, sdt;
 
 
--- 插入客户单日销售业绩
+-- 插入单日销售业绩
 insert overwrite table csx_dw.ads_sale_s_d_sale_warzone01_detail_dtl partition (sdt)
 select 
   qdflag, dist, diro, manage, city_real, cityjob, cust_id, cust_name, bd_name, xse, mle, sdt 
@@ -193,7 +193,7 @@ select
 from 
 (
   select 
-    case when qdflag = '大客户' then 1 
+    case when qdflag = '大' then 1 
 	  when qdflag = '商超' then 2 -- when qdflag = '商超(对外)' then 3
       when qdflag = '企业购' then 4 end as qdrno,
     qdflag,
@@ -211,7 +211,7 @@ from
   where qdflag not in ('大宗','平台','供应链(S端)') -- and dist not in ('商超平台')
   union all 
   select 
-    case when qdflag = '大客户' then 1 
+    case when qdflag = '大' then 1 
 	  when qdflag = '商超' then 2
       when qdflag = '企业购' then 4 end as qdrno,
     qdflag,
@@ -229,10 +229,10 @@ from
   where qdflag not in ('大宗','平台','供应链(S端)') and dist in ('福建','江苏','浙江')
   union all 
   select 
-    case when qdflag in ('大客户','平台') then 1 
+    case when qdflag in ('大','平台') then 1 
       when qdflag = '商超' then 2
       when qdflag = '企业购' then 4 end as qdrno,
-    case when qdflag = '平台' then '大客户' 
+    case when qdflag = '平台' then '大' 
       else qdflag end as qdflag,
     '总计' as dist,
     100 as diro,
@@ -252,8 +252,8 @@ order by diro, qdrno, city_real desc;
   -- union all 
   -- select
   --   1 as qdrno,
-  --   '大客户' as qdflag,
-  --   '大客户平台' as dist,
+  --   '大' as qdflag,
+  --   '大平台' as dist,
   --   102 as diro,
   --   '' as manage,
   --   '' as city_real,
@@ -267,7 +267,7 @@ order by diro, qdrno, city_real desc;
   -- where qdflag = '平台'
   -- union all 
   -- select 
-  --   case when qdflag = '大客户' then 1 
+  --   case when qdflag = '大' then 1 
   --     when qdflag = '商超' then 2 -- when qdflag = '商超(对外)' then 3
   --     when qdflag = '企业购' then 4 end as qdrno,
   --   qdflag,

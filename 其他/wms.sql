@@ -266,10 +266,10 @@ select
 	t3.receive_location_name as receive_location_name,	--收货地点名称
 			t3.settlement_dc as settlement_dc,		--结算DC
 		t3.settlement_dc_name  as settlement_dc_name,	--结算DC名称		
-	t3.customer_code as customer_code,	--客户编号
-	t3.customer_name as customer_name,	--客户名称
-	t3.sub_customer_code as sub_customer_code,	--子客户号
-	t3.sub_customer_address as sub_customer_address,	--子客户地址
+	t3.customer_code as customer_code,	--编号
+	t3.customer_name as customer_name,	--名称
+	t3.sub_customer_code as sub_customer_code,	--子号
+	t3.sub_customer_address as sub_customer_address,	--子地址
 	t3.shop_type as shop_type,	--门店类型
 	t3.shop_code as shop_code,	--门店编号
 	t3.shop_name as shop_name,	--门店名称
@@ -327,10 +327,10 @@ from
 		receive_location_name,	--收货地点名称
 					settlement_dc ,		--结算DC
 		settlement_dc_name ,	--结算DC名称		
-		customer_code,	--客户编号
-		customer_name,	--客户名称
-		sub_customer_code,	--子客户号
-		sub_customer_address,	--子客户地址
+		customer_code,	--编号
+		customer_name,	--名称
+		sub_customer_code,	--子号
+		sub_customer_address,	--子地址
 		shop_type,	--门店类型
 		shop_code,	--门店编号
 		shop_name,	--门店名称
@@ -464,10 +464,10 @@ from
 		update_time,--	更新时间
 		update_by ,--	更新者
  
-		''customer_code,	--客户编号
-		''customer_name,	--客户名称
-		''sub_customer_code,	--子客户号
-		''sub_customer_address,	--子客户地址
+		''customer_code,	--编号
+		''customer_name,	--名称
+		''sub_customer_code,	--子号
+		''sub_customer_address,	--子地址
 		''shop_type,	--门店类型
 		''shop_code,	--门店编号
 		''shop_name,	--门店名称
@@ -532,10 +532,10 @@ select
 		update_time,	--更新时间
 		update_by,	--更新者
 
-		customer_code,	--客户编号
-		customer_name,	--客户名称
-		sub_customer_code,	--子客户号
-		sub_customer_address,	--子客户地址
+		customer_code,	--编号
+		customer_name,	--名称
+		sub_customer_code,	--子号
+		sub_customer_address,	--子地址
 		shop_type,	--门店类型
 		shop_code,	--门店编号
 		shop_name,	--门店名称

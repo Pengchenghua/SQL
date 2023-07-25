@@ -11,7 +11,7 @@ SELECT mon,
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust --销售客户数
+       sale_cust --销售数
 FROM
   (SELECT substr(sdt,1,6) mon,
           dc_code,
@@ -20,7 +20,7 @@ FROM
           sum(sales_qty)sales_qty, --销售量
           count(DISTINCT sdt) AS sale_sdt, --销售天数
           count(DISTINCT substr(sdt,1,6)) AS sales_mon, --销售月份
-          count(DISTINCT a.customer_no) AS sale_cust --销售客户数
+          count(DISTINCT a.customer_no) AS sale_cust --销售数
 FROM csx_dw.dws_sale_r_d_detail a
     WHERE sdt >= '20201201'
      AND sdt < '20210301'
@@ -110,7 +110,7 @@ select a.dc_code,
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust, --销售客户
+       sale_cust, --销售
        max_sale,
        min_sale,
        max_mon_qty,
@@ -134,7 +134,7 @@ from
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust, --销售客户
+       sale_cust, --销售
        max_sale,
        min_sale,
        max_mon_qty,
@@ -205,7 +205,7 @@ SELECT mon,
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust --销售客户数
+       sale_cust --销售数
 FROM
   (SELECT substr(sdt,1,6) mon,
           dc_code,
@@ -214,7 +214,7 @@ FROM
           sum(sales_qty)sales_qty, --销售量
           count(DISTINCT sdt) AS sale_sdt, --销售天数
           count(DISTINCT substr(sdt,1,6)) AS sales_mon, --销售月份
-          count(DISTINCT a.customer_no) AS sale_cust --销售客户数
+          count(DISTINCT a.customer_no) AS sale_cust --销售数
 FROM csx_dw.dws_sale_r_d_detail a
     WHERE sdt >= '20210201'
      AND sdt <= '20210419'
@@ -310,7 +310,7 @@ select a.mon,
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust, --销售客户
+       sale_cust, --销售
        max_sale,
        min_sale,
        max_mon_qty,
@@ -335,7 +335,7 @@ from
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust, --销售客户
+       sale_cust, --销售
        max_sale,
        min_sale,
        max_mon_qty,
@@ -418,7 +418,7 @@ select a.mon,
        sales_qty, --销售量
        sale_sdt, --销售天数
        sales_mon, --销售月份
-       sale_cust, --销售客户
+       sale_cust, --销售
        max_sale,
        min_sale,
        max_mon_qty,

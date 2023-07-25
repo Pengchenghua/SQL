@@ -1,6 +1,6 @@
 -- 1、商超订单满足率
 -- 2、提取订单表
---订单：	出库DC、客户、订单号、订单SKU、订单量
+--订单：	出库DC、、订单号、订单SKU、订单量
 -- 出库：出库量、出库额
 /*  	col_name	data_type	comment
 1	order_no	string	交易单号
@@ -38,10 +38,10 @@
 33	receive_time	string	签收时间
 34	finish_time	string	完成时间
 35	order_date	int	下单日期
-36	sap_cus_code	string	SAP买家客户编码
-37	sap_cus_name	string	SAP买家客户名称
-38	sap_sub_cus_code	string	SAP买家客户子账号
-39	sap_sub_cus_name	string	sap子客户名称
+36	sap_cus_code	string	SAP买家编码
+37	sap_cus_name	string	SAP买家名称
+38	sap_sub_cus_code	string	SAP买家子账号
+39	sap_sub_cus_name	string	sap子名称
 40	sap_sale_office	string	SAP销售办公室
 41	sap_sale_organization	string	SAP销售组织
 42	sap_order_type	string	SAP订单类型
@@ -62,7 +62,7 @@
 57	receive_order_time	string	接单时间
 58	pay_type	int	0:线上支付,1:线下支付
 59	created_user_id	bigint	下单用户ID
-60	scale_status	int	客户精度状态(0不控制，1保留一位小数)
+60	scale_status	int	精度状态(0不控制，1保留一位小数)
 61	order_kind	string	订单类型：NORMAL-普通单，WELFARE-福利单
 62	order_mode	int	订单模式：0-配送,1-直送，2-自提，3-直通
 63	is_picking	int	是否分拣：0-否，1-是

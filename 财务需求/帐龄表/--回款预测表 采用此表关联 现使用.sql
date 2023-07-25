@@ -112,7 +112,7 @@ CREATE  table csx_analyse_tmp.csx_analyse_tmp_channel as
 
 
 CREATE  table csx_analyse_tmp.csx_analyse_tmp_channel_04 as 
--- 剔除一样的客户 
+-- 剔除一样的 
 select   a.sign_company_code,
          a.customer_code,
          a.channel_name as sales_channel_name
@@ -161,7 +161,7 @@ from
     where sdt='current') b on a.customer_id=b.customer_id
   where sdt = regexp_replace(date_sub(current_date,1),'-','')
     
-   --  and target_code in (1,3)    --存量与增量客户
+   --  and target_code in (1,3)    --存量与增量
     and project_code in (1)     --取预测销售额
     -- and target_year >= '2022'
 ) a lateral VIEW explode(month_map) col1s AS month,target_value
@@ -229,7 +229,7 @@ select
         performance_city_code,
         performance_city_name
     from 
-        csx_dim.csx_dim_crm_customer_company   --客户账期表
+        csx_dim.csx_dim_crm_customer_company   --账期表
     where 
         sdt='current'  ) c on a.customer_code = c.customer_code and a.company_code = c.company_code
      left join 

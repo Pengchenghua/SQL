@@ -1,5 +1,5 @@
 --20190820业务提出：不要利润中心的字段，增加信控固定额度，临时额度，销售员三个字段
---20191107'V7126','V7127','V7128','V7129','V7130','V7131','V7132'这些客户的账龄改为月结45天
+--20191107'V7126','V7127','V7128','V7129','V7130','V7131','V7132'这些的账龄改为月结45天
 
 --首先出表过去让业务对比，一致后再刷。 
 --sdt=月初第一天或者当天，根据下表1判断
@@ -24,7 +24,7 @@ where sdt='20210106'and  budat<'20210101' and mandt='800'
 and hkont like'1122%'
 group by bukrs,prctr,hkont;
 
---某个客户
+--某个
 select regexp_replace(kunnr ,'(^0*)',''),bukrs,hkont,sum(dmbtr) dmbtr
 from ods_ecc.ecc_ytbcustomer  
 where sdt='20210106'and  budat<'20210101' and mandt='800'  
@@ -209,7 +209,7 @@ select
   b.comp_name,
   a.prctr, -- 利润中心
   a.shop_name,
-  a.kunnr, -- 客户编码
+  a.kunnr, -- 编码
   c.customer_name as name,
   zterm, -- 账期类型
   case when zterm like 'Y%' then concat('月结', diff) else concat('票到', diff) end as diff, -- 账期

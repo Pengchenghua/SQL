@@ -373,7 +373,7 @@ FROM
    --  and sale_unit !='KG'
       ) a
   left JOIN (
-    -- 只取大客户
+    -- 只取大
     SELECT
       customer_code,
       customer_name,
@@ -388,7 +388,7 @@ FROM
     WHERE
       sdt = 'current'
       AND customer_code <> ''
-      AND channel_code = '1' -- 大客户
+      AND channel_code = '1' -- 大
   ) b ON a.customer_code = b.customer_code
   left join (
     SELECT

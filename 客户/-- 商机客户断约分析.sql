@@ -1,4 +1,4 @@
--- 商机客户断约分析
+-- 商机断约分析
 with aa as 
 (select c.performance_region_name,
     c.performance_province_name,

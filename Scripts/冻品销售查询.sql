@@ -3,9 +3,9 @@ select
 	province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	sum(case when classify_middle_code='B0304' then sales_value end ) as b_sales_value,
 	sum(case when classify_middle_code='B0304' then profit end ) as b_profit,
@@ -35,9 +35,9 @@ where
 group by province_code ,
 	province_name ,
 case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ;
 	
 select sum(sales_value) from csx_dw.dws_sale_r_d_customer_sale where sdt like '202010%';
@@ -63,9 +63,9 @@ select
 	province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 		goods_code ,
 		goods_name ,
@@ -100,9 +100,9 @@ where
 group by province_code ,
 	province_name ,
 case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end,
 		goods_code ,
 		goods_name ,
@@ -115,9 +115,9 @@ select
 	province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	customer_no,
 	customer_name,
@@ -158,9 +158,9 @@ where
 group by province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ,
 	customer_no,
 	customer_name,
@@ -220,9 +220,9 @@ select
 	a.dc_code,
 	a.dc_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	customer_no,
 	customer_name,
@@ -266,9 +266,9 @@ where
 group by province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ,
 	customer_no,
 	customer_name,
@@ -409,9 +409,9 @@ select
 	province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	customer_no,
 	customer_name,
@@ -455,9 +455,9 @@ group by  substr(sdt,1,6),
 	province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ,
 	customer_no,
 	customer_name,
@@ -476,9 +476,9 @@ group by  substr(sdt,1,6),
     substr(sdt,1,6) mon,
 	province_code ,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	customer_no,
 	sum(sales_value) all_sales_value 
@@ -489,9 +489,9 @@ where
 group by  substr(sdt,1,6),
 	province_code ,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ,
 	customer_no
 	) j on a.mon=j.mon and a.province_code =j.province_code and a.customer_no =j.customer_no and a.channel_name=j.channel_name

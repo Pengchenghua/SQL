@@ -65,7 +65,7 @@
 [32m+[m[32m             ELSE '转配'[m
 [32m+[m[32m         END[m
 [32m+[m[32mUNION ALL[m
-[32m+[m[32m-- 大客户[m
+[32m+[m[32m-- �客户[m
 [32m+[m[32mSELECT channel_name,[m
 [32m+[m[32m       province_name,[m
 [32m+[m[32m       CASE[m
@@ -83,7 +83,7 @@
 [32m+[m[32m           END channel,[m
 [32m+[m[32m           CASE[m
 [32m+[m[32m               WHEN channel IN ('1',[m
-[32m+[m[32m                                '7') THEN '大客户'[m
+[32m+[m[32m                                '7') THEN '�客户'[m
 [32m+[m[32m               ELSE channel_name[m
 [32m+[m[32m           END channel_name,[m
 [32m+[m[32m           sgm2.province_name,[m
@@ -102,7 +102,7 @@
 [32m+[m[32m            END,[m
 [32m+[m[32m            CASE[m
 [32m+[m[32m                WHEN channel IN ('1',[m
-[32m+[m[32m                                 '7') THEN '大客户'[m
+[32m+[m[32m                                 '7') THEN '�客户'[m
 [32m+[m[32m                ELSE channel_name[m
 [32m+[m[32m            END,[m
 [32m+[m[32m            goods_code,[m
@@ -409,10 +409,10 @@
 [31m--- system_status ϵͳ״̬(1-�������ύ��2-��ͬ��WMS��3-WMS�ѻش���4-�޸����ύ��5-�޸���ͬ��WMS��6-�޸ĳɹ���7-�޸�ʧ��)[m
 [31m--- source_type ��Դ����(1-�ɹ����롢2-ֱ�Ϳͻ���3-һ��������4-��Ŀ�ϻ��ˡ�5-�޵���⡢6-���۵�����7-��Ӫ������8-�Ƴ��ɹ���9-�����ɹ�)[m
 [32m+[m[32m-- 单据类型(1-供应商订单、2-供应商退货订单、3-配送订单、4-返配订单[m
-[32m+[m[32m-- source_type COMMENT '来源类型(1-采购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)'[m
+[32m+[m[32m-- source_type COMMENT '来源类型(1-�购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)'[m
 [32m+[m[32m-- status 状态(1-已创建、2-已发货、3-部分入库、4-已完成、5-已取消)[m
 [32m+[m[32m-- system_status 系统状态(1-订单已提交、2-已同步WMS、3-WMS已回传、4-修改已提交、5-修改已同步WMS、6-修改成功、7-修改失败)[m
-[32m+[m[32m-- source_type 来源类型(1-采购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)[m
+[32m+[m[32m-- source_type 来源类型(1-�购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)[m
  [m
 [31m--- system_status  COMMENT 'ϵͳ״̬(1-�������ύ��2-��ͬ��WMS��3-WMS�ѻش���4-�޸����ύ��5-�޸���ͬ��WMS��6-�޸ĳɹ���7-�޸�ʧ��)',[m
 [32m+[m[32m-- system_status  COMMENT '系统状态(1-订单已提交、2-已同步WMS、3-WMS已回传、4-修改已提交、5-修改已同步WMS、6-修改成功、7-修改失败)',[m
@@ -464,7 +464,7 @@
 [31m-		when channel in('1','7') then '��ͻ�'[m
 [31m-		when channel in('2','3','8') then '�̳�'[m
 [32m+[m		[32mwhen province_name like '平台%' then '平台'[m
-[32m+[m		[32mwhen channel in('1','7') then '大客户'[m
+[32m+[m		[32mwhen channel in('1','7') then '�客户'[m
 [32m+[m		[32mwhen channel in('2','3','8') then '商超'[m
  		else channel_name[m
  	end  channel_name,[m
@@ -477,7 +477,7 @@
 [31m-		when channel in('1','7') then '��ͻ�'[m
 [31m-		when channel in('2','3','8') then '�̳�'[m
 [32m+[m		[32mwhen province_name like '平台%' then '平台'[m
-[32m+[m		[32mwhen channel in('1','7') then '大客户'[m
+[32m+[m		[32mwhen channel in('1','7') then '�客户'[m
 [32m+[m		[32mwhen channel in('2','3','8') then '商超'[m
  		else channel_name[m
  	end ,[m

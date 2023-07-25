@@ -147,7 +147,7 @@ select * from dim.dim_shop_latest;
 
 SELECT  shop_name FROM csx_dw.csx_shop where sdt='current' and  (CASE WHEN province_code='W0H4' then 350000 else province_code end );
 
--- 客户类型销售
+-- 类型销售
 
 select
 	province_code,
@@ -155,7 +155,7 @@ select
 	division_code,
 	division_name,
 	case
-		when b.attribute = '合伙人客户' then '合伙人'
+		when b.attribute = '合伙人' then '合伙人'
 		else channel_name
 end note,
 COUNT(DISTINCT goods_code)as sale_sku,
@@ -203,7 +203,7 @@ group by
 	division_code,
 	division_name,
 	case
-		when b.attribute = '合伙人客户' then '合伙人'
+		when b.attribute = '合伙人' then '合伙人'
 		else channel_name
 end ;
 
@@ -213,7 +213,7 @@ select
 	division_code,
 	division_name,
 	case
-		when b.attribute = '合伙人客户' then '合伙人'
+		when b.attribute = '合伙人' then '合伙人'
 		when channel_name in ('供应链(生鲜)','供应链(食百)') then '供应链'
 		else channel_name
 end note,
@@ -261,12 +261,12 @@ group by
 	division_code,
 	division_name,
 		case
-		when b.attribute = '合伙人客户' then '合伙人'
+		when b.attribute = '合伙人' then '合伙人'
 		when channel_name in ('供应链(生鲜)','供应链(食百)') then '供应链'
 		else channel_name
 end ;
 
-select customer_no,is_parter,`attribute`,case when `attribute`='合伙人客户' then '是' else '否'end note  from csx_dw.customer_m where sdt='20200320' and customer_no!='' and channel !='商超'
+select customer_no,is_parter,`attribute`,case when `attribute`='合伙人' then '是' else '否'end note  from csx_dw.customer_m where sdt='20200320' and customer_no!='' and channel !='商超'
 ;
     select
         province_code,

@@ -1,4 +1,4 @@
---客户编码，客户名称，日期，退货金额，退货毛利.5月份的.等下有空，帮我这个大客户的刷一下.
+--编码，名称，日期，退货金额，退货毛利.5月份的.等下有空，帮我这个大的刷一下.
 
 select sdt,a.customer_no,customer_name,sales_user_name,region_province_name,sum(a.tax_sale_val)sale,sum(a.tax_profit)profit from csx_dw.big_customer_order a
 join

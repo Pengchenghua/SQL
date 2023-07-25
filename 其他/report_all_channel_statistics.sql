@@ -15,7 +15,7 @@ sum(order_customers) as order_customers
 from 
 (
   select 
-    case when (qdflag='B端' or qdflag='平台') then '大客户' 
+    case when (qdflag='B端' or qdflag='平台') then '大' 
       when qdflag = '供应链(S端)' then '供应链'
       when qdflag='M端' then '商超'
       else qdflag end as channel_name,
@@ -28,7 +28,7 @@ from
   from csx_dw.sale_warzone01_detail_dtl 
   where sdt >= regexp_replace(trunc(date_sub(current_date,1),'MM'),'-','') and
     sdt <= regexp_replace(date_sub(current_date,1),'-','')
-  group by  case when (qdflag='B端' or qdflag='平台') then '大客户' 
+  group by  case when (qdflag='B端' or qdflag='平台') then '大' 
       when qdflag = '供应链(S端)' then '供应链'
       when qdflag='M端' then '商超'
       else qdflag end, 
@@ -36,7 +36,7 @@ from
     case when qdflag= '平台' then '平台' else dist end
   union all 
   select 
-    case when (qdflag='B端' or qdflag='平台') then '大客户' 
+    case when (qdflag='B端' or qdflag='平台') then '大' 
       when qdflag = '供应链(S端)' then '供应链'
       when qdflag='M端' then '商超'
       else qdflag end as channel_name,
@@ -49,7 +49,7 @@ from
   from csx_dw.sale_warzone01_detail_dtl 
   where sdt >= regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),-1),'-','') and
     sdt <= regexp_replace(add_months(date_sub(current_date,1),-1),'-','')
-  group by case when (qdflag='B端' or qdflag='平台') then '大客户' 
+  group by case when (qdflag='B端' or qdflag='平台') then '大' 
       when qdflag = '供应链(S端)' then '供应链'
       when qdflag='M端' then '商超'
       else qdflag end, 
@@ -81,7 +81,7 @@ from
     profit,
     cast(profit/sales_value as decimal(26, 6)) as profit_rate,
     order_customers
-  from b2b_tmp.channel_sales_statistics where channel_name in ('商超','大客户')
+  from b2b_tmp.channel_sales_statistics where channel_name in ('商超','大')
   union all
   select 
     'all' as channel_name,
@@ -110,6 +110,6 @@ from
 )a
 order by case when channel_name='all' then 1 
   when channel_name='商超'then 2 
-  when channel_name='大客户' then 3 
+  when channel_name='大' then 3 
   when channel_name='大宗'then 4 
   when channel_name='供应链' then 5 else 6 end, sales_province;

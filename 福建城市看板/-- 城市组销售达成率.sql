@@ -41,9 +41,9 @@ SELECT a.channel_name,
 FROM 
 (
 SELECT CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        a.province_code,
@@ -81,9 +81,9 @@ GROUP BY province_code,
          a.city_group_code,
          a.city_group_name,
          CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END
 )a 
@@ -122,9 +122,9 @@ FROM
 csx_tmp.temp_war_city_sale  a 
 left join 
 (select CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        province_code,
@@ -136,9 +136,9 @@ left join
      and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046',
 				'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
     group by CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END ,
        a.city_group_code,
@@ -153,9 +153,9 @@ left join
 DROP TABLE IF EXISTS csx_tmp.temp_ring_war_zone_sale;
 CREATE TEMPORARY TABLE csx_tmp.temp_ring_war_zone_sale AS
 SELECT CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        province_code,
@@ -174,9 +174,9 @@ GROUP BY province_code,
          a.city_group_code,
     a.city_group_name,
          CASE
-           WHEN a.channel_code IN ('1','7','9') THEN '大客户'
+           WHEN a.channel_code IN ('1','7','9') THEN '大'
  		   when channel_code in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel_code in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END ;
 
@@ -189,7 +189,7 @@ DROP TABLE IF EXISTS csx_tmp.temp_war_zone_sale_02;
 CREATE TEMPORARY TABLE csx_tmp.temp_war_zone_sale_02 AS
 
 select
-    '大客户' as channel_name,
+    '大' as channel_name,
     province_code ,
     province_name  ,
     a.city_group_code,
@@ -252,7 +252,7 @@ select trim(province_code)province_code,
     sum(plan_profit)plan_profit 
    from 
    (select province_code,city_group_code,case when city_group_name like '攀枝花%' then '攀枝花市' else city_group_name end city_group_name,
-        '大客户' as channel_name,
+        '大' as channel_name,
         0 daily_plan_sales_value,
         0 daily_plan_profit,
         (plan_sales_value)plan_sales_value ,
@@ -288,7 +288,7 @@ SELECT '1' level_id,
        substr(regexp_replace(${hiveconf:edate},'-',''),1,6) as  sales_months,
        zone_id,
        zone_name,
-       case when a.channel_name='大客户' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
+       case when a.channel_name='大' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
        a.channel_name,
        a.province_code,
        a.province_name,

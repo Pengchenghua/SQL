@@ -215,11 +215,11 @@ from csx_dw.dws_basic_w_a_csx_shop_m
     order_status string comment '订单状态', 
     order_time string comment '订单时间', 
     order_no string comment '订单号', -- 完成订单数
-    sap_sub_cus_code string comment '子客户号', -- 子客户数
-    sap_sub_cus_name string comment '子客户名称',
-    customer_site_name string comment '客户站点', -- 站点数
-    sap_cus_code string comment '客户编码', -- 客户数
-    sap_cus_name string comment '客户名称',
+    sap_sub_cus_code string comment '子号', -- 子数
+    sap_sub_cus_name string comment '子名称',
+    customer_site_name string comment '站点', -- 站点数
+    sap_cus_code string comment '编码', -- 数
+    sap_cus_name string comment '名称',
     order_kind_type string comment '订单类型',
     order_amt  decimal(30,6) '订单金额', -- 明日订单总金额
     update_time timestamp() comment '更新时间'    

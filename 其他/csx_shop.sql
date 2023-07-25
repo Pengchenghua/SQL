@@ -45,7 +45,7 @@ create table csx_dw.csx_shop
 		process_area STRING comment '加工营业面积'                                                          ,
 		fresh_flag STRING comment '是否经营生鲜 比如:X:是 空:否'                                                 ,
 		table_type string comment '公司类型 1 彩食鲜 、2 永辉'                                                  ,
-		location_uses string comment '仓库用途(01大客户物流、02	商超物流、03工厂、04	寄售门店、05	彩食鲜小店)'                    ,
+		location_uses string comment '仓库用途(01大物流、02	商超物流、03工厂、04	寄售门店、05	彩食鲜小店)'                    ,
 		location_type string comment '仓库类型 1仓库、2工厂、3	门店)'                                             ,
 		location_status comment '地点启用 1开启 2禁用'                                                        ,
 		zone_id string comment '战区编码'                                                                 ,

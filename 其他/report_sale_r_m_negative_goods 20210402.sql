@@ -42,7 +42,7 @@ set source_wms_stock_detail = csx_dw.dws_wms_r_d_batch_detail;
 -- 工厂订单明细
 set source_factory_order = csx_dw.dws_mms_r_a_factory_order;
 
--- 客户维度表
+-- 维度表
 set source_customer = csx_dw.dws_crm_w_a_customer;
 
 -- 商品维度表
@@ -193,9 +193,9 @@ select
   sum(middle_office_price * sales_qty) / sum(case when middle_office_price is null then 0 else sales_qty end) as middle_office_price,
   --  销售价格
   sum(sales_price * sales_qty) / sum(case when sales_price is null then 0 else sales_qty end) as sales_price,
-  --  大区商品客户毛利排名
+  --  大区商品毛利排名
   row_number() over(partition by region_code, goods_code order by sum(profit) asc) as region_customer_profit_ranking,
-  -- 	省区商品客户毛利排名
+  -- 	省区商品毛利排名
   row_number() over(partition by province_code, goods_code order by sum(profit) asc) as province_customer_profit_ranking
 from csx_tmp.tmp_2b_sale_trace 
 where goods_group_sales_value > 0 and goods_group_profit < 0 
@@ -227,9 +227,9 @@ select
   sum(middle_office_price * sales_qty) / sum(case when middle_office_price is null then 0 else sales_qty end) as middle_office_price,
   --  销售价格
   sum(sales_price * sales_qty) / sum(case when sales_price is null then 0 else sales_qty end) as sales_price,
-  --  大区商品客户毛利排名
+  --  大区商品毛利排名
   row_number() over(partition by  goods_code order by sum(profit) asc) as region_customer_profit_ranking,
-  -- 	省区商品客户毛利排名
+  -- 	省区商品毛利排名
   row_number() over(partition by province_code, goods_code order by sum(profit) asc) as province_customer_profit_ranking
 from csx_tmp.tmp_2b_sale_trace 
 where goods_group_sales_value > 0 and goods_group_profit < 0 
@@ -396,7 +396,7 @@ negative_region_sale as
    t1.profit,
    t1.sales_value,
    t1.negative_profit,
-   -- 最大负毛利客户在总负毛利中占比
+   -- 最大负毛利在总负毛利中占比
    concat(t3.top1_customer, ':', round(t3.top1_customer_profit/t1.negative_profit*100, 0), '%') as top1_customer_prorate, 
    concat(t2.top1_province, ':', round(t2.top1_province_profit/t1.negative_profit*100, 0), '%') as top1_province_prorate,
    region_goods_profit_ranking
@@ -493,7 +493,7 @@ select
   sales_value,	
   -- 负毛利金额  
   negative_profit, 
-  -- 最大负毛利客户在总负毛利中占比
+  -- 最大负毛利在总负毛利中占比
   top1_customer_prorate,
   -- 最大负毛利省区在总负毛利中占比
   top1_province_prorate,
@@ -540,7 +540,7 @@ union all
   sales_value,	
   -- 负毛利金额  
   negative_profit, 
-  -- 最大负毛利客户在总负毛利中占比
+  -- 最大负毛利在总负毛利中占比
   top1_customer_prorate,
   -- 最大负毛利省区在总负毛利中占比
   top1_province_prorate,
@@ -583,7 +583,7 @@ select
   sales_value,	
   -- 负毛利金额  
   negative_profit, 
-  -- 最大负毛利客户在总负毛利中占比
+  -- 最大负毛利在总负毛利中占比
   top1_customer_prorate,
   -- 最大负毛利省区在总负毛利中占比
   '-' as top1_province_prorate,
@@ -626,7 +626,7 @@ select
   sales_value,	
   -- 负毛利金额  
   negative_profit, 
-  -- 最大负毛利客户在总负毛利中占比
+  -- 最大负毛利在总负毛利中占比
   top1_customer_prorate,
   -- 最大负毛利省区在总负毛利中占比
   '-' as top1_province_prorate,

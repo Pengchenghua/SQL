@@ -13,8 +13,8 @@ CREATE TABLE `csx_dw.ads_fis_r_a_customer_days_overdue_dtl`
 		`comp_name` string    comment '公司名称' ,
 		`shop_id` string      comment '门店编码,暂时为空' ,
 		`shop_name` string    comment '门店名称，暂时为空' ,
-		`customer_no` string  comment '客户编码' ,
-		`customer_name` string comment '客户名称' ,
+		`customer_no` string  comment '编码' ,
+		`customer_name` string comment '名称' ,
 		`zterm` string        comment '帐期类型' ,
 		`payment_days` int            comment '帐期天数',
 		`payment_terms` string    comment '帐期类型说明',
@@ -23,7 +23,7 @@ CREATE TABLE `csx_dw.ads_fis_r_a_customer_days_overdue_dtl`
 		`over_days` int       comment '逾期天数，负数未逾期，正数逾期' ,
 		`ac_all` de           comment '金额，负数为回款金额，正数应收金额' ,
 		write_time timestamp comment '插入时间'
-	)comment '客户应收逾期明细'
+	)comment '应收逾期明细'
 	partitioned by (sdt string comment '分区日期，计算逾期天数')
 	STORED AS parquet
 	;
@@ -505,9 +505,9 @@ select
     round(case when SUM(ac_all)* payment_days <= 0 then 0  else coalesce(SUM(case when over_days>0 then ac_all*over_days end ), 0)/ coalesce(SUM(ac_all)* payment_days, 0) end, 4) rate, 
 sum(ac_all) as ac_all 
 from csx_dw.ads_fis_r_a_customer_days_overdue_dtl a 
-where channel = '大客户' and sdt = '20200425' 
+where channel = '大' and sdt = '20200425' 
 group by channel, customer_no, customer_name, zterm, payment_days, payment_terms, comp_code, comp_name;
 
-   -- 客户逾期明细
-select *    from csx_dw.ads_fis_r_a_customer_days_overdue_dtl  where channel='大客户' and sdt='20200425';
+   -- 逾期明细
+select *    from csx_dw.ads_fis_r_a_customer_days_overdue_dtl  where channel='大' and sdt='20200425';
 

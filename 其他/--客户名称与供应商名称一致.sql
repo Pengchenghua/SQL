@@ -1,4 +1,4 @@
---客户名称与供应商名称一致
+--名称与供应商名称一致
 with temp_entry as 
 (select 
     b.company_code,
@@ -51,8 +51,8 @@ temp_sale b on a.company_code=b.company_code and a.city_code=b.city_code and a.c
 
 
 
--- 客户名称与供应商名称雷同
--- 客户下单频次、销售额、课组数组
+-- 名称与供应商名称雷同
+-- 下单频次、销售额、课组数组
   SET hive.execution.engine=spark; 
 
 
@@ -117,8 +117,8 @@ group by company_code,
     -- concat_ws(',', collect_list(department_name))as dept_id --未去重
    -- concat_ws(',',collect_set(department_name)) as dept_id --列转行 数据去重
  --   ;
--- 客户销售-- 客户名称与供应商名称雷同
--- 客户下单频次、销售额、课组数组
+-- 销售-- 名称与供应商名称雷同
+-- 下单频次、销售额、课组数组
   SET hive.execution.engine=spark; 
   
     -- concat_ws(',', collect_list(department_name))as dept_id --未去重

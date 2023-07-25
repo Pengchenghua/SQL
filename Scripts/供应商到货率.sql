@@ -19,7 +19,7 @@ and division_code in('12','13','14')
 where c.customer_no is null;
  ;
  
- --明细 5月大客户业绩（不含合伙人，不含BBC）
+ --明细 5月大业绩（不含合伙人，不含BBC）
 select a.channel_name,a.province_name,
 a.dc_code,a.dc_name,a.customer_no,d.customer_name,
 d.attribute,d.first_category,d.sales_name,d.work_no,

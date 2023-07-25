@@ -156,7 +156,7 @@ where
     mon,
     source_type,
        case when source_type=1  then '1_采购导入'
-        when source_type=2 then '2_直送客户'
+        when source_type=2 then '2_直送'
         when source_type=3 then '3_键代发'
         when source_type=4 then '4_项目合伙人'
         when source_type=5 then '5_无单入库'

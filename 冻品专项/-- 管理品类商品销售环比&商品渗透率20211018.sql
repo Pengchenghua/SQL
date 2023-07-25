@@ -98,7 +98,7 @@ group by
 
 
 
--- 商品层级销售额/成交客户数
+-- 商品层级销售额/成交数
 drop table if exists csx_tmp.temp_sale_all_01;
 create temporary table csx_tmp.temp_sale_all_01 as 
 select
@@ -121,8 +121,8 @@ select
     sum(last_sales_qty) as last_goods_sales_qty,
     sum(last_sales_value) as last_goods_sales,
     sum(last_profit) as last_goods_profit,
-    count(distinct case when sales_value>0 then customer_no end ) as goods_cust_number, --商品成交客户数
-    count(distinct case when last_sales_value>0 then customer_no end )as last_goods_cust_number,  --商品环比冻品成交客户数
+    count(distinct case when sales_value>0 then customer_no end ) as goods_cust_number, --商品成交数
+    count(distinct case when last_sales_value>0 then customer_no end )as last_goods_cust_number,  --商品环比冻品成交数
     grouping__id
 from csx_tmp.tmp_dp_goods_sale a
 where 1=1
@@ -188,7 +188,7 @@ grouping sets
 ;
 
    
--- 总客户数
+-- 总数
 drop table if exists  csx_tmp.temp_sale_cust;
 create  temporary table csx_tmp.temp_sale_cust as 
 select 
@@ -445,14 +445,14 @@ select a.channel_name,
     last_goods_sales_qty,
     last_goods_sales,
     last_goods_profit,
-    goods_cust_number,                                  --商品成交客户数
-    last_goods_cust_number,                             --环期商品成交客户数
+    goods_cust_number,                                  --商品成交数
+    last_goods_cust_number,                             --环期商品成交数
     b.b_sales_value,                                     --B端销售额
     b.b_profit,                                         --B端销售毛利
-    b.b_cust_number,                                    --B端成交客户
+    b.b_cust_number,                                    --B端成交
     b.last_b_sales_value,                               --环期B端销售额
     b.last_b_profit,                                    --环期B端毛利额
-    b.last_b_cust_number,                               --环期B端成交客户
+    b.last_b_cust_number,                               --环期B端成交
     sum(goods_sales_qty)over(partition by classify_middle_code,a.province_code,a.region_name ) as class_sales_qty,--管理分类销量
     sum(goods_sales)over(partition by classify_middle_code,a.province_code,a.region_name ) as class_sales_value,                                     --管理分类销售额
     a.goods_sales/sum(goods_sales)over(partition by classify_middle_code,a.province_code,a.region_name ) as goods_sales_ratio,    -- 商品销售/管理二级分类销售占比
@@ -516,14 +516,14 @@ select
     coalesce(last_goods_sales_qty,0) as last_goods_sales_qty,
     coalesce(last_goods_sales,0) as last_goods_sales,
     coalesce(last_goods_profit,0) as last_goods_profit,
-    coalesce(goods_cust_number,    0) as goods_cust_number,                                  --商品成交客户数
-    coalesce(last_goods_cust_number,0) as last_goods_cust_number,                             --环期商品成交客户数
+    coalesce(goods_cust_number,    0) as goods_cust_number,                                  --商品成交数
+    coalesce(last_goods_cust_number,0) as last_goods_cust_number,                             --环期商品成交数
     coalesce(b_sales_value, 0) as b_sales_value,                                     --B端销售额
     coalesce(b_profit, 0) as b_profit,                                         --B端销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                    --B端成交客户
+    coalesce(b_cust_number,0) as b_cust_number,                                    --B端成交
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                    --环期B端毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端成交客户
+    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端成交
     coalesce(classify_sales_qty,  0) as classify_sales_qty,                                 --冻品销量
     coalesce(classify_sales_value, 0) as classify_sales_value,                                     --冻品销售额
     coalesce(goods_sales/classify_sales_value,0) as goods_sales_ratio,    -- 商品销售/冻品销售占比
@@ -603,14 +603,14 @@ CREATE TABLE `csx_tmp.report_scm_r_d_goods_sale_B_fr`(
   `last_goods_sales_qty` decimal(38,6) COMMENT '环期商品销量', 
   `last_goods_sales` decimal(38,6) COMMENT '环期商品销售额', 
   `last_goods_profit` decimal(38,6) COMMENT '环期商品毛利额', 
-  `goods_cust_number` bigint COMMENT '商品成交客户数', 
-  `last_goods_cust_number` bigint COMMENT '商品成交客户数环期', 
+  `goods_cust_number` bigint COMMENT '商品成交数', 
+  `last_goods_cust_number` bigint COMMENT '商品成交数环期', 
   `b_sales_value` decimal(38,6) COMMENT 'B端总销售额（剔除城市服务商）', 
   `b_profit` decimal(38,6) COMMENT 'B端总毛利额（剔除城市服务商）', 
-  `b_cust_number` bigint COMMENT 'B端成交客户数（剔除城市服务商）', 
+  `b_cust_number` bigint COMMENT 'B端成交数（剔除城市服务商）', 
   `last_b_sales_value` decimal(38,6) COMMENT '环期B端总销售额（剔除城市服务商）', 
   `last_b_profit` decimal(38,6) COMMENT '环期B端总毛利额（剔除城市服务商）', 
-  `last_b_cust_number` bigint COMMENT '环期B端成交客户数（剔除城市服务商）', 
+  `last_b_cust_number` bigint COMMENT '环期B端成交数（剔除城市服务商）', 
   `classify_sales_qty` decimal(38,6) COMMENT '冻品总销售量', 
   `classify_sales_value` decimal(38,6) COMMENT '冻品总销售额', 
   `goods_sales_ratio` decimal(38,6) COMMENT '商品销售额占比=商品销售额/冻品销售额', 
@@ -619,8 +619,8 @@ CREATE TABLE `csx_tmp.report_scm_r_d_goods_sale_B_fr`(
   `goods_ring_sales_qty_rate` decimal(38,6) COMMENT '商品销量环比增长率', 
   `goods_profit_rate` decimal(38,6) COMMENT '商品毛利率', 
   `goods_diff_profit_rate` decimal(38,6) COMMENT '商品环比毛利率差', 
-  `cust_penetration_rate` decimal(38,6) COMMENT '商品客户渗透率', 
-  `last_cust_penetration_rate` decimal(38,6) COMMENT '环期客户渗透率', 
+  `cust_penetration_rate` decimal(38,6) COMMENT '商品渗透率', 
+  `last_cust_penetration_rate` decimal(38,6) COMMENT '环期渗透率', 
   `diff_cust_penetration_rate` decimal(38,6) COMMENT '环期渗透率差', 
   `b_sales_ratio` decimal(38,6) COMMENT '商品销售占比=商品销售额/B端销售额', 
   `last_b_sales_ratio` decimal(38,6) COMMENT '环期商品销售占比=商品销售额/B端销售额', 
@@ -672,11 +672,11 @@ select
     last_goods_sales_qty,
     last_goods_sales/10000 as last_goods_sales,
     last_goods_profit/10000 as last_goods_profit,
-    goods_cust_number,                                  --成交客户数
+    goods_cust_number,                                  --成交数
     last_goods_cust_number, 
     goods_diff_profit_rate,     --冻品毛利率差
-    cust_penetration_rate ,   -- 客户渗透率
-    last_cust_penetration_rate ,   -- 环期客户渗透率
+    cust_penetration_rate ,   -- 渗透率
+    last_cust_penetration_rate ,   -- 环期渗透率
     diff_cust_penetration_rate ,   -- 渗透率环比
     b_sales_ratio,
     last_b_sales_ratio,

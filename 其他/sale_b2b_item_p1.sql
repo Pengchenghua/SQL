@@ -47,7 +47,7 @@ from
   where sales_belong_flag in ('4_企业购', '5_彩食鲜')
 )c on a.shop_id = c.shop_id;
 
--- 查询近两个月的发票数据,并关联门店的财务主体和客户的财务主体
+-- 查询近两个月的发票数据,并关联门店的财务主体和的财务主体
 drop table b2b_tmp.tmp_sales_2m;
 create temporary table b2b_tmp.tmp_sales_2m 
 as 

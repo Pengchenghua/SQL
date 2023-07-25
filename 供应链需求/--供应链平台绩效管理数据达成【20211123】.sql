@@ -1,6 +1,6 @@
 --供应链平台绩效管理数据达成【20211123】
 -- 更新日期20220216
---迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大客户渠道 business_type_code not in('4','9')set parquet.compression=snappy;
+--迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4','WB26'),2、自营大渠道 business_type_code not in('4','9')set parquet.compression=snappy;
 
 --更新 蔬菜按照区域占比 孙鲁 北京、安徽、湖北、陕西、河南，江韩国 福建、广东，董春发 四川 、成都、贵州
 --更新DC仓20220620
@@ -19,7 +19,7 @@ set hive.exec.dynamic.partition=true;
 set hive.exec.dynamic.partition.mode=nonstrict;
 -- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
 
--- 大客户销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
+-- 大销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
 drop table if exists csx_tmp.temp_sale_01 ;
 create temporary table csx_tmp.temp_sale_01 as 
 select substr(sdt,1,6) as sales_months,
@@ -231,7 +231,7 @@ set hive.exec.dynamic.partition=true;
 set hive.exec.dynamic.partition.mode=nonstrict;
 -- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
 
--- 大客户销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
+-- 大销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
 drop table if exists csx_tmp.temp_sale_01 ;
 create temporary table csx_tmp.temp_sale_01 as 
 select substr(sdt,1,6) as sales_months,
@@ -524,7 +524,7 @@ set last_edt=regexp_replace(if(${hiveconf:edt}=last_day(${hiveconf:edt}),last_da
 
 -- select  ${hiveconf:last_sdt},${hiveconf:s_dt},${hiveconf:last_edt},${hiveconf:e_dt} ;
 
--- 大客户销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
+-- 大销售销售业务包含（日配业务、福利业务、省区大宗、批发内购）
 drop table if exists csx_tmp.temp_sale_01 ;
 create temporary table csx_tmp.temp_sale_01 as 
 select substr(sdt,1,6) as sales_months,

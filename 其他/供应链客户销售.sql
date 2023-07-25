@@ -17,7 +17,7 @@ SET s_date=regexp_replace(to_date(trunc(${hiveconf:i_edate},'YY')),'-','');
 -- SELECT ${hiveconf:s_date},substr(regexp_replace(trunc(${hiveconf:i_edate},'YY'),'-',''),1,4) as sales_year,
 --         substr(regexp_replace(trunc(${hiveconf:i_edate},'MM'),'-',''),1,6) as sales_months;
 
--- 计算月至今客户销售
+-- 计算月至今销售
 -- 1.合计
 -- SHOW
 -- CREATE TABLE csx_dw.ads_sale_customer_division_level_sales;

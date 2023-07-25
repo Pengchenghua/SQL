@@ -69,7 +69,7 @@
   dc_uses string COMMENT 'DC用途', 
   update_time timestamp COMMENT '更新日期'
   )
-COMMENT '物流库存周转剔除客户直送、一件代发业务'
+COMMENT '物流库存周转剔除直送、一件代发业务'
 PARTITIONED BY ( 
   sdt string COMMENT '日期分区')
 STORED AS parquet 

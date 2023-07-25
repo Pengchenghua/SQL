@@ -17,14 +17,14 @@ stored as textfile;
 
 
 
--- 新建表 202006以前合伙人清单(合伙人、断约客户--断约月及以前为合伙人)+202007及以后用月末最后一天客户信息表中合伙人客户属性，当月取最新
+-- 新建表 202006以前合伙人清单(合伙人、断约--断约月及以前为合伙人)+202007及以后用月末最后一天信息表中合伙人属性，当月取最新
 --drop table csx_tmp.tmp_cust_partner;
 create table if not exists `csx_tmp.tmp_cust_partner` (
   `cust_type` STRING comment '类别',
   `province_name` STRING comment '省区',
   `city_name` STRING comment '城市',  
-  `customer_no` STRING comment '客户编号',
-  `customer_name` STRING comment '客户名称',
+  `customer_no` STRING comment '编号',
+  `customer_name` STRING comment '名称',
   `break_date` STRING comment '断约年月'
 ) comment '合伙人清单_v2'
 partitioned by (sdt string comment '日期分区')
@@ -36,8 +36,8 @@ create table if not exists `csx_tmp.tmp_cust_partner1` (
   `cust_type` STRING comment '类别',
   `province_name` STRING comment '省区',
   `city_name` STRING comment '城市',  
-  `customer_no` STRING comment '客户编号',
-  `customer_name` STRING comment '客户名称',
+  `customer_no` STRING comment '编号',
+  `customer_name` STRING comment '名称',
   `break_date` STRING comment '断约年月',
   `sdt` STRING comment '分区'
 ) comment '合伙人清单_v2'
@@ -179,10 +179,10 @@ from
 		and item_channel_code in('1','7')
 		and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046',
 						'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
-		--签呈客户不考核，不算提成
+		--签呈不考核，不算提成
 		and customer_no not in('111118','103717','102755','104023','105673','104402')
 		and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
-		--签呈客户仅4月不考核，不算提成
+		--签呈仅4月不考核，不算提成
 		--and customer_no not in('PF0320','105177')
 		group by sdt,customer_no,substr(sdt,1,6),
 				if(substr(sdt,1,6)=substr(regexp_replace(date_sub(current_date,1),'-',''),1,6),
@@ -190,7 +190,7 @@ from
 					regexp_replace(last_day(to_date(from_unixtime(unix_timestamp(sdt,'yyyyMMdd')))),'-','')
 					)
 		)a 
-	left join   --CRM客户信息取每月最后一天
+	left join   --CRM信息取每月最后一天
 		(select *
 		from csx_dw.dws_crm_w_a_customer_m_v1 
 		where sdt>=regexp_replace(trunc(date_sub(current_date,1),'YY'),'-','')  --昨日所在年第1天
@@ -205,7 +205,7 @@ from
 	)a;
 
 
---01、客户本月每天-销售员销额、最终前端毛利统计
+--01、本月每天-销售员销额、最终前端毛利统计
 drop table csx_tmp.temp_new_cust_00;
 create table csx_tmp.temp_new_cust_00
 as
@@ -228,14 +228,14 @@ and sales_type in ('qyg','sapqyg','sapgc','sc','bbc')
 and item_channel_code in('1','7')
 and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046',
 				'OC20111000000021','OC20111000000022','OC20111000000023','OC20111000000024','OC20111000000025') or order_no is null)
---签呈客户不考核，不算提成
+--签呈不考核，不算提成
 and customer_no not in('111118','103717','102755','104023','105673','104402')
 and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
---签呈客户仅4月不考核，不算提成
+--签呈仅4月不考核，不算提成
 --and customer_no not in('PF0320','105177')
 --9月签呈 四川 算到业务代理人，每月剔除逾期和销售
 and customer_no not in('104179','112092')
---9月签呈 重庆 合伙人客户，9月剔除逾期和销售
+--9月签呈 重庆 合伙人，9月剔除逾期和销售
 --and customer_no not in('114265','114248','114401','111933','113080','113392')
 --9月签呈 重庆 剔除9月逾期，其中'109484'剔除9月的逾期和销售
 --and customer_no not in('109484')
@@ -250,7 +250,7 @@ left join
 	)c on c.work_no=b.work_no and c.sales_name=b.sales_name and c.sdt=a.sdt
 group by a.sales_province,a.customer_no,b.customer_name,b.work_no,b.sales_name,c.sale_rate,c.profit_rate,a.smonth;
 
---大客户前端毛利扣点后结果
+--大前端毛利扣点后结果
 drop table csx_tmp.temp_new_cust_01;
 create table csx_tmp.temp_new_cust_01
 as
@@ -268,7 +268,7 @@ round(sum(a.sales_value*coalesce(a.sale_rate,0.002))+
 --round(a.sales_value*coalesce(a.sale_rate,0.002)+if((a.fnl_prorate-coalesce(z.rate,0))*a.sales_value<0,0,coalesce((a.fnl_prorate-coalesce(z.rate,0))*a.sales_value,0)*coalesce(a.profit_rate,0.1)),2) salary
 from csx_tmp.temp_new_cust_00 a
 left join
-(  --福建区域大客户扣点 20200115
+(  --福建区域大扣点 20200115
 select '104824'cust_id, 0.02 rate
 union all
 select '104847'cust_id, 0.02 rate
@@ -329,8 +329,8 @@ group by a.dist,a.cust_id,a.cust_name,a.work_no,a.sales_name,a.smonth
 --结果表1 
 
 
---02客户、销售员逾期系数
---客户当月提成 
+--02、销售员逾期系数
+--当月提成 
 
 drop table csx_tmp.temp_new_cust_salary;
 create table csx_tmp.temp_new_cust_salary
@@ -375,7 +375,7 @@ group by smonth,dist,work_no,sales_name,sale_over_rate ;
 
 
 /*
--- 大客户提成：月度新客户
+-- 大提成：月度新
 select b.sales_province,b.customer_no,b.customer_name,b.attribute,b.work_no,b.sales_name,b.sign_date,
 	a.first_sales_date
 from
@@ -388,7 +388,7 @@ and customer_no<>''
 and channel_code in('1','7')
 )b
 join
---客户最早销售月 新客月、新客季度
+--最早销售月 新客月、新客季度
 	(select customer_no,
 	min(first_sales_date) first_sales_date
 	from csx_tmp.ads_sale_w_d_customer_company_sales_date

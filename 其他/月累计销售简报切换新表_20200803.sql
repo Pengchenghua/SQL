@@ -62,7 +62,7 @@ from
 		select
 			case
 				when stype in ('M端', '商品（对内）') then '商超'
-				when stype in('B端', '大客户')then '大客户'
+				when stype in('B端', '大')then '大'
 				when stype like '%s%'	then '供应链'
 				when stype in('BBC', '企业购')	then '企业购'
 					else stype
@@ -354,7 +354,7 @@ from
 				select
 					case
 						when province_name like '平台-B%'	then '平台'
-						when channel in ('1', '3')		then '大客户'
+						when channel in ('1', '3')		then '大'
 						when channel in ('2')	then '商超'
 						else a.channel_name
 					end as stype,
@@ -373,7 +373,7 @@ from
 					and month >= substr(regexp_replace(to_date(trunc('${edate}', 'yy')), '-', ''),1,6)
 				group by
 					case when province_name like '平台-B%' then '平台'
-						when channel in ('1', '3')	then '大客户'
+						when channel in ('1', '3')	then '大'
 						when channel in ('2')	then '商超'
 						else a.channel_name	end,
 					case
@@ -385,7 +385,7 @@ from
 				select
 					case
 						when province_name like '平台-B%'	then '平台'
-						when channel in ('1','3')then '大客户'
+						when channel in ('1','3')then '大'
 						when channel in ('2')	then '商超'
 						else a.channel_name
 					end as stype,
@@ -406,7 +406,7 @@ from
 				group by
 					case
 						when province_name like '平台%'	then '平台'
-						when channel in ('1','3')then '大客户'
+						when channel in ('1','3')then '大'
 						when channel in ('2')then '商超'
 						else a.channel_name
 					end,
@@ -452,7 +452,7 @@ from
 			substr(a.prov_name, 1, length (prov_name) -3) = substr(b.province_name, 1, length (b.province_name) -3)
 order by
 	case
-		when qstype = '大客户' then 1
+		when qstype = '大' then 1
 		when qstype in('商超') then 2
 		when qstype like '企业购%' then 3
 		when qstype in('供应链(食百)', '供应链(生鲜)')	then 4

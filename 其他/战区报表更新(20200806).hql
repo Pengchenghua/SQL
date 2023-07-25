@@ -24,7 +24,7 @@ SELECT  a.channel_name
        ,months_customer_num
 FROM 
 (
-	SELECT  CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END channel_name
+	SELECT  CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END channel_name
 	       ,a.province_code
 	       ,a.province_name
 	       ,SUM(CASE WHEN sdt=regexp_replace(${hiveconf:edate},'-','') THEN sales_value END)AS yesterday_sales_value
@@ -50,7 +50,7 @@ FROM
 	AND sdt<=regexp_replace(${hiveconf:edate},'-','') 
 	GROUP BY  province_code
 	         ,province_name
-	         ,CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END 
+	         ,CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END 
 )a ; -- 关联上周环比数据
 
 DROP TABLE IF EXISTS csx_tmp.temp_war_zone_sale_01;
@@ -72,12 +72,12 @@ SELECT  a.channel_name
 FROM csx_tmp.temp_war_zone_sale a
 JOIN 
 (
-	SELECT  CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END channel_name
+	SELECT  CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END channel_name
 	       ,province_code
 	       ,SUM(a.sales_value)as last_day_sales
 	FROM csx_dw.dws_sale_r_d_customer_sale a
 	WHERE sdt=regexp_replace(date_sub(${hiveconf:edate},7),'-','') 
-	GROUP BY  CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END 
+	GROUP BY  CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END 
 	         ,province_code 
 ) AS c
 ON a.province_code=c.province_code AND a.channel_name=c.channel_name; 
@@ -88,7 +88,7 @@ CREATE TABLE csx_dw.ads_sale_w_d_ads_customer_sales_q; -- 上月环比数据
 
 DROP TABLE IF EXISTS csx_tmp.temp_ring_war_zone_sale;
 CREATE TEMPORARY TABLE csx_tmp.temp_ring_war_zone_sale AS
-SELECT  CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END channel_name
+SELECT  CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END channel_name
        ,province_code
        ,province_name
        ,SUM(CASE WHEN sdt=regexp_replace(${hiveconf:l_edate},'-','') THEN sales_value END)AS last_yesterday_sales_value
@@ -98,11 +98,11 @@ WHERE sdt>=regexp_replace(${hiveconf:l_sdate},'-', '')
 AND sdt<=regexp_replace(${hiveconf:l_edate},'-','') 
 GROUP BY  province_code
          ,province_name
-         ,CASE WHEN a.channel IN ('1','7') THEN '大客户' ELSE a.channel_name END ; -- 负毛利
+         ,CASE WHEN a.channel IN ('1','7') THEN '大' ELSE a.channel_name END ; -- 负毛利
 
 DROP TABLE IF EXISTS csx_tmp.temp_war_zone_sale_02;
 CREATE TEMPORARY TABLE csx_tmp.temp_war_zone_sale_02 AS
-SELECT  '大客户'                                                                                     AS channel_name
+SELECT  '大'                                                                                     AS channel_name
        ,province_code 
        ,province_name 
        ,COUNT(distinct goods_code )as sale_sku
@@ -363,7 +363,7 @@ LEFT JOIN
 	         ,format_name
 	         ,if(process_type='','非代加工',coalesce(process_type,'非代加工')) 
 ) b
-ON a.province_code=b.province_code AND trim(a.sales_belong_flag)=trim(format_name) AND a.mach_type=b.process_type ; ----------------------------------------------------------------------分割线-------------------------------------------------------------------------------------------- -- 客户属性销售
+ON a.province_code=b.province_code AND trim(a.sales_belong_flag)=trim(format_name) AND a.mach_type=b.process_type ; ----------------------------------------------------------------------分割线-------------------------------------------------------------------------------------------- -- 属性销售
 
 CREATE temporary TABLE csx_tmp.temp_zone_attribute_01 AS
 SELECT  zone_id
@@ -388,9 +388,9 @@ FROM
 (
 	SELECT  province_code 
 	       ,CASE WHEN a.channel='7' THEN 'BBC' 
-	             WHEN b.attribute_code=3 THEN '贸易客户' 
-	             WHEN a.order_kind='WELFARE' THEN '福利客户' 
-	             WHEN b.attribute_code=5 THEN '合伙人客户' ELSE '日配客户' END attribute
+	             WHEN b.attribute_code=3 THEN '贸易' 
+	             WHEN a.order_kind='WELFARE' THEN '福利' 
+	             WHEN b.attribute_code=5 THEN '合伙人' ELSE '日配' END attribute
 	       ,CASE WHEN a.channel='7' THEN '7' 
 	             WHEN b.attribute_code=3 THEN '3' 
 	             WHEN a.order_kind='WELFARE' THEN '2' 
@@ -419,9 +419,9 @@ FROM
 	AND sdt<= regexp_replace(${hiveconf:edate},'-','') 
 	AND a.channel in('1','7') 
 	GROUP BY  CASE WHEN a.channel='7' THEN 'BBC' 
-	             WHEN b.attribute_code=3 THEN '贸易客户' 
-	             WHEN a.order_kind='WELFARE' THEN '福利客户' 
-	             WHEN b.attribute_code=5 THEN '合伙人客户' ELSE '日配客户' END 
+	             WHEN b.attribute_code=3 THEN '贸易' 
+	             WHEN a.order_kind='WELFARE' THEN '福利' 
+	             WHEN b.attribute_code=5 THEN '合伙人' ELSE '日配' END 
 	         ,CASE WHEN a.channel='7' THEN '7' 
 	             WHEN b.attribute_code=3 THEN '3' 
 	             WHEN a.order_kind='WELFARE' THEN '2' 
@@ -431,9 +431,9 @@ FROM
 	UNION ALL
 	SELECT  province_code 
 	       ,CASE WHEN a.channel='7' THEN 'BBC' 
-	             WHEN b.attribute_code=3 THEN '贸易客户' 
-	             WHEN a.order_kind='WELFARE' THEN '福利客户' 
-	             WHEN b.attribute_code=5 THEN '合伙人客户' ELSE '日配客户' END attribute
+	             WHEN b.attribute_code=3 THEN '贸易' 
+	             WHEN a.order_kind='WELFARE' THEN '福利' 
+	             WHEN b.attribute_code=5 THEN '合伙人' ELSE '日配' END attribute
 	       ,CASE WHEN a.channel='7' THEN '7' 
 	             WHEN b.attribute_code=3 THEN '3' 
 	             WHEN a.order_kind='WELFARE' THEN '2' 
@@ -462,9 +462,9 @@ FROM
 	AND sdt<= regexp_replace(${hiveconf:l_edate},'-','') 
 	AND a.channel in('1','7') 
 	GROUP BY  CASE WHEN a.channel='7' THEN 'BBC' 
-	             WHEN b.attribute_code=3 THEN '贸易客户' 
-	             WHEN a.order_kind='WELFARE' THEN '福利客户' 
-	             WHEN b.attribute_code=5 THEN '合伙人客户' ELSE '日配客户' END 
+	             WHEN b.attribute_code=3 THEN '贸易' 
+	             WHEN a.order_kind='WELFARE' THEN '福利' 
+	             WHEN b.attribute_code=5 THEN '合伙人' ELSE '日配' END 
 	         ,CASE WHEN a.channel='7' THEN '7' 
 	             WHEN b.attribute_code=3 THEN '3' 
 	             WHEN a.order_kind='WELFARE' THEN '2' 
@@ -518,7 +518,7 @@ LEFT JOIN
 	       ,SUM(plan_profit)plan_profit
 	FROM csx_tmp.dws_csms_manager_month_sale_plan_tmp
 	WHERE month='202008' 
-	AND channel_name='大客户' 
+	AND channel_name='大' 
 	GROUP BY  province_code
 	         ,channel_name
 	         ,customer_attribute_code
@@ -591,7 +591,7 @@ from
             coalesce(sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000,0) as old_M_sales_value,  --老客-累计销售额
             coalesce(sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000,0) as old_M_profit,  --老客-累计毛利额
             coalesce(sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000,0) as old_H_sales_value,  --老客-环比累计销售额
-            coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计客户数
+            coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计数
             coalesce(sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000,0) as new_Md_sales_value, --新客-昨日销售额
             coalesce(sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000,0) as new_M_sales_value,  --新客-累计销售额
             coalesce(sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000,0) as new_M_profit,  --新客-累计毛利额
@@ -630,7 +630,7 @@ from
                      smonth,
                      sdt,
                      case when channel_name='商超' then 'M端'
-							when channel_name='大客户' or channel_name like '企业购%' then 'B端'
+							when channel_name='大' or channel_name like '企业购%' then 'B端'
 							else '其他' end channel_name_1
                 FROM csx_tmp.tmp_supervisor_day_detail
                 )a
@@ -695,7 +695,7 @@ LEFT JOIN
               sum(plan_profit)plan_profit
       FROM csx_tmp.dws_csms_manager_month_sale_plan_tmp
       WHERE MONTH='202008'
-        AND channel_name='大客户'
+        AND channel_name='大'
       GROUP BY province_code,
                channel_name,
                manager_name,

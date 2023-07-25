@@ -1,6 +1,6 @@
 
 
--- 负毛利客户追踪 2-2--822  
+-- 负毛利追踪 2-2--822  
  select
     region_code,
     region_name,

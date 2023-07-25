@@ -1,4 +1,4 @@
--- 供应链大客户渗透率修改增加日配直送数据
+-- 供应链大渗透率修改增加日配直送数据
 -- ******************************************************************** 
 -- @功能描述：
 -- @创建者： 彭承华 
@@ -280,14 +280,14 @@ select
     sum(last_daily_sales_value) as last_daily_sales_value,
     sum(daily_profit ) as daily_profit,             --日配毛利额
     sum(last_daily_profit ) as last_daily_profit,   --环期日配毛利额
-    count(distinct case when daily_sales_value>0 then customer_code end ) as daily_cust_number, --日配成交客户数
-    count(distinct case when last_daily_sales_value>0  then customer_code end )as last_daily_cust_number,  --环比日配冻品成交客户数
+    count(distinct case when daily_sales_value>0 then customer_code end ) as daily_cust_number, --日配成交数
+    count(distinct case when last_daily_sales_value>0  then customer_code end )as last_daily_cust_number,  --环比日配冻品成交数
     sum(daily_direct_sales_value) as daily_direct_sales_value,              --日配含直送销售额
     sum(last_daily_direct_sales_value) as last_daily_direct_sales_value,    --环期含直送日配销售
     sum(daily_direct_profit ) as daily_direct_profit,             --日配含直送毛利额
     sum(last_daily_direct_profit ) as last_daily_direct_profit,   --环期含直送日配毛利额
-    count(distinct case when daily_direct_sales_value>0 then customer_code end ) as daily_direct_cust_number, --日配含直送成交客户数
-    count(distinct case when last_daily_direct_sales_value>0  then customer_code end )as last_daily_direct_cust_number  --环比日配含直送成交客户数
+    count(distinct case when daily_direct_sales_value>0 then customer_code end ) as daily_direct_cust_number, --日配含直送成交数
+    count(distinct case when last_daily_direct_sales_value>0  then customer_code end )as last_daily_direct_cust_number  --环比日配含直送成交数
     grouping__id
 from csx_analyse_tmp.csx_analyse_tmp_scm_sale_all a
 -- where business_type_code!='4'  --剔除城市服务商
@@ -423,7 +423,7 @@ grouping sets
 
 --   select * from  csx_analyse_tmp.temp_sale_cust;
    
--- 计算日配客户数
+-- 计算日配数
 drop table if exists  csx_analyse_tmp.csx_analyse_tmp_sale_cust;
 create  temporary table csx_analyse_tmp.csx_analyse_tmp_sale_cust as 
 select 
@@ -673,7 +673,7 @@ grouping sets
     );
 
 
--- 统计期末库存 01大客户物流 07 BBC物流
+-- 统计期末库存 01大物流 07 BBC物流
 drop table if exists csx_analyse_tmp.csx_analyse_tmp_sale_02;
 
 create temporary table csx_analyse_tmp.csx_analyse_tmp_sale_02 as
@@ -840,10 +840,10 @@ select a.channel_name,
     profit ,                                            -- 本期毛利额
     last_sales_value,                                   -- 环比销售额
     last_profit,                                        -- 环比毛利额
-    daily_cust_number,                                  -- 日配成交客户数
-    last_daily_cust_number,                             -- 环比日配成交客户数
-    b.b_daily_cust_number,                                -- B端本期客户数
-    b.last_b_daily_cust_number,                           -- B端环期客户数
+    daily_cust_number,                                  -- 日配成交数
+    last_daily_cust_number,                             -- 环比日配成交数
+    b.b_daily_cust_number,                                -- B端本期数
+    b.last_b_daily_cust_number,                           -- B端环期数
     c.all_sales_value,                                  -- 省区销售额
     all_profit,                                         -- 省区毛利额
     all_profit/all_sales_value as all_profit_rate,      -- 省区毛利率
@@ -942,10 +942,10 @@ select
     b.profit_30day,
     final_qty,      -- 期末库存量
     final_amt ,     -- 期末库存额
-    daily_cust_number,                                  -- 日配成交客户数
-    last_daily_cust_number,                             -- 环比日配成交客户数
-    b_daily_cust_number,                                -- B端本期客户数
-    last_b_daily_cust_number,                           -- B端环期客户数
+    daily_cust_number,                                  -- 日配成交数
+    last_daily_cust_number,                             -- 环比日配成交数
+    b_daily_cust_number,                                -- B端本期数
+    last_b_daily_cust_number,                           -- B端环期数
     IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number) as daily_cust_penetration_rate ,   -- 日配业务渗透率
     IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number) as last_daily_cust_penetration_rate ,   -- 环期日配业务渗透率
     coalesce(IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number)- IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number),0) as diff_daily_cust_penetration_rate ,   -- 日配业务渗透率环比

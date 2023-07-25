@@ -2902,9 +2902,9 @@ group by date_m ,
 		-- `profitrate`       decimal(38,18) comment '毛利率',
 		-- `front_profit`     decimal(38,6)  comment '前端毛利额',
 		-- `front_profitrate` decimal(38,18) comment '前端毛利率',
-		-- `sale_cust`        bigint         comment '动销客户数',
-		-- `last_sale_cust`   bigint         comment '环比客户数',
-		-- `diff_cust`        bigint         comment '客户差'
+		-- `sale_cust`        bigint         comment '动销数',
+		-- `last_sale_cust`   bigint         comment '环比数',
+		-- `diff_cust`        bigint         comment '差'
 	-- )comment '省区课组销售日、月、年环比销售表'
 	-- partitioned by (sdt string comment '日期分区')
 	-- STORED AS parquet

@@ -22,8 +22,8 @@ select
 	c.channel,
 	c.channel_code,	
 	a.order_no,	-- 来源单号
-	a.customer_no,	-- 客户编码
-	c.customer_name,	-- 客户名称
+	a.customer_no,	-- 编码
+	c.customer_name,	-- 名称
 	a.company_code,	-- 签约公司编码
 	b.company_name,	-- 签约公司名称
 	a.happen_date,	-- 发生时间		
@@ -43,8 +43,8 @@ from
 	(
 	select 
 		source_bill_no as order_no,	-- 来源单号
-		customer_code as customer_no,	-- 客户编码
-		--customer_name,	-- 客户名称
+		customer_code as customer_no,	-- 编码
+		--customer_name,	-- 名称
 		company_code,	-- 签约公司编码
 		--company_name,	-- 签约公司名称
 		happen_date,	-- 发生时间		
@@ -67,8 +67,8 @@ from
 	union all
 	select 
 		id as order_no,	-- 来源单号
-		customer_code as customer_no,	-- 客户编码
-		--customer_name,	-- 客户名称
+		customer_code as customer_no,	-- 编码
+		--customer_name,	-- 名称
 		company_code,	-- 签约公司编码
 		--company_name,	-- 签约公司名称		
 		'' happen_date,	-- 发生时间		
@@ -115,8 +115,8 @@ select
 	a.channel,	-- 渠道
 	b.work_no,	-- 销售员工号
 	b.sales_name,	-- 销售员
-	a.customer_no,	-- 客户编码
-	a.customer_name,	-- 客户名称
+	a.customer_no,	-- 编码
+	a.customer_name,	-- 名称
 	c.account_period_code,	-- 账期编码
 	if(c.account_period_code like 'Y%',if(c.account_period_val=31,45,c.account_period_val+15),c.account_period_val) account_period_val,	-- 帐期天数
 	c.account_period_name,	-- 账期名称
@@ -148,16 +148,16 @@ from
 		sum(case when over_days>=1 then receivable_amount*over_days else 0 end) as over_amt_s,
 		sum(case when receivable_amount>=0 then receivable_amount else 0 end* if(COALESCE(account_period_val,0)=0,1,acc_val_calculation_factor)) as receivable_amount_s
 	from csx_tmp.tmp_cust_order_overdue_dtl  
-	where channel = '大客户' and sdt = ${hiveconf:i_sdate_11} 
-	--签呈客户不考核，不算提成,因此不算逾期
+	where channel = '大' and sdt = ${hiveconf:i_sdate_11} 
+	--签呈不考核，不算提成,因此不算逾期
 	and customer_no not in('111118','103717','102755','104023','105673','104402')
 	and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
-	--签呈客户仅4月不考核，不算提成，4-6月不算逾期
+	--签呈仅4月不考核，不算提成，4-6月不算逾期
 	--and customer_no not in('PF0320','105177')
-	--5月签呈客户5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
+	--5月签呈5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
 	and customer_no not in('103883','103167','105673','104352','104662','104514','104746','104172')
 	--and customer_no not in('104055','106463')
-	--6月签呈客户仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
+	--6月签呈仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
 	--and customer_no not in('105157','107570','106905','104484','109382','106463','106765')
 	--and customer_no not in('106463','106765')
 	and customer_no not in('106765')
@@ -174,16 +174,16 @@ from
 							--'107065','108096','108452','107851','106811','105572',
 							--'105493','105758','105832','105994','107015','111417',
 							--'113108','113067','110656','111837','111296','105202')
-	--7月坏账签呈中，105601客户8月逾期剔除
+	--7月坏账签呈中，1056018月逾期剔除
 	----and customer_no not in('105601')
-	--8月签呈，其中107181客户8-9月剔除逾期，其他仅剔除8月
+	--8月签呈，其中1071818-9月剔除逾期，其他仅剔除8月
 	--and customer_no not in('107181','105669','111905','110661','110677','110682','107459')
 	----and customer_no not in('107181')
 	--9月签呈 四川 算到业务代理人，每月剔除逾期和销售
 	and customer_no not in('104179','112092')
 	--9月签呈 安徽 已断约每月剔除? '106997'、'105169'9月有销售
 	and customer_no not in('104352','105493','105758','105832','105994','107015','106626','106997','111383','105169','106652','105254','108773')
-	--9月签呈 重庆 合伙人客户，9月剔除逾期和销售
+	--9月签呈 重庆 合伙人，9月剔除逾期和销售
 	--and customer_no not in('114265','114248','114401','111933','113080','113392')
 	--9月签呈 重庆 剔除9月逾期，其中'109484'剔除9月的逾期和销售
 	--and customer_no not in('109484','107790','110664')	
@@ -214,14 +214,14 @@ left join
 	
 	
 
---客户逾期系数
+--逾期系数
 drop table csx_tmp.temp_cust_over_rate;
 create table csx_tmp.temp_cust_over_rate
 as
 select 
 	channel,	-- 渠道
-	customer_no,	-- 客户编码
-	customer_name,	-- 客户名称
+	customer_no,	-- 编码
+	customer_name,	-- 名称
 	sum(case when receivable_amount>=0 then receivable_amount else 0 end) receivable_amount,	-- 应收金额
 	sum(case when over_amt>=0 and receivable_amount>0 then over_amt else 0 end) over_amt,	-- 逾期金额
 	--sum(case when over_amt>=0 then over_amt_s else 0 end) over_amt_s,	-- 逾期金额*逾期天数
@@ -247,16 +247,16 @@ from
 		sum(case when over_days>=1 then receivable_amount*over_days else 0 end) as over_amt_s,
 		sum(case when receivable_amount>=0 then receivable_amount else 0 end* if(COALESCE(account_period_val,0)=0,1,acc_val_calculation_factor)) as receivable_amount_s
 	from csx_tmp.tmp_cust_order_overdue_dtl a 
-	where channel = '大客户' and sdt = ${hiveconf:i_sdate_11}
-	--签呈客户不考核，不算提成,因此不算逾期
+	where channel = '大' and sdt = ${hiveconf:i_sdate_11}
+	--签呈不考核，不算提成,因此不算逾期
 	and customer_no not in('111118','103717','102755','104023','105673','104402')
 	and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
-	--签呈客户仅4月不考核，不算提成，4-6月不算逾期
+	--签呈仅4月不考核，不算提成，4-6月不算逾期
 	--and customer_no not in('PF0320','105177')
-	--5月签呈客户5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
+	--5月签呈5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
 	and customer_no not in('103883','103167','105673','104352','104662','104514','104746','104172')
 	--and customer_no not in('104055','106463')
-	--6月签呈客户仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
+	--6月签呈仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
 	--and customer_no not in('105157','107570','106905','104484','109382','106463','106765')
 	--and customer_no not in('106463','106765')
 	and customer_no not in('106765')
@@ -273,16 +273,16 @@ from
 							--'107065','108096','108452','107851','106811','105572',
 							--'105493','105758','105832','105994','107015','111417',
 							--'113108','113067','110656','111837','111296','105202')
-	--7月坏账签呈中，105601客户8月逾期剔除
+	--7月坏账签呈中，1056018月逾期剔除
 	----and customer_no not in('105601')
-	--8月签呈，其中107181客户8-9月剔除逾期，其他仅剔除8月
+	--8月签呈，其中1071818-9月剔除逾期，其他仅剔除8月
 	--and customer_no not in('107181','105669','111905','110661','110677','110682','107459')
 	----and customer_no not in('107181')
 	--9月签呈 四川 算到业务代理人，每月剔除逾期和销售
 	and customer_no not in('104179','112092')
 	--9月签呈 安徽 已断约每月剔除? '106997'、'105169'9月有销售
 	and customer_no not in('104352','105493','105758','105832','105994','107015','106626','106997','111383','105169','106652','105254','108773')
-	--9月签呈 重庆 合伙人客户，9月剔除逾期和销售
+	--9月签呈 重庆 合伙人，9月剔除逾期和销售
 	--and customer_no not in('114265','114248','114401','111933','113080','113392')
 	--9月签呈 重庆 剔除9月逾期，其中'109484'剔除9月的逾期和销售
 	--and customer_no not in('109484','107790','110664')	
@@ -330,16 +330,16 @@ from
 		sum(case when over_days>=1 then receivable_amount*over_days else 0 end) as over_amt_s,
 		sum(case when receivable_amount>=0 then receivable_amount else 0 end* if(COALESCE(account_period_val,0)=0,1,acc_val_calculation_factor)) as receivable_amount_s
 	from csx_tmp.tmp_cust_order_overdue_dtl a 
-	where channel = '大客户' and sdt = ${hiveconf:i_sdate_11} 
-	--签呈客户不考核，不算提成,因此不算逾期
+	where channel = '大' and sdt = ${hiveconf:i_sdate_11} 
+	--签呈不考核，不算提成,因此不算逾期
 	and customer_no not in('111118','103717','102755','104023','105673','104402')
 	and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
-	--签呈客户仅4月不考核，不算提成，4-6月不算逾期
+	--签呈仅4月不考核，不算提成，4-6月不算逾期
 	--and customer_no not in('PF0320','105177')
-	--5月签呈客户5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
+	--5月签呈5月剔除逾期，前者剔除逾期，后者仅5月剔除逾期
 	and customer_no not in('103883','103167','105673','104352','104662','104514','104746','104172')
 	--and customer_no not in('104055','106463')
-	--6月签呈客户仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
+	--6月签呈仅6月剔除逾期，其中 106463 从8月开始不剔除，106765 从12月开始不剔除，105240一直剔除
 	--and customer_no not in('105157','107570','106905','104484','109382','106463','106765')
 	--and customer_no not in('106463','106765')
 	and customer_no not in('106765')
@@ -356,16 +356,16 @@ from
 							--'107065','108096','108452','107851','106811','105572',
 							--'105493','105758','105832','105994','107015','111417',
 							--'113108','113067','110656','111837','111296','105202')
-	--7月坏账签呈中，105601客户8月逾期剔除
+	--7月坏账签呈中，1056018月逾期剔除
 	----and customer_no not in('105601')
-	--8月签呈，其中107181客户8-9月剔除逾期，其他仅剔除8月
+	--8月签呈，其中1071818-9月剔除逾期，其他仅剔除8月
 	--and customer_no not in('107181','105669','111905','110661','110677','110682','107459')
 	----and customer_no not in('107181')
 	--9月签呈 四川 算到业务代理人，每月剔除逾期和销售
 	and customer_no not in('104179','112092')
 	--9月签呈 安徽 已断约每月剔除? '106997'、'105169'9月有销售
 	and customer_no not in('104352','105493','105758','105832','105994','107015','106626','106997','111383','105169','106652','105254','108773')
-	--9月签呈 重庆 合伙人客户，9月剔除逾期和销售
+	--9月签呈 重庆 合伙人，9月剔除逾期和销售
 	--and customer_no not in('114265','114248','114401','111933','113080','113392')
 	--9月签呈 重庆 剔除9月逾期，其中'109484'剔除9月的逾期和销售
 	--and customer_no not in('109484','107790','110664')	
@@ -396,8 +396,8 @@ select
 from
 	(select *
 	from csx_tmp.tmp_cust_order_overdue_dtl  
-	where channel = '大客户' and sdt = ${hiveconf:i_sdate_11} 
-	--签呈客户不考核，不算提成
+	where channel = '大' and sdt = ${hiveconf:i_sdate_11} 
+	--签呈不考核，不算提成
 	and customer_no not in('111118','103717','102755','104023','105673','104402')
 	and customer_no not in('107338','104123','102629','104526','106375','106380','106335','107268','104296','108391','108390','108072','108503')
 	)a 

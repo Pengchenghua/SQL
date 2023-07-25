@@ -75,7 +75,7 @@ set hive.exec.dynamic.partition.mode=nonstrict;
     from 
     (
     select case when channel_code in ('1','7','9') then '1' when channel_code in ('5','6') then '4' else  channel_code end channel_code,
-    case when channel_code in ('1','7','9') then '大客户'  when channel_code in ('5','6') then '大宗'  else  channel_name end channel_name ,
+    case when channel_code in ('1','7','9') then '大'  when channel_code in ('5','6') then '大宗'  else  channel_name end channel_name ,
     case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '21'
         when channel_code='2' then '22' else business_type_code  end business_type_code,
     case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'
@@ -98,7 +98,7 @@ where sdt >=${hiveconf:sdate}
     and classify_middle_code in ('B0304','B0305')
 group by
    case when channel_code in ('1','7','9') then '1' when channel_code in ('5','6') then '4' else  channel_code end ,
-    case when channel_code in ('1','7','9') then '大客户'  when channel_code in ('5','6') then '大宗'  else  channel_name end  ,
+    case when channel_code in ('1','7','9') then '大'  when channel_code in ('5','6') then '大宗'  else  channel_name end  ,
    case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '21'
      when channel_code='2' then '22' else business_type_code  end ,
     case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'

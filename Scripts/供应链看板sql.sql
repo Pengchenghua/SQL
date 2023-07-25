@@ -251,7 +251,7 @@ group by supplier_code ,supplier_name,business_division_code,business_division_n
 order by receive_amt desc
 limit 10;
 
--- 客户TOP 10
+-- TOP 10
 select customer_no ,customer_name,second_category  ,(sales_qty )qty,(sales_value )/10000 sale,(profit )/10000 profit ,
 (profit )/(sales_value )profit_rate,sales_sku,sales_days,rank_num
 from csx_dw.ads_sale_customer_division_level_sales where sdt='20200507' and business_division_code='11' and purchase_group_code='00' and channel='1' and date_m='m' and sales_months='202005'
@@ -309,7 +309,7 @@ select  '每日销售趋势'as note, max(write_time)write_time  from csx_dw.ads_
 union all 
 select  '商品销售表'as note, max(write_time)write_time  from csx_dw.ads_supply_kanban_goods_sales where sdt>='20200511' 
 union all 
-select  '客户销售'as note, max(write_time)write_time  from  csx_dw.ads_supply_customer_division_level_sales where sdt>='20200511' 
+select  '销售'as note, max(write_time)write_time  from  csx_dw.ads_supply_customer_division_level_sales where sdt>='20200511' 
 union all 
 select  '课组销售'as note, max(write_time)write_time  from csx_dw.ads_sale_r_m_dept_sale_mon_report where sdt>='20200511')a ;
 

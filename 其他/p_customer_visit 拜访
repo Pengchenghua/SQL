@@ -3,23 +3,23 @@ insert overwrte table csx_dw.p_customer_visit PARTITION (sdt)
 更改
 insert into table csx_dw.p_customer_visit PARTITION (sdt)
 -- 以下方法未尝试，待验证	
-alter table csx_dw.p_customer_visit partition(sdt='20191029') add columns(cust_number string comment '子客户数',min_visit_time string comment '最早拜访日期');
+alter table csx_dw.p_customer_visit partition(sdt='20191029') add columns(cust_number string comment '子数',min_visit_time string comment '最早拜访日期');
 
 alter table csx_dw.p_customer_visit
- add columns(cust_number string comment '子客户数',min_visit_time string comment '最早拜访日期');
+ add columns(cust_number string comment '子数',min_visit_time string comment '最早拜访日期');
  
  -- 创建表
 CREATE TABLE `csx_dw.p_customer_visit`(
   `id` string COMMENT 'id', 
-  `customer_number` string COMMENT '客户编码', 
-  `customer_name` string COMMENT '客户名称', 
+  `customer_number` string COMMENT '编码', 
+  `customer_name` string COMMENT '名称', 
   `channel` string COMMENT '渠道', 
   `fist_category` string COMMENT '企业属性', 
   `second_category` string COMMENT '二级属性', 
   `third_category` string COMMENT '三级属性', 
-  `province_code` string COMMENT '客户归属省区', 
-  `province_name` string COMMENT '客户归属省区', 
-  `city_name` string COMMENT '客户城市', 
+  `province_code` string COMMENT '归属省区', 
+  `province_name` string COMMENT '归属省区', 
+  `city_name` string COMMENT '城市', 
   `sales_name` string COMMENT '销售员', 
   `work_no` string COMMENT '销售员工号', 
   `sales_province` string COMMENT '销售省区', 
@@ -27,7 +27,7 @@ CREATE TABLE `csx_dw.p_customer_visit`(
   `company_code` string COMMENT '公司代码', 
   `comp_name` string COMMENT '公司名称', 
   `archive_category` string COMMENT '档案分类', 
-  `customer_type` string COMMENT '合作客户', 
+  `customer_type` string COMMENT '合作', 
   `social_credit_code` string COMMENT '社会信用代码', 
   `legal_person_name` string COMMENT '法定人姓名', 
   `legal_person_id_no` string COMMENT '法定人身份证', 
@@ -43,15 +43,15 @@ CREATE TABLE `csx_dw.p_customer_visit`(
   `taxes_category` string COMMENT '税分类', 
   `plan_sales_amount` string COMMENT '计划销售额', 
   `sign_amount` string COMMENT '签单额', 
-  `customer_level` string COMMENT '客户等级', 
+  `customer_level` string COMMENT '等级', 
   `credit_limit` string COMMENT '固定额度', 
   `temp_credit_limit` string COMMENT '临时额度', 
   `temp_begin_time` string COMMENT '临时额度起始日期', 
   `temp_end_time` string COMMENT '临时额度结束日期', 
   `credit_modulus` string COMMENT '信控系数', 
-  `customer_status` string COMMENT '客户状态', 
-  `org_code` string COMMENT '客户组', 
-  `org_name` string COMMENT '客户组名称', 
+  `customer_status` string COMMENT '状态', 
+  `org_code` string COMMENT '组', 
+  `org_name` string COMMENT '组名称', 
   `contract_begin_time` string COMMENT '合同开始日期', 
   `contract_end_time` string COMMENT '合同结束日期', 
   `invoice_address` string COMMENT '开票地址', 
@@ -91,9 +91,9 @@ CREATE TABLE `csx_dw.p_customer_visit`(
   `visit_phone_180` string COMMENT '180天电话拜访', 
   `visit_offline_365` string COMMENT '365天上门拜访', 
   `visit_phone_365` string COMMENT '365天电话拜访', 
-  `cust_number` string COMMENT '子客户数', 
+  `cust_number` string COMMENT '子数', 
   `min_visit_time` string COMMENT '最早拜访日期')
-COMMENT '客户拜访分析'
+COMMENT '拜访分析'
 PARTITIONED BY ( 
   `sdt` string COMMENT '日期分区')
 ROW FORMAT SERDE 
@@ -174,7 +174,7 @@ union all
 select 
 'Z008'payment_terms,'票到8天' payment_name
 ;
--- 子客户数
+-- 子数
  DROP
 	TABLE
 		IF EXISTS b2b_tmp.p_cust_info_01;
@@ -208,7 +208,7 @@ where
 	)a group by customer_no;
 
 		
--- 客户属性表    sys_customer_category_ods
+-- 属性表    sys_customer_category_ods
  DROP
 	TABLE
 		IF EXISTS b2b_tmp.p_cust_info;
@@ -220,7 +220,7 @@ CREATE TEMPORARY
 			a.id,
 			a.customer_number,
 			customer_name,
-			j.cust_number,--子客户数
+			j.cust_number,--子数
 			channel,
 			concat( first_category_code,'_',first_category )AS fist_category,
 			concat( second_category_code,'_',second_category )AS second_category,
@@ -284,9 +284,9 @@ CREATE TEMPORARY
 				second_category,
 				third_category_code,
 				third_category,
-				-- 档案分类：01法人，02政府/事业单位，03军队，04其他非法人，05一次性客户
+				-- 档案分类：01法人，02政府/事业单位，03军队，04其他非法人，05一次性
 				 archive_category,
-				-- 合作模式：01长期客户；02临时客户
+				-- 合作模式：01长期；02临时
 				customer_type ,
 				social_credit_code,
 				legal_person_name,
@@ -327,11 +327,11 @@ CREATE TEMPORARY
 				province_name,
 				city_name,
 				CASE
-					WHEN customer_level = 'AA' THEN 'AA优质客户'
-					WHEN customer_level = 'A' THEN 'A良好客户'
-					WHEN customer_level = 'B' THEN 'B良好客户'
-					WHEN customer_level = 'C' THEN 'C一般客户'
-					WHEN customer_level = 'D' THEN 'D风险客户'
+					WHEN customer_level = 'AA' THEN 'AA优质'
+					WHEN customer_level = 'A' THEN 'A良好'
+					WHEN customer_level = 'B' THEN 'B良好'
+					WHEN customer_level = 'C' THEN 'C一般'
+					WHEN customer_level = 'D' THEN 'D风险'
 				END customer_level,
 				credit_limit,
 				temp_credit_limit,
@@ -473,7 +473,7 @@ CREATE
 		GROUP BY
 			customer_no ,
 			sdt;
--- 2.0计算最近销售客户
+-- 2.0计算最近销售
  DROP
 	TABLE
 		IF EXISTS b2b_tmp.p_max_sale;
@@ -695,7 +695,7 @@ END visit_type
 , nvl(visit_phone_180, 0)visit_phone_180
 , nvl(visit_offline_365, 0)visit_offline_365
 , nvl(visit_phone_365, 0)visit_phone_365 
-, nvl(a.cust_number,0)cust_number -- 子客户数
+, nvl(a.cust_number,0)cust_number -- 子数
 , regexp_replace(to_date(min_visit_time),'-','') as min_visit_time -- 最早拜访日期
 , regexp_replace(to_date(date_sub(CURRENT_TIMESTAMP(),1)),'-','') sdt
 FROM

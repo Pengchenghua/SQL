@@ -1,7 +1,7 @@
 -- 尽调数据财务供应商
 select distinct a.source_type_name,a.business_type_name FROM   csx_tmp.report_fr_r_m_financial_purchase_detail a where a.source_type_name='云超物流采购';
 
--- 销售单号	销售日期	sku编码	sku名称	管理品类	不含税销售额	不含税毛利额	毛利率	客户编码	客户名称
+-- 销售单号	销售日期	sku编码	sku名称	管理品类	不含税销售额	不含税毛利额	毛利率	编码	名称
 
 select 
     order_no,

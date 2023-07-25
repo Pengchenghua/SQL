@@ -101,13 +101,13 @@ SELECT
 FROM
 ( -- 截止到昨天业绩城市粒度汇总
   SELECT
-    province_name, city_group_name, -- B端大客户业绩
+    province_name, city_group_name, -- B端大业绩
     sum(if(channel_code IN ('1', '9'), sales_value, 0)) AS sales_value,
     sum(if(channel_code IN ('1', '9'), profit, 0)) AS profit,
 	--自营销售额
 	sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', sales_value, 0)) AS self_sales_value,
     sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', profit, 0)) AS self_profit,
-	-- B端大客户非自营业绩
+	-- B端大非自营业绩
     sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), sales_value, 0)) AS joint_sales_value,
     sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), profit, 0)) AS joint_profit,
     coalesce(round(sum(if(channel_code IN ('1', '9'), profit, 0)) / abs(sum(if(channel_code IN ('1', '9'), sales_value, 0))), 6), 0) AS profit_rate, -- BBC业绩
@@ -121,17 +121,17 @@ FROM
 ( -- 今日业绩城市粒度汇总
   SELECT
     province_name, city_group_name,
-    -- B端大客户自营业绩
+    -- B端大自营业绩
     sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', sales_value, 0)) AS self_sales_value,
     sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', profit, 0)) AS self_profit,
     coalesce(round(sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', profit, 0))
       / abs(sum(if(channel_code IN ('1', '9') AND business_type_code <> '4' AND dc_code <> 'W0K4', sales_value, 0))), 6), 0) AS self_profit_rate,
-    -- B端大客户非自营业绩
+    -- B端大非自营业绩
     sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), sales_value, 0)) AS joint_sales_value,
     sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), profit, 0)) AS joint_profit,
     coalesce(round(sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), profit, 0))
       / abs(sum(if(channel_code IN ('1', '9') AND (business_type_code = '4' OR dc_code = 'W0K4'), sales_value, 0))), 6), 0) AS joint_profit_rate,
-    -- B端大客户总业绩
+    -- B端大总业绩
     sum(if(channel_code IN ('1', '9'), sales_value, 0)) AS sales_value,
     sum(if(channel_code IN ('1', '9'), profit, 0)) AS profit,
     coalesce(round(sum(if(channel_code IN ('1', '9'), profit, 0)) / abs(sum(if(channel_code IN ('1', '9'), sales_value, 0))), 6), 0) AS profit_rate,
@@ -144,7 +144,7 @@ FROM
   GROUP BY province_name, city_group_name
 ) t2 ON t1.province_name = t2.province_name AND t1.city_group_name = t2.city_group_name
 FULL JOIN
-( -- 待发货+配送中+待客户确认数据统计 --CUTTED待出库 STOCKOUT配送中 
+( -- 待发货+配送中+待确认数据统计 --CUTTED待出库 STOCKOUT配送中 
   SELECT
     e.province_name, f.city_group_name,
     SUM(coalesce(IF(order_status IN ('CUTTED', 'STOCKOUT'), send_amt, purchase_amt), 0)) AS no_receive_amt,   --CUTTED待出库 STOCKOUT配送中 

@@ -79,8 +79,8 @@ order by total_amt desc
 -- 8、动销率：动销SKU/SKU数
 -- 9、负库存 ：库存数量<0
 -- 10、30天周转天数：近30天期间库存金额/近30天累计销售成本；累计销售成本<=0且期间库存额>0 周转天数默认 9999
--- 11、销售数据剔除：一件代发、客户直送、客户配送
--- 12、入库剔除：客退入库、客户直送、货到即配、地采
+-- 11、销售数据剔除：一件代发、直送、配送
+-- 12、入库剔除：客退入库、直送、货到即配、地采
 drop table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr;
 create table csx_tmp.report_wms_r_d_turnover_classify_kanban_fr as 
 select 
@@ -277,7 +277,7 @@ select '全国' province_name,
     sum(final_amt)/10000 total_amt
 from csx_tmp.ads_wms_r_d_goods_turnover 
 where sdt='20220412' 
-   -- and dc_uses in ('大客户物流','工厂')
+   -- and dc_uses in ('大物流','工厂')
      and division_code in ('11','10','12','13','14')
     group by dc_uses
 union all 
@@ -286,7 +286,7 @@ select   province_name,
     sum(final_amt)/10000 total_amt
 from csx_tmp.ads_wms_r_d_goods_turnover 
 where sdt='20220412' 
-   -- and dc_uses in ('大客户物流','工厂')
+   -- and dc_uses in ('大物流','工厂')
      and division_code in ('11','10','12','13','14')
     group by dc_uses,province_name
 ;

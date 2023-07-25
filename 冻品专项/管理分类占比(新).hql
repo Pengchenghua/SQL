@@ -149,7 +149,7 @@ group by
 ;
 -- select * from csx_tmp.tmp_sale_frozen_02;
 -- select * from csx_tmp.tmp_sale_frozen_02 where region_code='3' and first_category_code is null   ;
--- 日配客户行业销售额/成交客户数
+-- 日配行业销售额/成交数
 drop table if exists csx_tmp.tmp_sale_frozen_02;
 create temporary table csx_tmp.tmp_sale_frozen_02 as 
 select
@@ -174,8 +174,8 @@ select
     sum(case when business_type_code='1' then  profit end ) as daily_profit,                      -- 日配销售额
     sum(case when business_type_code='1' then  last_sales_value end ) as last_daily_sales_value,            -- 环期日配销售额
     sum(case when business_type_code='1' then  last_profit end ) as last_daily_profit,            -- 环期日配销售额
-    count(distinct case when sales_value>0  and business_type_code='1' then customer_no end ) as sales_cust_number, --日配成交客户数
-    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_sales_cust_number,  --日配环比冻品成交客户数
+    count(distinct case when sales_value>0  and business_type_code='1' then customer_no end ) as sales_cust_number, --日配成交数
+    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_sales_cust_number,  --日配环比冻品成交数
     grouping__id
 from 
 (select
@@ -294,7 +294,7 @@ grouping sets
 
 --select * from csx_tmp.tmp_sale_frozen_03;
    
--- 日配总客户数
+-- 日配总数
 drop table if exists  csx_tmp.tmp_sale_frozen_03;
 create  temporary table csx_tmp.tmp_sale_frozen_03 as 
 select 
@@ -603,10 +603,10 @@ select
     coalesce(B_daily_profit, 0) as B_daily_profit,                        --日配行业销售毛利
     coalesce(last_B_daily_sale, 0) as last_B_daily_sale,                               --环期日配销售额
     coalesce(last_B_daily_profit,0) as last_B_daily_profit,                                 --环期日配行业毛利额
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --日配成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交客户数
-    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交客户
-    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交客户
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --日配成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交数
+    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交
+    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交
     coalesce(sales_cust_number/b_daily_cust_number,0) as daily_cust_penetration_rate ,               --日配渗透率
     coalesce(last_sales_cust_number/last_b_daily_cust_number,0) as last_daily_cust_penetration_rate ,  --环期日配渗透率
     coalesce(sales_cust_number/b_daily_cust_number,0) - coalesce(last_sales_cust_number/last_b_daily_cust_number ,0)  as diff_daily_cust_penetration_rate ,   -- 日配渗透率环比
@@ -684,10 +684,10 @@ select
     coalesce(B_daily_profit, 0) as B_daily_profit,                        --日配行业销售毛利
     coalesce(last_B_daily_sale, 0) as last_B_daily_sale,                               --环期日配销售额
     coalesce(last_B_daily_profit,0) as last_B_daily_profit,                                 --环期日配行业毛利额
-    coalesce(sales_cust_number, 0) as sales_cust_number,                                  --日配成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交客户数
-    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交客户
-    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交客户
+    coalesce(sales_cust_number, 0) as sales_cust_number,                                  --日配成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --日配环期成交数
+    coalesce(b_daily_cust_number,0) as b_daily_cust_number,                                         --日配行业成交
+    coalesce(last_b_daily_cust_number, 0) as last_b_daily_cust_number,                               --环期日配行业成交
     coalesce(sales_cust_number/b_daily_cust_number,0) as daily_cust_penetration_rate ,               --日配渗透率
     coalesce(last_sales_cust_number/last_b_daily_cust_number,0) as last_daily_cust_penetration_rate ,  --环期日配渗透率
     coalesce(sales_cust_number/b_daily_cust_number,0) - coalesce(last_sales_cust_number/last_b_daily_cust_number ,0)  as diff_daily_cust_penetration_rate ,   -- 日配渗透率环比

@@ -1,6 +1,6 @@
  -- 物流一次性出库率
  -- 找出符合条件的包裹单
- -- 在tms_route_item同DC内同子客户编码同发运日期的排线线路有几条，根据线路id查询排线确认时间一致的
+ -- 在tms_route_item同DC内同子编码同发运日期的排线线路有几条，根据线路id查询排线确认时间一致的
  -- 根据排线ID查询确认时间
     SELECT
       a.delivery_date, 
@@ -271,7 +271,7 @@ FROM
   FROM tmp_normal_sale_order_item_v2
   WHERE delivery_date >= ${s_last_month_start} AND delivery_date < regexp_replace(current_date(), '-', '')
 ) a JOIN
-( -- 只取大客户
+( -- 只取大
   SELECT
     customer_code,
     customer_name,
@@ -282,7 +282,7 @@ FROM
     performance_city_code,
     performance_city_name
   FROM csx_dim.csx_dim_crm_customer_info
-  WHERE sdt = 'current' AND customer_code <> '' AND channel_code = '1' -- 大客户
+  WHERE sdt = 'current' AND customer_code <> '' AND channel_code = '1' -- 大
 ) b ON a.customer_code = b.customer_code
 left join
 (
@@ -531,7 +531,7 @@ FROM
   FROM tmp_normal_sale_order_item_v2
   WHERE 1=1
 ) a JOIN
-( -- 只取大客户
+( -- 只取大
   SELECT
     customer_code,
     customer_name,
@@ -542,7 +542,7 @@ FROM
     performance_city_code,
     performance_city_name
   FROM csx_dim.csx_dim_crm_customer_info
-  WHERE sdt = 'current' AND customer_code <> '' AND channel_code = '1' -- 大客户
+  WHERE sdt = 'current' AND customer_code <> '' AND channel_code = '1' -- 大
 ) b ON a.customer_code = b.customer_code
 left join
 (

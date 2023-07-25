@@ -193,7 +193,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	group by 
 	category_large_code,
 	category_large_name,
@@ -215,7 +215,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	and is_factory_goods_code=1
 	group by 
 	category_large_code,
@@ -290,7 +290,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	group by 
 	category_large_code,
 	category_large_name,
@@ -316,7 +316,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	and is_factory_goods_code=1
 	group by 
 	province_code,
@@ -396,7 +396,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	group by 
 	category_large_code,
 	category_large_name,
@@ -424,7 +424,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	and is_factory_goods_code=1
 	group by 
 	goods_code,
@@ -504,7 +504,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	group by 
 	category_large_code,
 	category_large_name,
@@ -532,7 +532,7 @@ from
 where
 	sdt >= '20200301'
 	and sdt <= '20200321'
-	AND channel_name in ('大客户','企业购 ','商超')
+	AND channel_name in ('大','企业购 ','商超')
 	and is_factory_goods_code=1
 	group by 
 	goods_code,

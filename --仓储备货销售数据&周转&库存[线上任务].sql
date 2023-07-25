@@ -1,6 +1,6 @@
 --仓储备货销售数据&周转&库存[线上任务]
 --省区	城市	采购部编码	采购部名称	管理一级分类编码	管理分类一级分类	管理三级分类编码	管理分类三级分类	管理三级分类编码	管理分类三级分类
---SPU	价格带	商品编码	商品名称	单位	规格	品牌	销售数量	销售额	毛利额	毛利率	动销天数	客户渗透率	动销客户数	下单次数	
+--SPU	价格带	商品编码	商品名称	单位	规格	品牌	销售数量	销售额	毛利额	毛利率	动销天数	渗透率	动销数	下单次数	
 --销售额排名	销售量排名	"动销天数排名"	渗透率排名
 --取入库表： DC编码	DC名称	期间入库数量	期间入库金额	
 --取周转表： 当前库存量	当前库存额	库存周转天数	期间DMS（日均销量）	商品状态  
@@ -65,7 +65,7 @@ select
         goods_code,
         a.classify_middle_code,
         classify_middle_name,
-        cust_no,    -- 客户数
+        cust_no,    -- 数
         sale_date,                       --销售天数
         sales_order_cn,      --订单数
         sales_qty,
@@ -74,7 +74,7 @@ select
         profit,
         profit/sales_value profit_rate,
         all_cust_no,
-        cust_no/all_cust_no percolation_rate,        --客户渗透率
+        cust_no/all_cust_no percolation_rate,        --渗透率
         dense_rank()over(partition by a.dc_code,a.classify_middle_code order by sales_value desc) as sales_rank,  --销售额排名
         dense_rank()over(partition by a.dc_code,a.classify_middle_code order by sales_qty desc) as sales_qty_rank,  --销售额排名
         dense_rank()over(partition by a.dc_code,a.classify_middle_code order by sale_date desc) as sale_date_rank ,   -- 动销天数排名
@@ -91,7 +91,7 @@ select
         goods_code,
         classify_middle_code,
         classify_middle_name,
-        count(distinct customer_no ) as cust_no,    -- 客户数
+        count(distinct customer_no ) as cust_no,    -- 数
         count(distinct sdt )sale_date,                       --销售天数
         sum(sales_order_cn) as sales_order_cn,      --订单数
         sum(sales_qty) sales_qty,
@@ -227,10 +227,10 @@ create temporary table csx_tmp.temp_sale_t5
        coalesce(sales_value,0)as    sales_value,
        coalesce(profit,0)as    profit,
        coalesce(profit_rate,0)as    profit_rate,
-       coalesce(cust_no,               0)as    cust_no,                     -- 客户数
+       coalesce(cust_no,               0)as    cust_no,                     -- 数
        coalesce(sale_date,             0)as    sale_date,                   --销售天数
        coalesce(sales_order_cn,        0)as    sales_order_cn,              --订单数
-       coalesce(percolation_rate,      0)as    percolation_rate,            --客户渗透率
+       coalesce(percolation_rate,      0)as    percolation_rate,            --渗透率
        coalesce(sales_rank,            0)as    sales_rank,                  --销售额排名
        coalesce(sales_qty_rank,        0)as    sales_qty_rank,              --销售量排名
        coalesce(sale_date_rank,        0)as    sale_date_rank,              -- 动销天数排名
@@ -295,10 +295,10 @@ select b.province_code province_code,
        coalesce(sales_value,0)as    sales_value,
        coalesce(profit,0)as    profit,
        coalesce(profit_rate,0)as    profit_rate,
-       coalesce(cust_no,               0)as    cust_no,                     -- 客户数
+       coalesce(cust_no,               0)as    cust_no,                     -- 数
        coalesce(sale_date,             0)as    sale_date,                   --销售天数
        coalesce(sales_order_cn,        0)as    sales_order_cn,              --订单数
-       coalesce(percolation_rate,      0)as    percolation_rate,            --客户渗透率
+       coalesce(percolation_rate,      0)as    percolation_rate,            --渗透率
        coalesce(sales_rank,            0)as    sales_rank,                  --销售额排名
        coalesce(sales_qty_rank,        0)as    sales_qty_rank,              --销售量排名
        coalesce(sale_date_rank,        0)as    sale_date_rank,              -- 动销天数排名
@@ -361,14 +361,14 @@ CREATE  TABLE `csx_tmp.report_scm_r_d_select_goods`(
   `sales_value` decimal(38,6) COMMENT '累计销售额', 
   `profit` decimal(38,6) comment '累计毛利额', 
   `profit_rate` decimal(38,18) comment '累计毛利率', 
-  `cust_no` bigint COMMENT '累计成交客户', 
+  `cust_no` bigint COMMENT '累计成交', 
   `sale_date` bigint COMMENT '累计成交天数', 
   `sales_order_cn` bigint COMMENT '累计订单数', 
-  `percolation_rate` decimal(38,6) COMMENT '客户渗透率', 
+  `percolation_rate` decimal(38,6) COMMENT '渗透率', 
   `sales_rank` int COMMENT '销售排名', 
   `sales_qty_rank` int COMMENT '销量排名', 
   `sale_date_rank` int COMMENT '成交天数排名', 
-  `percolation_rate_rank` int COMMENT '客户渗透率排名', 
+  `percolation_rate_rank` int COMMENT '渗透率排名', 
   `dms` decimal(38,6) COMMENT 'DMS', 
   `receive_qty` decimal(38,6) COMMENT '累计供应商入库量', 
   `receive_amt` decimal(38,6) COMMENT '累计供应商入库额', 

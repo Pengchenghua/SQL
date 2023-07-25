@@ -3,15 +3,15 @@ CREATE TABLE `csx_tmp.dws_csms_province_month_sale_plan_tmp` (
   `sdt` string COMMENT '日期',
   `province_code` string COMMENT '省区编码',
   `province_name` string COMMENT '省区名称',
-  `customer_attribute_code` string COMMENT '客户属性编码',
-  `customer_attribute_name` string COMMENT '客户属性名称',
+  `customer_attribute_code` string COMMENT '属性编码',
+  `customer_attribute_name` string COMMENT '属性名称',
   `plan_sales_value` decimal(19, 6) COMMENT '计划销售额',
   `plan_profit` decimal(19, 6) COMMENT '计划毛利',
   `create_time` string COMMENT '创建时间',
   `create_by` string COMMENT '创建者',
   `update_time` string COMMENT '更新时间',
   `update_by` string COMMENT '更新者'
-) COMMENT '大客户省区月销售预算'
+) COMMENT '大省区月销售预算'
 partitioned by (month string)  ;
 
 CREATE TABLE `csx_tmp.dws_csms_province_day_sale_plan_tmp` (
@@ -25,7 +25,7 @@ CREATE TABLE `csx_tmp.dws_csms_province_day_sale_plan_tmp` (
   `create_by` string COMMENT '创建者',
   `update_time` string COMMENT '更新时间',
   `update_by` string COMMENT '更新者'
-) COMMENT '大客户省区日配销售预算'
+) COMMENT '大省区日配销售预算'
 partitioned by (month string)  ;
 
 CREATE TABLE `csx_tmp.dws_ssms_province_month_sale_plan_tmp` (
@@ -56,11 +56,11 @@ CREATE TABLE `csx_tmp.dws_csms_manager_month_sale_plan_tmp` (
   `city_manager_name` string COMMENT '城市经理名称',
   `manager_job_no` string COMMENT '主管工号',
   `manager_name` string COMMENT '主管名称',
-  `customer_attribute_code` string COMMENT '客户属性编码',
-  `customer_attribute_name` string COMMENT '客户属性名称',
+  `customer_attribute_code` string COMMENT '属性编码',
+  `customer_attribute_name` string COMMENT '属性名称',
   `customer_age_code` string COMMENT '客龄编码',
   `customer_age_name` string COMMENT '客龄名称',
-  `customer_count` int COMMENT '客户数',
+  `customer_count` int COMMENT '数',
   `plan_sales_value` decimal(19, 6) COMMENT '计划销售额',
   `plan_profit` decimal(19, 6) COMMENT '计划毛利',
   `create_time` string COMMENT '创建时间',

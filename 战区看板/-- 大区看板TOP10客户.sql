@@ -1,4 +1,4 @@
--- 大区看板TOP10客户
+-- 大区看板TOP10
 
 CREATE TABLE `csx_tmp.report_fr_r_d_zone_sale_customer_top10`(
   `region_code` string COMMENT '大区', 
@@ -7,8 +7,8 @@ CREATE TABLE `csx_tmp.report_fr_r_d_zone_sale_customer_top10`(
   `province_name` string COMMENT'省区', 
   `city_group_code` string COMMENT '城市组', 
   `city_group_name` string COMMENT '城市组', 
-  `customer_no` string COMMENT '客户编码', 
-  `customer_name` string COMMENT '客户名称', 
+  `customer_no` string COMMENT '编码', 
+  `customer_name` string COMMENT '名称', 
   `ring_sale_value` decimal(36,12) COMMENT '环期销售额整月', 
   `ring_profit` decimal(36,12) COMMENT '环期毛利额', 
   `ring_profit_rate` decimal(38,22) COMMENT '环期毛利率', 
@@ -19,7 +19,7 @@ CREATE TABLE `csx_tmp.report_fr_r_d_zone_sale_customer_top10`(
   `ring_rank_desc` int COMMENT '上期排名'
    rank_desc int comment '本期排名',
    update_time timestamp comment '更新时间'
-   ) comment '大区看板客户TOP10'
+   ) comment '大区看板TOP10'
 STORED AS parquet
 ; 
 --
@@ -32,7 +32,7 @@ set sdt =regexp_replace(to_date(trunc(${hiveconf:enddate},'MM')),'-','');
 
 
 --select ${hiveconf:l_edt},${hiveconf:l_sdt},${hiveconf:edt},${hiveconf:sdt};
---上月全月销售TOP客户
+--上月全月销售TOP
 drop table csx_tmp.temp_top_10;
 create temporary table csx_tmp.temp_top_10 as
 select region_code ,
@@ -61,7 +61,7 @@ select region_code ,
      
 ;
 
--- 本月客户销售
+-- 本月销售
 drop table csx_tmp.temp_top_10_01;
 create temporary table csx_tmp.temp_top_10_01 as
 select mon,
@@ -133,7 +133,7 @@ insert overwrite table csx_tmp.report_fr_r_d_zone_sale_customer_top10  partition
 
 
 
---日配客户TOP 大区看板 IMPALA
+--日配TOP 大区看板 IMPALA
  with tmp_sale as 
       (select region_code ,region_name,province_code ,province_name ,city_group_code ,
      city_group_name ,customer_no ,customer_name,sale as ring_sale ,profit as ring_profit,

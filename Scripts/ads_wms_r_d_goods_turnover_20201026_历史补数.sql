@@ -1,7 +1,7 @@
 -- 已补充10、8月数据
 --set hive.execution.engin=spark;
 -- 20200825 增加DC用途及更改dctype 工厂 、仓库、门店
--- 20200825 调整销售业务类型，将客户直送、客户配送、一件代发 剔除，入库剔除客退入库、客户直送 03、货到即配 54
+-- 20200825 调整销售业务类型，将直送、配送、一件代发 剔除，入库剔除客退入库、直送 03、货到即配 54
 -- set mapreduce.job.reduces =80;
 
 -- 20200923 更改销售表名 dws_sale_r_d_sale_item_simple_20200921
@@ -87,7 +87,7 @@ group by
 	calday
 ;
 
--- 剔除 19 客户直送、73一件代发 据号
+-- 剔除 19 直送、73一件代发 据号
 -- 关联地采单据号 销量-拣货量=0 剔除 ,数量大于0，剔除退货
 --最近出库日期 20200807
 drop table if exists csx_tmp.p_sale_max	;	
@@ -117,7 +117,7 @@ GROUP BY
 
 --select * from csx_tmp.p_entry_max;	
 --末次入库日期及数量
--- 入库剔除 客退入库 、客户直送 03、货到即配 54
+-- 入库剔除 客退入库 、直送 03、货到即配 54
 drop table if exists csx_tmp.p_entry_max;
 
 create temporary table if not exists csx_tmp.p_entry_max as
@@ -167,7 +167,7 @@ group by
 	
 
 
---- 计算销售数据剔除相关的单据号 单据类型:客户直送 19、 一件代发 73、地采 
+--- 计算销售数据剔除相关的单据号 单据类型:直送 19、 一件代发 73、地采 
 drop TABLE if exists csx_tmp.p_sales_data ;
 create TEMPORARY TABLE csx_tmp.p_sales_data as 
 select calday,

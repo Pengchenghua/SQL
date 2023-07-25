@@ -1,5 +1,5 @@
 -- ******************************************************************** 
--- @功能描述大区经营看板日配客户TOP10
+-- @功能描述大区经营看板日配TOP10
 -- @创建者： 彭承华 
 -- @创建者日期：2022-08-25 10:48:31 
 -- @修改者日期：
@@ -147,8 +147,8 @@ CREATE TABLE `csx_analyse.csx_analyse_fr_sale_customer_top10_kanban`(
 	  `performance_province_name` string COMMENT '省区', 
 	  `performance_city_code` string COMMENT '城市组', 
 	  `performance_city_name` string COMMENT '城市组', 
-	  `customer_code` string COMMENT '客户编码', 
-	  `customer_name` string COMMENT '客户名称', 
+	  `customer_code` string COMMENT '编码', 
+	  `customer_name` string COMMENT '名称', 
 	  `ring_sale_value` decimal(36,12) COMMENT '环期销售额整月', 
 	  `ring_profit` decimal(36,12) COMMENT '环期毛利额', 
 	  `ring_profit_rate` decimal(38,22) COMMENT '环期毛利率', 
@@ -159,7 +159,7 @@ CREATE TABLE `csx_analyse.csx_analyse_fr_sale_customer_top10_kanban`(
 	  `ring_rank_desc` int COMMENT '上期排名', 
 	  `rank_desc` int COMMENT '本期排名', 
 	  `update_time` timestamp COMMENT '更新时间')
-	COMMENT '大区看板客户TOP10'
+	COMMENT '大区看板TOP10'
 	PARTITIONED BY (   `months` string COMMENT '月分区销售月')
     STORED AS parquet 
 

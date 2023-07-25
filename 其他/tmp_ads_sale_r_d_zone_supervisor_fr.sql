@@ -39,12 +39,12 @@ from
     province_code,
     province_name,
     first_supervisor_name as manager_name,
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then Md_sales_value end)/10000,0) as old_daily_sale, --老客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000,0) as old_month_sale,  --老客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000,0) as old_month_profit,  --老客-累计毛利额
     coalesce(sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000,0) as old_last_month_sale,  --老客-环比累计销售额
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000,0) as new_daily_sale, --新客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000,0) as new_month_sale,  --新客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000,0) as new_month_profit,  --新客-累计毛利额
@@ -87,10 +87,10 @@ from (SELECT channel,
              smonth,
              substr(sdt,1,6)as months,
              case when channel_name='商超' then '商超'
-				when channel_name='大客户' or channel_name like '企业购%' then '大客户'
+				when channel_name='大' or channel_name like '企业购%' then '大'
 				else channel_name end channel_name_1,
 			case when channel_name='商超' then '2'
-				when channel_name='大客户' or channel_name like '企业购%' then '1'
+				when channel_name='大' or channel_name like '企业购%' then '1'
 				else channel end channel_name_code
         FROM csx_tmp.tmp_supervisor_day_detail
     )a
@@ -135,7 +135,7 @@ from (SELECT channel,
       join 
       (select region_code,region_name,province_code,province_name from csx_dw.dim_area where area_rank=13) b on a.province_code=b.province_code
       WHERE MONTH= regexp_replace(${hivecof:edate},'-','')
-       --  AND channel_name='大客户'
+       --  AND channel_name='大'
       GROUP BY b.region_code,
             b.region_name,
             b.province_code,
@@ -228,7 +228,7 @@ create table csx_tmp.ads_sale_r_d_zone_supervisor_fr(
   province_name string comment '销售省区',  
   manager_no string comment '主管工号',
   manager_name string comment '主管姓名',
-  all_cust_count bigint comment '汇总累计客户数',
+  all_cust_count bigint comment '汇总累计数',
   all_daily_sale decimal(19, 6) comment '汇总昨日销售额',
   all_plan_sale decimal(19, 6) comment '汇总目标销售额',
   all_month_sale decimal(19, 6) comment '汇总累计销售额',
@@ -239,18 +239,18 @@ create table csx_tmp.ads_sale_r_d_zone_supervisor_fr(
   all_month_profit decimal(19, 6) comment '汇总累计毛利额',
   all_month_profit_fill_rate decimal(19, 6) comment '汇总累计毛利额达成率',
   all_month_profit_rate decimal(19, 6) comment '汇总累计毛利率',
-  old_cust_count bigint comment '老客累计客户数',
+  old_cust_count bigint comment '老客累计数',
   old_daily_sale decimal(19, 6) comment '老客昨日销售额',
   old_plan_sale decimal(19, 6) comment '老客目标销售额',
   old_month_sale decimal(19, 6) comment '老客累计销售额',
-  old_sales_fill_rate decimal(19, 6) comment '老客户销售达成率',
+  old_sales_fill_rate decimal(19, 6) comment '老销售达成率',
   old_last_month_sale decimal(19, 6) comment '老客环比累计销售额',
   old_mom_sale_growth_rate decimal(19, 6) comment '老客销售环比增长率率',
   old_month_profit decimal(19, 6) comment '老客累计毛利额',
   old_month_profit_rate decimal(19, 6) comment '老客累计毛利率',
-  new_plan_sale_cust_num bigint comment '新客户数计划',
-  new_cust_count bigint comment '新客累计客户数',
-  new_cust_count_fill bigint comment '新客累计客户数达成情况',
+  new_plan_sale_cust_num bigint comment '新数计划',
+  new_cust_count bigint comment '新客累计数',
+  new_cust_count_fill bigint comment '新客累计数达成情况',
   new_daily_sale decimal(19, 6) comment '新客昨日销售额',
   new_plan_sale decimal(19, 6) comment '新客目标销售额',
   new_month_sale decimal(19, 6) comment '新客累计销售额',

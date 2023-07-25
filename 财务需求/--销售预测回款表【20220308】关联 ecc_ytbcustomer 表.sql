@@ -59,7 +59,7 @@ left join
 
 
 
--- 1.2 计算上月整月销售额 取客户签约公司
+-- 1.2 计算上月整月销售额 取签约公司
 drop table if exists csx_tmp.temp_account_02 ;
 create temporary table csx_tmp.temp_account_02 as 
 	select channel_code,
@@ -77,7 +77,7 @@ create temporary table csx_tmp.temp_account_02 as
 			 province_code
 ;
 
--- 1.3 预测回款目标，供应链取上个月销售目标,其中部分销售属于云超客户，属于关联交易
+-- 1.3 预测回款目标，供应链取上个月销售目标,其中部分销售属于云超，属于关联交易
 drop table if exists csx_tmp.temp_account_03 ;
 create temporary table csx_tmp.temp_account_03 as
 select a.comp_code,
@@ -132,10 +132,10 @@ CREATE temporary table csx_tmp.temp_channel as
 
 ;
 
--- 1.7 查找客户渠道,城市服务商从销售表取，渠道从客户信息表取
+-- 1.7 查找渠道,城市服务商从销售表取，渠道从信息表取
 drop table if exists  csx_tmp.temp_channel_04 ;
 CREATE temporary table csx_tmp.temp_channel_04 as 
--- 剔除一样的客户 
+-- 剔除一样的 
 select   a.sign_company_code,
          a.customer_no,
          a.channel_name as sales_channel_name
@@ -183,14 +183,14 @@ from
   (select customer_id,customer_no from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_id=b.customer_id
   where sdt = regexp_replace(date_sub(current_date,1),'-','')
     
-   --  and target_code in (1,3)    --存量与增量客户
+   --  and target_code in (1,3)    --存量与增量
     and project_code in (1)     --取预测销售额
     -- and target_year >= '2022'
 ) a lateral VIEW explode(month_map) col1s AS month,target_value
 ;
 
 
--- 全量客户
+-- 全量
 drop table csx_tmp.temp_cust ;
 create temporary table csx_tmp.temp_cust as 
 select 
@@ -258,7 +258,7 @@ select
         city_code,
         city_name
     from 
-        csx_dw.dws_crm_w_a_customer_company   --客户账期表
+        csx_dw.dws_crm_w_a_customer_company   --账期表
     where 
         sdt='current'  ) c on lpad(a.kunnr, 10, '0') = lpad(c.customer_no, 10, '0') and a.bukrs = c.company_code
    left join 

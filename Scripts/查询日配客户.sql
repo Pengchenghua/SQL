@@ -36,7 +36,7 @@ join (
 		csx_dw.customer_m
 	where
 		sdt = '20200226'
-		and attribute ='日配客户')b on
+		and attribute ='日配')b on
 	a.customer_no = b.customer_no
 	and sdt >= '20200101'
 	and sdt <= '20200131'

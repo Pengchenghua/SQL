@@ -1,4 +1,4 @@
---福利单-中台已直接处理好(客户单品门店层级直接有采购报价销售成本)但库存移动平均价，销售价格需取销售表，或自己计算
+--福利单-中台已直接处理好(单品门店层级直接有采购报价销售成本)但库存移动平均价，销售价格需取销售表，或自己计算
 /*select a.customer_number,a.customer_name,a.warehouse_code
 ,a.delivery_date,a.query_time,a.query_user_id,a.query_user_name,a.quotation_time
 ,a.quote_user_id,a.quote_user_name,a.valid_begin_time
@@ -40,8 +40,8 @@ dc_code,		--履约dc编码
 receive_mode,	--'收货方式，HOME:送货上门，SITE:门店自提',    订单表中只有home的方式和空白方式
 order_mode,		--订单模式：0-配送,1-直送，2-自提，3-直通
 order_kind,		--订单类型：NORMAL-普通单，WELFARE-福利单',
-sap_cus_code cust_id,	--sap客户编码	
-sap_sub_cus_code,		--sap子客户编码
+sap_cus_code cust_id,	--sap编码	
+sap_sub_cus_code,		--sap子编码
 product_code goodsid,	--商品编码
 self_product_name,	--自建商品名称', 这个基本上数据基本上为空  20190910那天数据共2万9千多条、不为空的465条
 tax_rate,		--税率
@@ -76,8 +76,8 @@ dc_code,--履约dc编码
 prefer_dc_code,	--库存dc编码
 receive_mode,	--'收货方式，HOME:送货上门，SITE:门店自提',    订单表中只有home的方式和空白方式
 a.order_kind,--订单类型：NORMAL-普通单，WELFARE-福利单'
-cust_id,	--sap客户编码
-sap_sub_cus_code,--sap子客户编码
+cust_id,	--sap编码
+sap_sub_cus_code,--sap子编码
 goodsid,--商品编码
 self_product_name,--自建商品名称', 这个基本上数据基本上为空  20190910那天数据共2万9千多条、不为空的465条
 tax_rate,--税率
@@ -138,8 +138,8 @@ dc_code,--履约dc编码
 prefer_dc_code,--库存dc编码
 receive_mode,--'收货方式，HOME:送货上门，SITE:门店自提',    订单表中只有home的方式和空白方式
 order_kind,--订单类型：NORMAL-普通单，WELFARE-福利单'
-cust_id,--sap客户编码
-sap_sub_cus_code,--sap子客户编码
+cust_id,--sap编码
+sap_sub_cus_code,--sap子编码
 a.goodsid,	--商品编码
 self_product_name,	--自建商品名称', 这个基本上数据基本上为空  20190910那天数据共2万9千多条、不为空的465条
 tax_rate,			--税率
@@ -211,8 +211,8 @@ a.dc_code,--履约dc编码
 a.prefer_dc_code,--库存dc编码
 a.receive_mode,--'收货方式，HOME:送货上门，SITE:门店自提',    订单表中只有home的方式和空白方式
 a.order_kind,--订单类型：NORMAL-普通单，WELFARE-福利单'
-a.cust_id,--sap客户编码
-a.sap_sub_cus_code,--sap子客户编码
+a.cust_id,--sap编码
+a.sap_sub_cus_code,--sap子编码
 a.goodsid,--商品编码
 self_product_name,	--自建商品名称', 这个基本上数据基本上为空  20190910那天数据共2万9千多条、不为空的465条
 a.tax_rate,				--税率
@@ -242,8 +242,8 @@ from
 		prefer_dc_code,		--库存dc编码
 		receive_mode,	--'收货方式，HOME:送货上门，SITE:门店自提',    订单表中只有home的方式和空白方式
 		order_kind,		--订单类型：NORMAL-普通单，WELFARE-福利单'
-		cust_id,	--sap客户编码
-		sap_sub_cus_code,	--sap子客户编码
+		cust_id,	--sap编码
+		sap_sub_cus_code,	--sap子编码
 		goodsid,	--商品编码
 		tax_rate,	--税率
 		origin_price,	-- 正常售价
@@ -718,8 +718,8 @@ dc_code string comment '履约dc编码',
 prefer_dc_code string comment '库存dc编码',
 receive_mode string comment '收货方式',
 order_kind string comment '订单类型',
-cust_id string comment '客户编码',
-sap_sub_cus_code string comment 'SAP买家客户子账号',
+cust_id string comment '编码',
+sap_sub_cus_code string comment 'SAP买家子账号',
 goodsid string comment '商品编码',
 tax_rate decimal(26,4) comment '税费比例',
 origin_price decimal(26,4) comment'正常售价',

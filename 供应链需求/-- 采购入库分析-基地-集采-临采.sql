@@ -22,10 +22,10 @@ select   belong_region_code  ,
   sum(case when a.order_business_type_name='是' then receive_amt end ) jd_amt,
   sum(case when a.is_central_tag='1'  then receive_qty end ) as jc_qty,
   sum(case when a.is_central_tag='1'  then receive_amt end ) jc_amt,
-  sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) then receive_qty end ) as lc_qty,
-  sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) then receive_amt end ) lc_amt,
-  sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end ) as qt_qty,
-  sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end ) qt_amt,
+  sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) then receive_qty end ) as lc_qty,
+  sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) then receive_amt end ) lc_amt,
+  sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end ) as qt_qty,
+  sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end ) qt_amt,
   if(b.goods_code is null ,'否','是') as is_jd,
   if(c.goods_code is null ,'否','是') as is_jc,
   if(d.goods_code is null ,'否','是') as is_lc
@@ -33,7 +33,7 @@ select   belong_region_code  ,
  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods  a 
 left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where order_business_type_name='是' ) b on a.goods_code=b.goods_code  -- 基地标识
 left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where is_central_tag='1' ) c on a.goods_code=c.goods_code  -- 集采标识 
-left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where source_type_name  in('临时地采','临时加单','客户直送','紧急采购' )) d on a.goods_code=d.goods_code  -- 临采标识 
+left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where source_type_name  in('临时地采','临时加单','直送','紧急采购' )) d on a.goods_code=d.goods_code  -- 临采标识 
 -- join csx_analyse_tmp.csx_analyse_tmp_goods_top_20 b on a.goods_code=b.goods_code
 where source_type_name not in ('城市服务商','联营直送','项目合伙人')
     and is_supplier_dc='是'
@@ -218,15 +218,15 @@ select   belong_region_code  ,
   sum(case when a.order_business_type_name='是' then receive_qty end ) as jd_qty,
   sum(case when a.order_business_type_name='是' then receive_amt end ) jd_amt,
   if(sum(case when a.order_business_type_name='是' then receive_qty end )=0,0,sum(case when a.order_business_type_name='是' then receive_amt end )/sum(case when a.order_business_type_name='是' then receive_qty end )) as jd_avg_cost,
-  sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )  then receive_qty end ) as jc_qty,
-  sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )  then receive_amt end ) jc_amt,
-  if(sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )  then receive_qty end )=0,0,sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )  then receive_amt end )/sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )  then receive_qty end )) jc_avg_cost,
-  sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end ) as lc_qty,
-  sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) and a.is_central_tag !='1' then receive_amt end ) lc_amt,
-  if(sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end )=0,0, sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) and a.is_central_tag !='1' then receive_amt end )/sum(case when a. source_type_name  in('临时地采','临时加单','客户直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end )) as lc_avg_cost,
-  sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end ) as qt_qty,
-  sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end ) qt_amt,
-  if(sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end )=0,0,sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end )/sum(case when a. source_type_name not in('临时地采','临时加单','客户直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end )) as qt_avg_cost,
+  sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )  then receive_qty end ) as jc_qty,
+  sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )  then receive_amt end ) jc_amt,
+  if(sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )  then receive_qty end )=0,0,sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )  then receive_amt end )/sum(case when a.is_central_tag='1' and a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )  then receive_qty end )) jc_avg_cost,
+  sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end ) as lc_qty,
+  sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) and a.is_central_tag !='1' then receive_amt end ) lc_amt,
+  if(sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end )=0,0, sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) and a.is_central_tag !='1' then receive_amt end )/sum(case when a. source_type_name  in('临时地采','临时加单','直送','紧急采购' ) and a.is_central_tag !='1' then receive_qty end )) as lc_avg_cost,
+  sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end ) as qt_qty,
+  sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end ) qt_amt,
+  if(sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end )=0,0,sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name!='是' then receive_amt end )/sum(case when a. source_type_name not in('临时地采','临时加单','直送','紧急采购' )and a.is_central_tag !='1' and a.order_business_type_name !='是' then receive_qty end )) as qt_avg_cost,
   if(b.goods_code is null ,'否','是') as is_jd,
   if(c.goods_code is null ,'否','是') as is_jc,
   if(d.goods_code is null ,'否','是') as is_lc
@@ -234,7 +234,7 @@ select   belong_region_code  ,
  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods  a 
 left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where order_business_type_name='是' ) b on a.goods_code=b.goods_code  -- 基地标识
 left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where is_central_tag='1' ) c on a.goods_code=c.goods_code  -- 集采标识 
-left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where source_type_name  in('临时地采','临时加单','客户直送','紧急采购' )) d on a.goods_code=d.goods_code  -- 临采标识 
+left  join (select distinct goods_code  from   csx_analyse_tmp.csx_analyse_tmp_entry_goods where source_type_name  in('临时地采','临时加单','直送','紧急采购' )) d on a.goods_code=d.goods_code  -- 临采标识 
 -- join csx_analyse_tmp.csx_analyse_tmp_goods_top_20 b on a.goods_code=b.goods_code
 where source_type_name not in ('城市服务商','联营直送','项目合伙人')
     and is_supplier_dc='是'

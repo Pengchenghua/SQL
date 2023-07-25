@@ -38,7 +38,7 @@ set i_sdate_23 =regexp_replace(add_months(trunc(date_sub(current_date,1),'MM'),-
 drop table csx_tmp.tmp_sale_order_flag;
 create table csx_tmp.tmp_sale_order_flag 
 as 
-select case when channel_name='业务代理' then '大客户' else channel_name end channel_name,
+select case when channel_name='业务代理' then '大' else channel_name end channel_name,
 province_code,province_name,origin_order_no,order_no,goods_code,
 sum(sales_value)sales_value,
 sum(excluding_tax_sales)excluding_tax_sales
@@ -46,7 +46,7 @@ from csx_dw.dws_sale_r_d_detail
 where sdt>=add_months(trunc(date_sub(current_date,1),'MM'),-6)
 --and sales_type in ('sapqyg','sapgc','qyg','sc','bbc')
 --and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046') or order_no is null)
-group by case when channel_name='业务代理' then '大客户' else channel_name end,
+group by case when channel_name='业务代理' then '大' else channel_name end,
 	province_code,province_name,origin_order_no,order_no,goods_code;
 
 

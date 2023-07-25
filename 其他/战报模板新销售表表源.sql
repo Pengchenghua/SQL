@@ -1,6 +1,6 @@
 /*20190807更改战报数据源b2b销售表为发票表汇总出来的csx_dw.sale_b2b_item表
 qyg  gc
-W0H4卖给彩食鲜外部客户的这部分数据算入供应链S端*/
+W0H4卖给彩食鲜外部的这部分数据算入供应链S端*/
 战报里：泉州改成：沈峰   上海：改成徐学亮  
 --20190814S端拆分食百生鲜部门，且报表呈现种S端销售至门店部门拆分成S端M端，其余为S端B端
 -- 福建省城市门店重新划分
@@ -14,7 +14,7 @@ select a.sdt,case when shopid_orig='W0B6' then 'BBC'
 when a.shop_id='W0H4' and a.cust_id like 'S%' then '供应链(S端)' 
 when c.channel='M端' then '商超（对内）'
 when c.channel like '供应链%' then '供应链(S端)'
-when c.channel='大客户'then 'B端' else c.channel end qdflag,
+when c.channel='大'then 'B端' else c.channel end qdflag,
 case when sales_province is not null and c.channel<>'M端' then substr(sales_province,1,2)
 when a.cust_id like 'S%' and 
 substr(b.prov_name,1,2) in ('重庆','四川','北京','福建','上海','浙江','江苏','安徽','广东') then substr(b.prov_name,1,2)
@@ -45,7 +45,7 @@ group by a.sdt,case when shopid_orig='W0B6' then 'BBC'
 when a.shop_id='W0H4' and a.cust_id like 'S%' then '供应链(S端)' 
 when c.channel='M端' then '商超（对内）'
 when c.channel like '供应链%' then '供应链(S端)'
-when c.channel='大客户'then 'B端' else c.channel end,
+when c.channel='大'then 'B端' else c.channel end,
 case when sales_province is not null and c.channel<>'M端' then substr(sales_province,1,2)
 when a.cust_id like 'S%' and 
 substr(b.prov_name,1,2) in ('重庆','四川','北京','福建','上海','浙江','江苏','安徽','广东') then substr(b.prov_name,1,2)
@@ -197,14 +197,14 @@ order by diro,qdrno,city_real desc;
 
 create table csx_dw.sale_warzone01_detail_dtl
 (
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 diro int comment '省区序号',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
-cust_name string comment '客户名称',
+cust_id string comment '编码',
+cust_name string comment '名称',
 bd_name string comment '部门名称',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
@@ -298,14 +298,14 @@ order by diro,city_real desc
 DROP TABLE IF EXISTS csx_dw.sale_warzone02_detail_dtl;
 create table csx_dw.sale_warzone02_detail_dtl
 (
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 diro int comment '省区序号',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
-cust_name string comment '客户名称',
+cust_id string comment '编码',
+cust_name string comment '名称',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
 )
@@ -319,12 +319,12 @@ create table csx_dw.display_warzone02_res_dtl
 (
 qdrno int comment '渠道序号',
 diro int comment '省区序号',
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
+cust_id string comment '编码',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
 )

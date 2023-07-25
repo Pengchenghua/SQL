@@ -101,7 +101,7 @@ left join
     send_sdt
 from csx_dw.wms_shipped_order 
 where send_sdt>='20200101' 
-    -- and business_type like '客户%'
+    -- and business_type like '%'
 )b on a.outside_order_code=b.order_no
 ;
 

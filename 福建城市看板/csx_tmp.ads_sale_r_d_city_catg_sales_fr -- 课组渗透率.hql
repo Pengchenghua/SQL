@@ -160,7 +160,7 @@ group by zone_id,
     
     ;
  
--- 计算各城市客户数
+-- 计算各城市数
 drop table if exists  csx_tmp.temp_city_bd_sale_02;
 create temporary table csx_tmp.temp_city_bd_sale_02 as 
 select
@@ -221,7 +221,7 @@ from
 -- select * from csx_tmp.temp_city_bd_sale_02  where zone_id='3';
 
 
--- 计算各城市客户数
+-- 计算各城市数
 drop table if exists  csx_tmp.temp_city_bd_sale_03;
 create temporary table csx_tmp.temp_city_bd_sale_03 as 
 select 

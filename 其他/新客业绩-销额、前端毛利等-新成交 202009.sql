@@ -1,6 +1,6 @@
 
 
- -- 1、客户最小、最大成交日期 -all  
+ -- 1、最小、最大成交日期 -all  
  -- customer_sale表只有2019年以后数据，本报表是关于新客因此可使用
 drop table b2b_tmp.tmp_new_sale_1;
 create temporary table b2b_tmp.tmp_new_sale_1
@@ -16,7 +16,7 @@ from csx_dw.dws_sale_r_d_customer_sale
 group by customer_no;
 
 
---01、客户每天-销售员销额、最终前端毛利统计
+--01、每天-销售员销额、最终前端毛利统计
 drop table b2b_tmp.temp_new_day_cust_1;
 create temporary table b2b_tmp.temp_new_day_cust_1
 as
@@ -43,10 +43,10 @@ join
 	regexp_replace(substr(sign_time,1,10),'-','') sign_time
 	from csx_dw.dws_crm_w_a_customer_m_v1
 	where sdt=regexp_replace(date_sub(current_date,1),'-','')
-	and channel = '大客户'
+	and channel = '大'
 	and create_time is not null
     and sign_time is not null
-	--and attribute <> '福利客户'
+	--and attribute <> '福利'
 	)b on b.customer_no =a.customer_no 
 join 
 	(select * from b2b_tmp.tmp_new_sale_1 
@@ -58,7 +58,7 @@ insert overwrite directory '/tmp/gonghuimin/xinke1' row format delimited fields 
 select * from b2b_tmp.temp_new_day_cust_1;
 
 
---02、客户销额、最终前端毛利统计
+--02、销额、最终前端毛利统计
 drop table b2b_tmp.temp_new_cust_1;
 create temporary table b2b_tmp.temp_new_cust_1
 as
@@ -91,7 +91,7 @@ sum(sales_value)sales_value,
 sum(profit) profit,sum(profit)/sum(sales_value) prorate,
 sum(front_profit) front_profit,sum(front_profit)/sum(sales_value) fnl_prorate
 from b2b_tmp.temp_new_day_cust_1 a 
-where a.attribute in ('日配客户','福利客户')
+where a.attribute in ('日配','福利')
 group by a.attribute,a.province_name,a.city_real,a.fourth_supervisor_name,a.first_supervisor_name,a.sales_name,a.work_no;
 
 insert overwrite directory '/tmp/gonghuimin/xinke3' row format delimited fields terminated by '\t' 

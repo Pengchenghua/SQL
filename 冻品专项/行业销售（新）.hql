@@ -300,8 +300,8 @@ select
     sum(last_frozen_profit) as last_frozen_profit,
     sum(last_frozen_daily_sales) as last_frozen_daily_sales,
     sum(last_frozen_daily_profit) as last_frozen_daily_profit,
-    count(distinct case when frozen_daily_sales>0 then customer_no end ) as daily_cust_number, --日配成交客户数
-    count(distinct case when last_frozen_sales>0 then customer_no end )as last_daily_cust_number,  --环比日配冻品成交客户数
+    count(distinct case when frozen_daily_sales>0 then customer_no end ) as daily_cust_number, --日配成交数
+    count(distinct case when last_frozen_sales>0 then customer_no end )as last_daily_cust_number,  --环比日配冻品成交数
     grouping__id
 from csx_tmp.temp_sale_all a
 -- where business_type_code!='4'  --剔除城市服务商
@@ -428,7 +428,7 @@ grouping sets
 ;
 
    
--- 计算日配客户数
+-- 计算日配数
 drop table if exists  csx_tmp.temp_sale_cust;
 create  temporary table csx_tmp.temp_sale_cust as 
 select 
@@ -656,7 +656,7 @@ select a.channel_name,
     last_frozen_profit,
     last_frozen_daily_sales,
     last_frozen_daily_profit,
-    daily_cust_number,                                  --日配成交客户数
+    daily_cust_number,                                  --日配成交数
     last_daily_cust_number, 
     b.sales_cust_number,
     b.last_sales_cust_number,
@@ -729,10 +729,10 @@ select
     last_frozen_daily_sales,
     last_frozen_daily_profit,
     last_frozen_daily_profit / last_frozen_daily_sales as last_frozen_daily_profit_rate, --环期冻品日配业务毛利率
-    daily_cust_number,                                  --日配成交客户数
+    daily_cust_number,                                  --日配成交数
     last_daily_cust_number, 
-    sales_cust_number,                                  --省区成交客户数
-    last_sales_cust_number,                             --环期省区成交客户
+    sales_cust_number,                                  --省区成交数
+    last_sales_cust_number,                             --环期省区成交
     all_sales_value,                                    --省区销售额/全国销售额
     all_profit,                                         --省区毛利额/全国毛利额
     all_profit/all_sales_value as all_profit_rate,      --省区毛利率/全国毛利率

@@ -1,6 +1,6 @@
 -- 帐龄表：csx_dw.account_age_dtl_fct_new 
--- 客户表：csx_dw.dws_crm_w_a_customer_m_v1
--- 客户帐期表 ：csx_dw.dws_crm_r_a_customer_account_day 
+-- 表：csx_dw.dws_crm_w_a_customer_m_v1
+-- 帐期表 ：csx_dw.dws_crm_r_a_customer_account_day 
 
 set e_date='${enddate}';
 
@@ -157,10 +157,10 @@ from
 	        	last_sales_date,
 	        	last_to_now_days,
 	        	customer_active_sts_code,
-	        	case when  customer_active_sts_code = 1 then '活跃客户'
-	        		when customer_active_sts_code = 2 then '沉默客户'
-	        		when customer_active_sts_code = 3 then '预流失客户'
-	        		when customer_active_sts_code = 4 then '流失客户'
+	        	case when  customer_active_sts_code = 1 then '活跃'
+	        		when customer_active_sts_code = 2 then '沉默'
+	        		when customer_active_sts_code = 3 then '预流失'
+	        		when customer_active_sts_code = 4 then '流失'
 	        		else '其他'
 	        		end  as  customer_active_sts,
 	        	sdt
@@ -260,10 +260,10 @@ from
 			last_sales_date,
 	        	last_to_now_days,
 	        	customer_active_sts_code,
-	        	case when  customer_active_sts_code = 1 then '活跃客户'
-	        		when customer_active_sts_code = 2 then '沉默客户'
-	        		when customer_active_sts_code = 3 then '预流失客户'
-	        		when customer_active_sts_code = 4 then '流失客户'
+	        	case when  customer_active_sts_code = 1 then '活跃'
+	        		when customer_active_sts_code = 2 then '沉默'
+	        		when customer_active_sts_code = 3 then '预流失'
+	        		when customer_active_sts_code = 4 then '流失'
 	        		else '其他'
 	        		end  as  customer_active_sts,
 	        sdt
@@ -329,7 +329,7 @@ select
    a.ac_over3y,
 	a.last_sales_date,
 	a.last_to_now_days,
-	a.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+	a.customer_active_sts_code as customer_active_sts_code,  --活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）
 	a.customer_active_sts as customer_active_sts,
 	'' as tmp_01,
 	'' as tmp_02,
@@ -353,7 +353,7 @@ left  join
 		temp_credit_limit,
 		payment_days
 	from 
-		csx_dw.dws_crm_r_a_customer_account_day    --客户账期表
+		csx_dw.dws_crm_r_a_customer_account_day    --账期表
 	where 
 		sdt='current'
 ) as b 	on a.customer_no =b.customer_number and a.comp_code=b.company_code
@@ -369,7 +369,7 @@ where a.sdt<'20200301'
   drop  table csx_tmp.ads_fr_account_receivables;
  create table csx_tmp.ads_fr_account_receivables
    (
-    channel_name	string comment	'客户类型',
+    channel_name	string comment	'类型',
 	hkont	string	comment '科目代码',
 	account_name	string comment	'科目名称',
 	comp_code	string	comment '公司代码',
@@ -379,8 +379,8 @@ where a.sdt<'20200301'
     sales_city string COMMENT '销售城市名称',
 	prctr	string comment	'利润中心',
 	shop_name	string	comment '利润中心名称',
-	customer_no	string comment	'客户编码',
-	customer_name	string	comment '客户名称',
+	customer_no	string comment	'编码',
+	customer_name	string	comment '名称',
     first_category string  COMMENT '第一分类',
     second_category string  COMMENT '第二分类',
     third_category string COMMENT '第三分类',
@@ -408,8 +408,8 @@ where a.sdt<'20200301'
 	ac_over3y	decimal(26,4)	comment '逾期3年账款',
 	last_sales_date	string	comment '最后一次销售日期',
 	last_to_now_days	string comment	'最后一次销售距今天数',
-	customer_active_sts_code	string comment	'客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）',
-	customer_active_sts string comment '客户活跃状态名称',
+	customer_active_sts_code	string comment	'活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）',
+	customer_active_sts string comment '活跃状态名称',
 	tmp_01 string comment '临时使用',
 	tmp_02 string comment '临时使用',
 	update_time timestamp comment '更新时间'

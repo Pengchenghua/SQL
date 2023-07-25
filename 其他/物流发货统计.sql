@@ -6,7 +6,7 @@ CREATE TABLE `csx_dw.wms_shipped_day_report`
 		shipped_location_code string comment '发货DC' ,
 		shipped_location_name string comment '发货名称' ,
 		source_system string comment'渠道'            ,
-		cust_num        int comment '客户数'                  ,
+		cust_num        int comment '数'                  ,
 		order_num       int comment '订单数'                  ,
 		goods_num       int comment 'SKU数'                 ,
 		qty             decimal(26,6) comment '发货数量'       ,
@@ -66,7 +66,7 @@ SELECT
 		WHEN source_system='BBC'
 			THEN 'BBC'
 		WHEN source_system='CSMS'
-			THEN '大客户'
+			THEN '大'
 		WHEN source_system='SSMS'
 			THEN '商超'
 		WHEN source_system='SCM'
@@ -170,7 +170,7 @@ GROUP BY
 		WHEN source_system='BBC'
 			THEN 'BBC'
 		WHEN source_system='CSMS'
-			THEN '大客户'
+			THEN '大'
 		WHEN source_system='SSMS'
 			THEN '商超'
 		WHEN source_system='SCM'

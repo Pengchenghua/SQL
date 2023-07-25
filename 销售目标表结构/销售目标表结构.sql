@@ -14,11 +14,11 @@ CREATE TABLE dws_csms_manager_month_sale_plan (
   `city_manager_name` varchar(64) DEFAULT NULL COMMENT '城市经理名称',
   `manager_job_no` varchar(64) DEFAULT NULL COMMENT '主管工号',
   `manager_name` varchar(64) DEFAULT NULL COMMENT '主管名称',
-  `customer_attribute_code` varchar(8) DEFAULT NULL COMMENT '客户属性编码',
-  `customer_attribute_name` varchar(64) DEFAULT NULL COMMENT '客户属性名称',
+  `customer_attribute_code` varchar(8) DEFAULT NULL COMMENT '属性编码',
+  `customer_attribute_name` varchar(64) DEFAULT NULL COMMENT '属性名称',
   `customer_age_code` varchar(8) DEFAULT NULL COMMENT '客龄编码',
   `customer_age_name` varchar(8) DEFAULT NULL COMMENT '客龄名称：老客 1、 2新客',
-  `customer_count` int(11) DEFAULT '0' COMMENT '客户数',
+  `customer_count` int(11) DEFAULT '0' COMMENT '数',
   `plan_sales_value` decimal(19,6) DEFAULT '0.000000' COMMENT '计划销售额',
   `plan_profit` decimal(19,6) DEFAULT '0.000000' COMMENT '计划毛利',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -46,7 +46,7 @@ CREATE TABLE data_analysis_prd.dws_csms_province_day_sale_plan(
   -- month varchar(64) not null comment'月份',
    PRIMARY KEY (`id`)
 )
-COMMENT '大客户省区日配销售预算';
+COMMENT '大省区日配销售预算';
 
 drop table data_analysis_prd.dws_ssms_province_month_sale_plan;
 CREATE TABLE data_analysis_prd.dws_ssms_province_month_sale_plan(
@@ -80,8 +80,8 @@ CREATE TABLE data_analysis_prd.dws_csms_province_month_sale_plan(
   `province_name`  varchar(64) not null COMMENT '省区名称',
   city_group_code varchar(64)  DEFAULT null COMMENT '城市组', 
   city_group_name varchar(64)  DEFAULT null COMMENT '城市组',
-  `customer_attribute_code` varchar(64)  DEFAULT null COMMENT '客户属性编码', 
-  `customer_attribute_name` varchar(64)  DEFAULT null COMMENT '客户属性名称', 
+  `customer_attribute_code` varchar(64)  DEFAULT null COMMENT '属性编码', 
+  `customer_attribute_name` varchar(64)  DEFAULT null COMMENT '属性名称', 
   `plan_sales_value` decimal(19,6)  DEFAULT '0.000000' COMMENT '计划销售额', 
   `plan_profit` decimal(19,6)  DEFAULT '0.000000' COMMENT '计划毛利', 
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -91,7 +91,7 @@ CREATE TABLE data_analysis_prd.dws_csms_province_month_sale_plan(
 --   month varchar(64) not null comment'月份',
   primary key(id)
   )
-COMMENT '大客户省区月销售预算'
+COMMENT '大省区月销售预算'
 ;
 
 
@@ -114,13 +114,13 @@ CREATE TABLE data_analysis_prd.dws_csms_province_day_sale_plan(
  -- month  varchar(64) not null  COMMENT '销售月份', 
   primary key(id)
   )
-COMMENT '大客户省区日配销售预算'
+COMMENT '大省区日配销售预算'
 ;
 
 -- 弃用
 CREATE TABLE `csx_tmp.dws_daily_sales_plan`(
   `id` string COMMENT '', 
-  `plan_type` string COMMENT '计划类型，1 大客户、2 商超', 
+  `plan_type` string COMMENT '计划类型，1 大、2 商超', 
   `province_code` string COMMENT '省区', 
   `province_name` string COMMENT '省区', 
   `channel_code` string COMMENT '渠道', 

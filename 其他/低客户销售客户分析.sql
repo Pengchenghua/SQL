@@ -1,4 +1,4 @@
--- 低客户销售客户分析
+-- 低销售分析
 CREATE
 TEMPORARY TABLE csx_tmp.temp_pch_aa AS
 SELECT order_no,

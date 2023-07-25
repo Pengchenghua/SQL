@@ -55,7 +55,7 @@ select sdt,location_code,move_type ,product_code,sum( amt_no_tax  )loss_amt from
         and move_type ='117A'
         group by location_code,sdt,move_type ,product_code;
  
-    select * from csx_dw.dws_sale_r_d_customer_sale  where goods_code ='270380' and sdt>='20200701' and sdt<='20200712' and channel_name ='大客户';
+    select * from csx_dw.dws_sale_r_d_customer_sale  where goods_code ='270380' and sdt>='20200701' and sdt<='20200712' and channel_name ='大';
  
     select
        move_name ,move_type ,sum(amt_no_tax ),direction
@@ -358,7 +358,7 @@ where
     and location_type_code in('"+$dctype+"');
 
 
--- 客户类型销售占比 
+-- 类型销售占比 
  select
     case
         when attribute_name = '' then '其他'
@@ -380,7 +380,7 @@ from
 where
     sdt = regexp_replace(to_date(date_sub(CURRENT_TIMESTAMP(), 1)), '-', '')
     and province_code = '1'
-    and channel_name = '大客户'
+    and channel_name = '大'
 order by
     attribute desc;
         
@@ -388,9 +388,9 @@ order by
     group by attribute_name;
 
 select type,division_code ,division_name , avg(sku ) avg_sku,sum(sale)sale from (
-select case when channel in ('1','7') then '大客户' else channel_name end type,sdt,division_code ,division_name , count(distinct goods_code ) as sku,sum(sales_value )sale
+select case when channel in ('1','7') then '大' else channel_name end type,sdt,division_code ,division_name , count(distinct goods_code ) as sku,sum(sales_value )sale
 from csx_dw.dws_sale_r_d_customer_sale where sdt>='20200601' and sdt<'20200724'
-group by division_code ,division_name ,sdt,case when channel in ('1','7') then '大客户' else channel_name end
+group by division_code ,division_name ,sdt,case when channel in ('1','7') then '大' else channel_name end
 )a group by type,division_code ,division_name 
 
 ;
@@ -437,7 +437,7 @@ JOIN
          zone_id,
          zone_name) b ON a.province_code=b.dist_code
 WHERE sdt='20200723'
-  AND channel_name ='大客户' ;
+  AND channel_name ='大' ;
   
   select * from csx_dw.csx_shop where sdt='current';
   
@@ -674,7 +674,7 @@ csx_ods.source_crm_w_a_sys_province
      province_name;
    
  
--- 客户属性销售  
+-- 属性销售  
 select  
        zone_id,zone_name ,
        province_code ,

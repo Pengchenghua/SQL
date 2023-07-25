@@ -1,5 +1,5 @@
 -- 逻辑规则于20191112 更改
--- 增加大宗、供应链 万四舍五入 round(new_cr,-4), 大客户、商超 千四舍五入round(a,-3)
+-- 增加大宗、供应链 万四舍五入 round(new_cr,-4), 大、商超 千四舍五入round(a,-3)
 SET mapreduce.job.queuename =caishixian;
 set hive.groupby.skewindata = true;
 SET hive.exec.parallel      =TRUE;
@@ -57,7 +57,7 @@ select
 ;
 
 --SET sdate=to_date(date_sub(current_timestamp(),1));
--- 客户资料
+-- 资料
 drop table if exists temp.p_sale_02
 ;
 
@@ -196,7 +196,7 @@ from
 -- 1、如果首单日期是空白的，且过去30个自然日日均销售也是空白的，那么信控降为0。
 -- 2、如果首单日期不是空白的，但是过去30个自然日日均销售是空白的（代表销售未满30天），则信控和原固定额度保持一致。
 -- 3、其他情况下都是对比（已使用信控额度+未来信控额度）和原固定额度，取较小值作为新的信控额度。如果对比下来较小值是个负数，则新信控额度为0。
--- 预测客户信控 20191022
+-- 预测信控 20191022
 set hive.exec.dynamic.partition             =true;     --开启动态分区
 set hive.exec.dynamic.partition.mode        =nonstrict;--设置为非严格模式
 set hive.exec.max.dynamic.partitions        =1000;     --在所有执行MR的节点上，最大一共可以创建多少个动态分区。
@@ -261,14 +261,14 @@ SELECT
 						 '大宗')
 			and min_sdt>regexp_replace(date_sub('${sdate}',60),'-','')
 			then round(credit_limit,-4)
-		when channel in ('大客户'    ,
+		when channel in ('大'    ,
 						 '企业购'    ,
 						 '商超(对外)' ,
 						 '商超(对内)')
 			and min_sdt>regexp_replace(date_sub('${sdate}',30),'-','')
 			then round(credit_limit,-3)
 			-- when new_credit_limit=0 then 0
-		when channel in ('大客户'    ,
+		when channel in ('大'    ,
 						 '企业购'    ,
 						 '商超(对外)' ,
 						 '商超(对内)')
@@ -297,14 +297,14 @@ SELECT
 								 '大宗')
 					and min_sdt>regexp_replace(date_sub('${sdate}',60),'-','')
 					then round(credit_limit,-4)
-				when channel in ('大客户'    ,
+				when channel in ('大'    ,
 								 '企业购'    ,
 								 '商超(对外)' ,
 								 '商超(对内)')
 					and min_sdt>regexp_replace(date_sub('${sdate}',30),'-','')
 					then round(credit_limit,-3)
 					-- when new_credit_limit=0 then 0
-				when channel in ('大客户'    ,
+				when channel in ('大'    ,
 								 '企业购'    ,
 								 '商超(对外)' ,
 								 '商超(对内)')

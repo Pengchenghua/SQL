@@ -1,4 +1,4 @@
-	-------业绩战报剔除：贸易客户，订单<0.015
+	-------业绩战报剔除：贸易，订单<0.015
 select 
      province_code, --省区
      case when channel in ('4')  then '大宗'
@@ -10,9 +10,9 @@ select
         when channel=2 then 'M端'
         when channel=7 then 'BBC'
 		when (customer_name like '%内购%' or customer_name like '%内%购%' or customer_name like '%临保%') 
-		  or (channel in ('1','9') and attribute='贸易客户' and profit_rate<=0.015 ) then '批发内购'
-		when channel in ('1','9') and attribute='贸易客户' and profit_rate>0.015 then '省区大宗'
-        when channel in ('1','9') and attribute='合伙人客户' then '城市服务商'
+		  or (channel in ('1','9') and attribute='贸易' and profit_rate<=0.015 ) then '批发内购'
+		when channel in ('1','9') and attribute='贸易' and profit_rate>0.015 then '省区大宗'
+        when channel in ('1','9') and attribute='合伙人' then '城市服务商'
         when channel in ('1','9')  and order_kind='WELFARE' then '福利单'
 		when channel in ('4','5','6')  then '大宗&供应链'
        else  '日配单'
@@ -65,9 +65,9 @@ select
         when channel=2 then 'M端'
         when channel=7 then 'BBC'
 		when (customer_name like '%内购%' or customer_name like '%内%购%' or customer_name like '%临保%') 
-		  or (channel in ('1','9') and attribute='贸易客户' and profit_rate<=0.015 ) then '批发内购'
-		when channel in ('1','9') and attribute='贸易客户' and profit_rate>0.015 then '省区大宗'
-        when channel in ('1','9') and attribute='合伙人客户' then '城市服务商'
+		  or (channel in ('1','9') and attribute='贸易' and profit_rate<=0.015 ) then '批发内购'
+		when channel in ('1','9') and attribute='贸易' and profit_rate>0.015 then '省区大宗'
+        when channel in ('1','9') and attribute='合伙人' then '城市服务商'
         when channel in ('1','9')  and order_kind='WELFARE' then '福利单'
 		when channel in ('4','5','6')  then '大宗&供应链'
        ELSE  '日配单'

@@ -1,8 +1,8 @@
--- 大客户月度计划
+-- 大月度计划
 select * from csx_tmp.dws_csms_province_month_sale_plan_tmp where sdt='202012';
 -- 商超月度计划
 select * from csx_tmp.dws_ssms_province_month_sale_plan_tmp  where sdt='202012';
---大客户日配每日计划
+--大日配每日计划
 select * from csx_tmp.dws_csms_province_day_sale_plan_tmp where `month` ='202012';
 --主管计划
 select * from csx_tmp.dws_csms_manager_month_sale_plan_tmp where `month` ='202012' and province_code ='24';

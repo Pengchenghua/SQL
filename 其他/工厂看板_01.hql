@@ -105,7 +105,7 @@ from (
       a.province_code,
 	  a.province_name,
     CASE WHEN channel IN ('1','7','3') THEN '1'	else a.channel END channel,
-		CASE WHEN channel IN ('1','7','3') THEN '大客户'	else a.channel_name END channel_name,
+		CASE WHEN channel IN ('1','7','3') THEN '大'	else a.channel_name END channel_name,
 	customer_no,
 	goods_code,
 	case when category_code in ('12','13','14') then '12' 
@@ -134,7 +134,7 @@ from (
       a.province_code,
 	  a.province_name,
     CASE WHEN channel IN ('1','7','3') THEN '1'	else a.channel END ,
-		CASE WHEN channel IN ('1','7','3') THEN '大客户'	else a.channel_name END ,
+		CASE WHEN channel IN ('1','7','3') THEN '大'	else a.channel_name END ,
 	customer_no,
 	goods_code,
 	case when category_code in ('12','13','14') then '12' 
@@ -363,7 +363,7 @@ GROUP BY province_code,province_name
        
 ;
 
---计算商超/大客户销售
+--计算商超/大销售
 drop table if exists temp.factory_stock_06;
 CREATE temporary table temp.factory_stock_06
 as 
@@ -409,21 +409,21 @@ temp.factory_stock_03 where workshop_code is not null
 GROUP BY province_code,province_name
 ;
 
--- 计算车间客户数
+-- 计算车间数
 drop table if exists temp.factory_cust_01;
 CREATE temporary table temp.factory_cust_01
 as 
 select a.province_code,workshop_code,workshop_name,shop_dept_cust,big_dept_cust,round(big_dept_cust/big_cust,4) sale_cust_ratio ,big_cust from
 (select province_code,workshop_code,workshop_name,
   count( distinct case when channel_name ='商超' then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户' then customer_no end) as big_dept_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大' then customer_no end) as big_dept_cust  from temp.factory_stock_02
 group by  province_code,workshop_code,workshop_name)a
 left join 
 (select province_code,
-  count( distinct case when channel_name ='大客户' then customer_no end) as big_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大' then customer_no end) as big_cust  from temp.factory_stock_02
 group by  province_code) b on a.province_code=b.province_code
 ;
---计算部类客户数
+--计算部类数
 drop table if exists temp.factory_cust_02;
 CREATE temporary table temp.factory_cust_02
 as 
@@ -434,15 +434,15 @@ round(big_dept_cust/big_cust,4) sale_cust_ratio ,
 big_cust from
 (select province_code,bd_id,bd_name,
   count( distinct case when channel_name ='商超' then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户' then customer_no end) as big_dept_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大' then customer_no end) as big_dept_cust  from temp.factory_stock_02
 group by  province_code,bd_id,bd_name)a
 left join 
 (select province_code,
-  count( distinct case when channel_name ='大客户' then customer_no end) as big_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大' then customer_no end) as big_cust  from temp.factory_stock_02
 group by  province_code) b on a.province_code=b.province_code
 ;
  
- --计算客户数
+ --计算数
 drop table if exists temp.factory_cust_03;
 CREATE temporary table temp.factory_cust_03
 as 
@@ -453,10 +453,10 @@ round(big_dept_cust/big_cust,4) sale_cust_ratio ,
 big_cust from
 (select province_code,channel,channel_name,
   count( distinct case when channel_name ='商超' and sale!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and sale!=0 then customer_no end) as big_dept_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大'and sale!=0 then customer_no end) as big_dept_cust  from temp.factory_stock_02
 group by  province_code,channel,channel_name)a
 left join 
 (select province_code,
-  count( distinct case when channel_name ='大客户' then customer_no end) as big_cust  from temp.factory_stock_02
+  count( distinct case when channel_name ='大' then customer_no end) as big_cust  from temp.factory_stock_02
 group by  province_code) b on a.province_code=b.province_code
 ;

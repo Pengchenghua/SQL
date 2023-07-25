@@ -1,6 +1,6 @@
 -- -- 建立库存/SKU/库存额/当天入库额;
--- 品类	动销SKU	"动销率（动销SKU/有库存SKU)"	SKU数	日销售	日毛利	累计销售	累计毛利	商超客户数	大客户客户数	"渗透率
--- （大客户）"	负毛利品项	库存额	周转天数	当天入库额
+-- 品类	动销SKU	"动销率（动销SKU/有库存SKU)"	SKU数	日销售	日毛利	累计销售	累计毛利	商超数	大数	"渗透率
+-- （大）"	负毛利品项	库存额	周转天数	当天入库额
 set
   mapreduce.job.queuename = caishixian;
 SET
@@ -173,7 +173,7 @@ from (
           a.province_code,
           a.province_name,
           CASE
-            WHEN channel IN ('1', '7') THEN '大客户'
+            WHEN channel IN ('1', '7') THEN '大'
             WHEN channel IN ('2', '3') THEN '商超'
             else a.channel_name
           END channel_name,
@@ -208,7 +208,7 @@ from (
         GROUP BY
           a.shop_id,
           CASE
-            WHEN channel IN ('1', '7') THEN '大客户'
+            WHEN channel IN ('1', '7') THEN '大'
             WHEN channel IN ('2', '3') THEN '商超'
             else a.channel_name
           END,
@@ -283,7 +283,7 @@ FROM (
       ) AS sale_sku,
       0 AS negative_sku,
       -- count(DISTINCT CASE
-      --                      WHEN channel_name='大客户' THEN customer_no
+      --                      WHEN channel_name='大' THEN customer_no
       --                  END) AS big_cust_data,
       --   count(DISTINCT CASE
       --                      WHEN channel_name='商超' THEN customer_no
@@ -348,7 +348,7 @@ FROM (
         end
       ) AS negative_sku,
       -- count(DISTINCT CASE
-      --                      WHEN channel_name='大客户' THEN customer_no
+      --                      WHEN channel_name='大' THEN customer_no
       --                  END) AS big_cust_data,
       --   count(DISTINCT CASE
       --                      WHEN channel_name='商超' THEN customer_no
@@ -418,7 +418,7 @@ GROUP BY
   province_name,
   workshop_code,
   workshop_name;
---客户数
+--数
   --set hive.groupby.skewindata=false;
   drop table if exists temp.factory_stock_05;
 CREATE temporary table temp.factory_stock_05 as
@@ -442,7 +442,7 @@ from (
       ) as shop_dept_cust,
       count(
         distinct case
-          when channel_name = '大客户' then customer_no
+          when channel_name = '大' then customer_no
         end
       ) as big_dept_cust
     from temp.factory_stock_02
@@ -456,7 +456,7 @@ left join (
       province_code,
       count(
         distinct case
-          when channel_name = '大客户' then customer_no
+          when channel_name = '大' then customer_no
         end
       ) as big_cust
     from temp.factory_stock_02
@@ -652,7 +652,7 @@ from (
           ) as shop_cust,
           count(
             distinct case
-              when channel_name = '大客户' then customer_no
+              when channel_name = '大' then customer_no
             end
           ) as big_cust
         from temp.factory_stock_02

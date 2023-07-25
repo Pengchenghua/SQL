@@ -6,7 +6,7 @@ CREATE EXTERNAL TABLE `ods_ecc.ecc_ytbcustomer`(
   `gjahr` string COMMENT '年度', 
   `buzei` string COMMENT '', 
   `budat` string COMMENT '回款日期', 
-  `kunnr` string COMMENT '客户编码', 
+  `kunnr` string COMMENT '编码', 
   `lifnr` string COMMENT '', 
   `prctr` string COMMENT '地点', 
   `hkont` string COMMENT '科目类型', 

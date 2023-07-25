@@ -1,6 +1,6 @@
 set mapreduce.job.queuename=caishixian;
 
--- 从DC W0B6 出去得算BBC，从W0H4出去且客户为门店得算供应链（S端）
+-- 从DC W0B6 出去得算BBC，从W0H4出去且为门店得算供应链（S端）
 --根据战报表逻辑生成近两个月的销售表，添加渠道，省区字段
 drop table b2b_tmp.tmp_customer_sale_1;
 create temporary table b2b_tmp.tmp_customer_sale_1
@@ -44,7 +44,7 @@ select
   sdt,
   sales_type,
   channel,
-  case when channel='1' then '大客户'
+  case when channel='1' then '大'
     when channel='2' then '商超（对内）'
     when channel='3' then '商超（对外）'
     when channel='4' then '大宗'
@@ -106,7 +106,7 @@ from
      when (a.origin_shop_id = 'W0H4' and a.customer_no like 'S%' and bd_name='食百') or (b.channel = '供应链（食百）' and bd_name='食百')then '5'
      when (a.origin_shop_id = 'W0H4' and a.customer_no like 'S%' and bd_name='生鲜') or (b.channel = '供应链（生鲜）' and bd_name='生鲜')then '6'
      when b.channel in ('商超（对内）', 'M端') then '2'
-     when b.channel = '大客户' or b.channel='B端' or a.customer_no in ('S9962','S9951','S9952','S9955','S9958','S9961','S9985') then '1'
+     when b.channel = '大' or b.channel='B端' or a.customer_no in ('S9962','S9951','S9952','S9955','S9958','S9961','S9985') then '1'
      when b.channel = '大宗' then '4'
      when b.channel='商超（对外）' then '3'
      when b.channel='其他' then '8'

@@ -98,8 +98,8 @@ FROM (
         else channel
       end channel,
       case
-        when channel in('1', '7') then '大客户'
-        when province_code = '33' then '大客户平台'
+        when channel in('1', '7') then '大'
+        when province_code = '33' then '大平台'
         when province_code = '-100' then '商超平台'
         else channel_name
       end channel_name,
@@ -224,10 +224,10 @@ LEFT OUTER JOIN (
     dc_province_name string comment 'DC省区名称',
     dc_company_code string comment 'DC公司代码',
     dc_company_name string comment 'DC公司代码名称',
-    customer_no string comment '客户编码',
-    customer_name string comment '客户名称',
-    province_code string comment '客户省区编码',
-    province_name string comment '客户省区名称',
+    customer_no string comment '编码',
+    customer_name string comment '名称',
+    province_code string comment '省区编码',
+    province_name string comment '省区名称',
     goods_code string comment '商品编码',
     bar_code string comment '商品条码',
     goods_name string comment '商品名称',

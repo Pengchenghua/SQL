@@ -32,7 +32,7 @@ select
   sum(profit) as profit,
   sum(a.sale_amt_no_tax) as sale_amt_no_tax,
   sum(a.sale_amt) sale_amt
-from -- 销售表中大客户生鲜部类
+from -- 销售表中大生鲜部类
 (
   select 
     inventory_dc_province_code as province_code,
@@ -230,7 +230,7 @@ from
 	and receive_qty > 0
 	and purpose <> '09'  -- 不含城市服务商
 	 and receive_dc_code in('W0A6','W0A8')
-	 -- and business_type_code<>'03'  -- 客户直送
+	 -- and business_type_code<>'03'  -- 直送
   group by order_code,goods_code,receive_dc_code,regexp_replace(to_date(receive_time),'-','')
 ) a
 join
@@ -638,7 +638,7 @@ from
 	 and inventory_dc_code in('W0A6','W0A8')
 	 and inventory_dc_province_name in('四川省','福建省')
 )a 
--- 客户报价策略 商品
+-- 报价策略 商品
 left join 
 (
   select 
@@ -656,12 +656,12 @@ left join
     float_down_rate,  -- 售价类型:下浮点数
     suggest_price_type,  -- 建议售价类型: 1-高;2:中;3:低
     is_fix_price  -- 是否固定价(1-固定价)	
-  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 客户报价策略配置表
+  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 报价策略配置表
   where sdt=regexp_replace(date_sub(current_date, 1),'-','') 
   and dimension_type = 0 --商品
 ) b1 on b1.customer_code = a.customer_code and b1.warehouse_code = a.inventory_dc_code 
 	and b1.dimension_value_code = a.goods_code
--- 客户报价策略 小类
+-- 报价策略 小类
 left join 
 (
   select 
@@ -680,13 +680,13 @@ left join
     float_down_rate,  -- 售价类型:下浮点数
     suggest_price_type,  -- 建议售价类型: 1-高;2:中;3:低
     is_fix_price  -- 是否固定价(1-固定价)	
-  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 客户报价策略配置表
+  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 报价策略配置表
   where sdt=regexp_replace(date_sub(current_date, 1),'-','') 
   and dimension_type = 1 --小类
   and dimension_value_code like'B0202%'
 ) b2 on b2.customer_code = a.customer_code and b2.warehouse_code = a.inventory_dc_code 
 	and b2.small_management_classify_code = a.classify_small_code
--- 客户报价策略 中类
+-- 报价策略 中类
 left join 
 (
   select 
@@ -704,12 +704,12 @@ left join
     float_down_rate,  -- 售价类型:下浮点数
     suggest_price_type,  -- 建议售价类型: 1-高;2:中;3:低
     is_fix_price  -- 是否固定价(1-固定价)	
-  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 客户报价策略配置表
+  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 报价策略配置表
   where sdt=regexp_replace(date_sub(current_date, 1),'-','') 
   and dimension_type = 2 --中类
   and dimension_value_code='B0202'	-- 蔬菜
 ) b3 on b3.customer_code = a.customer_code and b3.warehouse_code = a.inventory_dc_code 
--- 客户报价策略 大类
+-- 报价策略 大类
 left join 
 (
   select 
@@ -727,12 +727,12 @@ left join
     float_down_rate,  -- 售价类型:下浮点数
     suggest_price_type,  -- 建议售价类型: 1-高;2:中;3:低
     is_fix_price  -- 是否固定价(1-固定价)	
-  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 客户报价策略配置表
+  from csx_ods.csx_ods_csx_price_prod_customer_price_guide_config_df  -- 报价策略配置表
   where sdt=regexp_replace(date_sub(current_date, 1),'-','') 
   and dimension_type = 3 --大类
   and dimension_value_code='B02' -- 蔬菜水果
 ) b4 on b4.customer_code = a.customer_code and b4.warehouse_code = a.inventory_dc_code 
--- 客户报价周期
+-- 报价周期
 left join
 (
   select 

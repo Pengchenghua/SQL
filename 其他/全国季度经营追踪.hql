@@ -525,7 +525,7 @@ ORDER BY case when  region_code='2' then 1
 
 
  
--- 亏损客户
+-- 亏损
 SELECT 
        region_code,
        region_name,
@@ -924,7 +924,7 @@ SETS ((region_code,
                   province_name)) ;
 
 
--- 亏损客户分析 剔除退货、'104444','102998' 两个大
+-- 亏损分析 剔除退货、'104444','102998' 两个大
 SELECT 
        region_code,
        region_name,
@@ -1297,7 +1297,7 @@ SETS ((region_code,
                   province_name)) ;
 
 
--- 亏损客户分析 剔除退货、'104444','102998' 两个大
+-- 亏损分析 剔除退货、'104444','102998' 两个大
 SELECT 
        region_code,
        region_name,
@@ -1385,7 +1385,7 @@ SETS ((region_code,
 
 
 
----------------------------- 分割，不剔除北京两个客户
+---------------------------- 分割，不剔除北京两个
 
 SET hive.execution.engine=tez; 
 set tez.queue.name=caishixian;
@@ -1680,7 +1680,7 @@ ORDER BY region_code asc,
     ;
 
 
--- 亏损客户分析 剔除退货、'104444','102998' 两个大 
+-- 亏损分析 剔除退货、'104444','102998' 两个大 
 -- 负毛利金额-100 ，月销售额>0
 
 SELECT 
@@ -1783,11 +1783,11 @@ drop table csx_tmp.ads_sale_plan_national;
   zone_name string  comment  '大区名称',
   dist_code    string  comment  '省区编码简称',
   dist_name    string  comment  '省区编码简称',
-  plan_type_code string comment '指标类型,0 全渠道，1 大客户,2商超,3 BBC,4 福利单 WELFARE、5 新客',
-  plan_type string comment '指标类型,0 全渠道，1 大客户,2商超,BBC,福利单(WELFARE)、新客',
+  plan_type_code string comment '指标类型,0 全渠道，1 大,2商超,3 BBC,4 福利单 WELFARE、5 新客',
+  plan_type string comment '指标类型,0 全渠道，1 大,2商超,BBC,福利单(WELFARE)、新客',
   plan_sale_value decimal(38,6)  comment  '季度预算',
   plan_profit decimal(38,6)  comment  '毛利预算',
-  plan_cust_num decimal(38,6)  comment  '客户预算',
+  plan_cust_num decimal(38,6)  comment  '预算',
   update_time timestamp comment '更新日期'
  ) comment  '全国季度计划指标含各省区计划' 
   partitioned by (quarters string comment '日期分区' )
@@ -1829,7 +1829,7 @@ SELECT channel_name,
        sum(sale_cust_num)sale_cust_num,
        sum(last_sale_cust_num)last_sale_cust_num
 FROM
-  (SELECT case when channel in ('1','7','9') then '大客户' else channel_name end channel_name,
+  (SELECT case when channel in ('1','7','9') then '大' else channel_name end channel_name,
         case when channel='7' then 'BBC' 
             when order_kind='WELFARE' then '福利单'
             end sales_type,
@@ -1848,10 +1848,10 @@ FROM
                 when order_kind='WELFARE' then '福利单'
                 end
             ,
-             case when channel in ('1','7','9') then '大客户' else channel_name end ,
+             case when channel in ('1','7','9') then '大' else channel_name end ,
             province_code
    UNION ALL SELECT 
-                case when channel in ('1','7','9') then '大客户' else channel_name end channel_name,
+                case when channel in ('1','7','9') then '大' else channel_name end channel_name,
                 case when channel='7' then 'BBC' 
                 when order_kind='WELFARE' then '福利单'
                 end sales_type,
@@ -1869,7 +1869,7 @@ FROM
    GROUP BY  case when channel='7' then 'BBC' 
                 when order_kind='WELFARE' then '福利单'
                 end
-            , case when channel in ('1','7','9') then '大客户' else channel_name end ,
+            , case when channel in ('1','7','9') then '大' else channel_name end ,
             province_code)a
 LEFT JOIN
   (SELECT province_code,
@@ -1900,14 +1900,14 @@ select region_code,a.region_name,a.province_code,a.province_name,channel_name,pl
 from csx_tmp.temp_channel_sale a 
 left join 
 (select dist_code,plan_type,plan_sale_value,plan_profit,plan_cust_num 
-    from csx_tmp.ads_sale_plan_national where plan_type in ('大客户','商超') and quarters='202003')b on a.province_code=b.dist_code and a.channel_name=b.plan_type
+    from csx_tmp.ads_sale_plan_national where plan_type in ('大','商超') and quarters='202003')b on a.province_code=b.dist_code and a.channel_name=b.plan_type
 group by region_code,a.region_name,a.province_code,a.province_name,channel_name,plan_sale_value,plan_profit;
 
 
 
 
 CREATE TEMPORARY TABLE `csx_tmp.ads_fr_channel_quarter_national`(
-    level_id string COMMENT '层级 0 全渠道、1、大客户、2、商超',
+    level_id string COMMENT '层级 0 全渠道、1、大、2、商超',
   `region_code` string comment '大区编码', 
   `region_name` string comment '大区名称', 
   `province_code` string comment '省区编码', 
@@ -1929,7 +1929,7 @@ STORED AS PARQUET
 
 
 
----- 分割线，剔除北京两个客户---------------------------------------------------------
+---- 分割线，剔除北京两个---------------------------------------------------------
 
 SET hive.execution.engine=tez; 
 set tez.queue.name=caishixian;
@@ -2101,7 +2101,7 @@ SELECT channel,
        count(DISTINCT case when last_sale!=0 then  a.customer_no end )last_sale_cust_num
 FROM
   (SELECT case when channel='7' then 'BBC'
-               when b.attribute_code='3' then '贸易客户'
+               when b.attribute_code='3' then '贸易'
                when b.attribute_code='5' then '合伙人'
                when b.attribute_code in ('1','2') and  order_kind='WELFARE' then '福利单'
                when b.attribute_code in ('1','2') and  order_kind !='WELFARE' then '日配单'
@@ -2121,7 +2121,7 @@ FROM
      AND sdt<=regexp_replace(${hiveconf:edate},'-','')
      and channel in('1','7')
    GROUP BY   case when channel='7' then 'BBC'
-               when b.attribute_code='3' then '贸易客户'
+               when b.attribute_code='3' then '贸易'
                when b.attribute_code='5' then '合伙人'
                when b.attribute_code in ('1','2') and  order_kind='WELFARE' then '福利单'
                when b.attribute_code in ('1','2') and  order_kind !='WELFARE' then '日配单'
@@ -2131,7 +2131,7 @@ FROM
             province_code
    UNION ALL 
    SELECT case when channel='7' then 'BBC'
-               when b.attribute_code='3' then '贸易客户'
+               when b.attribute_code='3' then '贸易'
                when b.attribute_code='5' then '合伙人'
                when b.attribute_code in ('1','2') and  order_kind='WELFARE' then '福利单'
                when b.attribute_code in ('1','2') and  order_kind !='WELFARE' then '日配单'
@@ -2152,7 +2152,7 @@ FROM
     and order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046')
      and channel in('1','7')
    GROUP BY  case when channel='7' then 'BBC'
-               when b.attribute_code='3' then '贸易客户'
+               when b.attribute_code='3' then '贸易'
                when b.attribute_code='5' then '合伙人'
                when b.attribute_code in ('1','2') and  order_kind='WELFARE' then '福利单'
                when b.attribute_code in ('1','2') and  order_kind !='WELFARE' then '日配单'
@@ -2304,7 +2304,7 @@ ORDER BY case when  region_code='2' then 1
 
     
 
--- 亏损客户
+-- 亏损
 SELECT 
        region_code,
        region_name,

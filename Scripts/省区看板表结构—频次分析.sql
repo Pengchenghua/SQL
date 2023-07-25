@@ -1,13 +1,13 @@
--- 客户销售频次分析
+-- 销售频次分析
 drop table `csx_dw.provinces_kanban_frequency`;
 CREATE TABLE `csx_dw.provinces_kanban_frequency`(
  `province_code` string comment '省区编码', 
  `province_name` string comment'省区名称', 
  `sale` decimal(38,6) comment '销售额', 
- `cust_num` bigint comment '客户数', 
+ `cust_num` bigint comment '数', 
  `sale_num` bigint comment '交易频次', 
  `zones` string comment '组别', 
- `zone_num` string comment '区间')comment '看板客户频次分析'
+ `zone_num` string comment '区间')comment '看板频次分析'
  partitioned by (sdt string comment '分区日期')
  ;
  
@@ -77,7 +77,7 @@ select
 	
  
  
- -- 客户数
+ -- 数
  drop table `csx_dw.provinces_kanban_cust`;
  CREATE TABLE `csx_dw.provinces_kanban_cust`(
 `province_code` string, 
@@ -88,7 +88,7 @@ select
 `mom_sing_num` bigint, 
 `big_dept_cust` bigint, 
 `mom_big_cust` bigint)
-comment '看板成交客户'
+comment '看板成交'
  partitioned by (sdt string comment '分区日期')
  ;
  
@@ -165,7 +165,7 @@ on a.customer_no=b.customer_no
 group by sales_province,sales_province_code
 ;
 
---逾期客户
+--逾期
 drop table csx_dw.provinces_kanban_account_cust;
 create table csx_dw.provinces_kanban_account_cust
 as
@@ -289,7 +289,7 @@ select
 		work_no,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' 
+		case when channel in ('1','3','7') then '大' 
 		    when channel in ('2') then '商超'
 		    else channel end channel_name,
 		sum(sales_value)sale,
@@ -308,7 +308,7 @@ select
 		work_no,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' 
+		case when channel in ('1','3','7') then '大' 
 		    when channel in ('2') then '商超'else channel end 
 union all
 	select
@@ -316,7 +316,7 @@ union all
 		work_no,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' 
+		case when channel in ('1','3','7') then '大' 
 		    when channel in ('2') then '商超' else channel end channel_name,
 		0 as sale ,
 		0 as profit,
@@ -331,13 +331,13 @@ union all
 	and	sdt<=${hiveconf:l_edate}
 
 		-- and province_code = '32'
-		-- and attribute_name in('日配客户')
+		-- and attribute_name in('日配')
 	group by
 		sales_name,
 		work_no,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' 
+		case when channel in ('1','3','7') then '大' 
 		    when channel in ('2') then '商超' else channel end )a 
 --where profit>0
 group by
@@ -349,7 +349,7 @@ group by
 ) a
 ;
 
---负毛利客户TOP10
+--负毛利TOP10
 drop table `csx_dw.provinces_kanban_cust_lose`;
 CREATE TABLE `csx_dw.provinces_kanban_cust_lose`(
 type string comment 'lose 负毛利 up 销售top'
@@ -365,11 +365,11 @@ type string comment 'lose 负毛利 up 销售top'
 `prorate` decimal(38,6), 
 `desc_rank` int, 
 `ratio` decimal(38,6), 
-`sign_date` string)comment '客户负毛利'
+`sign_date` string)comment '负毛利'
 partitioned by (sdt string comment'日期分区')
 ;
 
---负毛利客户TOP10
+--负毛利TOP10
 insert overwrite  table csx_dw.provinces_kanban_cust_lose partition(sdt)
 select 'lose' type,
 province_code,
@@ -406,7 +406,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 --and province_code='32'
---and attribute_name in ('日配客户')
+--and attribute_name in ('日配')
 group by customer_no ,
 	customer_name ,
 	attribute_name,
@@ -418,7 +418,7 @@ group by customer_no ,
 where profit<0
 ;
 insert overwrite  table csx_dw.provinces_kanban_cust_lose partition(sdt)
--- TOP10 客户
+-- TOP10 
 select 'up' type ,
 province_code,
 sales_name,
@@ -454,7 +454,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
-and attribute_name in ('日配客户')
+and attribute_name in ('日配')
 group by customer_no ,
 	customer_name ,
 	attribute_name,
@@ -521,7 +521,7 @@ where
 and sdt>=regexp_replace(to_date(trunc(date_sub(current_timestamp(),1),'MM')),'-','')
 and channel  in ('1','7','3')
 and province_code='32'
--- and attribute_name in ('日配客户')
+-- and attribute_name in ('日配')
 group by goods_code,
 	goods_name,
 	unit,	
@@ -532,21 +532,21 @@ where profit<0
 ;
  
  CREATE TABLE `csx_dw.provinces_attribute_sale`(
-`attribute_name` string comment '客户属性', 
+`attribute_name` string comment '属性', 
 province_code string comment '省区编码',
 province_name string comment'省区名称',
 `sale` decimal(36,6) comment '本月销售额', 
 `profit` decimal(36,6) comment '本月毛利额', 
 `profit_rate` decimal(38,6) comment '本月毛利率', 
-`cust_num` bigint comment '本月客户数', 
+`cust_num` bigint comment '本月数', 
 `ring_sale` decimal(36,6) comment '上月销售额', 
 `ring_profit` decimal(36,6) comment '上月毛利额', 
 `ring_profit_rate` decimal(38,6) comment '上月毛利率', 
-`ring_cust_num` bigint comment '上月客户数', 
-`diff_cust_num` bigint comment '环比客户差异', 
+`ring_cust_num` bigint comment '上月数', 
+`diff_cust_num` bigint comment '环比差异', 
 `mom_sale_ratio` decimal(38,6) comment '销售环比', 
 `sale_ratio` decimal(38,6) comment '销售占比')
-comment '省区客户属性销售占比'
+comment '省区属性销售占比'
 partitioned by (sdt string comment'日期分区')
 
 set edate=regexp_replace(date_sub(current_date,1),'-','');
@@ -580,7 +580,7 @@ from
 		nvl(attribute_name,'')attribute_name ,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' when channel in ('2') then '商超' else channel_name end channel_name,
+		case when channel in ('1','3','7') then '大' when channel in ('2') then '商超' else channel_name end channel_name,
 		sum(case when sdt >= regexp_replace(${hiveconf:mdate},'-','') and sdt <= ${hiveconf:edate}  then sales_value end ) sale,
 		sum(case when sdt >= regexp_replace(${hiveconf:mdate},'-','') and sdt <= ${hiveconf:edate}  then profit end ) profit,
 		COUNT(DISTINCT case when sdt >= regexp_replace(${hiveconf:mdate},'-','') and sdt <= ${hiveconf:edate}  then customer_no end ) cust_num,
@@ -595,28 +595,28 @@ from
 		attribute_name,
 		province_code,
 		province_name,
-		case when channel in ('1','3','7') then '大客户' when channel in ('2') then '商超' else channel_name end )a ;
+		case when channel in ('1','3','7') then '大' when channel in ('2') then '商超' else channel_name end )a ;
 	
 select * from csx_dw.provinces_attribute_sale;
 
 drop table  `csx_dw.provinces_attribute_sale`;
  CREATE TABLE `csx_dw.provinces_attribute_sale`(
-`attribute_name` string comment '客户属性', 
+`attribute_name` string comment '属性', 
 province_code string comment '省区编码',
 province_name string comment'省区名称',
 channel_name string comment'渠道',
 `sale` decimal(36,6) comment '本月销售额', 
 `profit` decimal(36,6) comment '本月毛利额', 
 `profit_rate` decimal(38,6) comment '本月毛利率', 
-`cust_num` bigint comment '本月客户数', 
+`cust_num` bigint comment '本月数', 
 `ring_sale` decimal(36,6) comment '上月销售额', 
 `ring_profit` decimal(36,6) comment '上月毛利额', 
 `ring_profit_rate` decimal(38,6) comment '上月毛利率', 
-`ring_cust_num` bigint comment '上月客户数', 
-`diff_cust_num` bigint comment '环比客户差异', 
+`ring_cust_num` bigint comment '上月数', 
+`diff_cust_num` bigint comment '环比差异', 
 `mom_sale_ratio` decimal(38,6) comment '销售环比', 
 `sale_ratio` decimal(38,6) comment '销售占比')
-comment '省区客户属性销售占比'
+comment '省区属性销售占比'
 partitioned by (sdt string comment'日期分区')
  ;
  
@@ -640,7 +640,7 @@ partitioned by (sdt string comment'日期分区')
 `ac_365d` decimal(36,6), 
 `ac_over365d` decimal(36,6),
 max_day string comment'逾期最大天数')
-comment '逾期客户TOP10'
+comment '逾期TOP10'
 PARTITIONed by (sdt string comment'日期分区')
 STORED AS PARQUET
 ;

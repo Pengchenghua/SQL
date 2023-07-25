@@ -1,7 +1,7 @@
 -- ads_fr_r_d_forecast_collection_report_20220304
 	CREATE TABLE `csx_tmp.ads_fr_r_d_forecast_collection_report_20220304`(
-	  `channel_name` string COMMENT '客户类型', 
-	  `sales_channel_name` string COMMENT '客户销售渠道,增加城市服务商,其他根据CRM渠道', 
+	  `channel_name` string COMMENT '类型', 
+	  `sales_channel_name` string COMMENT '销售渠道,增加城市服务商,其他根据CRM渠道', 
 	  `hkont` string COMMENT '科目代码', 
 	  `account_name` string COMMENT '科目名称', 
 	  `comp_code` string COMMENT '公司代码', 
@@ -15,8 +15,8 @@
 	  `sales_city` string COMMENT '销售城市名称', 
 	  `prctr` string COMMENT '利润中心', 
 	  `shop_name` string COMMENT '利润中心名称', 
-	  `customer_no` string COMMENT '客户编码', 
-	  `customer_name` string COMMENT '客户名称', 
+	  `customer_no` string COMMENT '编码', 
+	  `customer_name` string COMMENT '名称', 
 	  `first_category_code` string COMMENT '行业一级分类编码', 
 	  `first_category` string COMMENT '行业一级分类名称', 
 	  `second_category_code` string COMMENT '行业二级分类编码', 

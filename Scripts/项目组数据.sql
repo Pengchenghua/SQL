@@ -56,7 +56,7 @@ join (
 where
     sdt >= '20190101'
     and sdt<'20200608'
-    AND business_type in ('客户直送', '供应商配送', '采购入库(old)')
+    AND business_type in ('直送', '供应商配送', '采购入库(old)')
 group by vendor_pur_lvl_name,
     SUBSTRING(sdt, 1, 4) ,
     SUBSTRING(sdt, 1, 6),
@@ -79,12 +79,12 @@ group by vendor_pur_lvl_name,
 
 -- 商品销售
 
---客户类型    商品年份    商品月 1级品类    2级品类    3级品类    4级品类    5级品类    销售SKU   区域  销售量 销售额 销售额%    月末库存额   月末库存额%  库存周转天数  毛利  毛利率
---customer_type 01长期客户；02临时客户
+--类型    商品年份    商品月 1级品类    2级品类    3级品类    4级品类    5级品类    销售SKU   区域  销售量 销售额 销售额%    月末库存额   月末库存额%  库存周转天数  毛利  毛利率
+--customer_type 01长期；02临时
  select
     channel ,
     `attribute` ,
-   case when  customer_type='01' then '长期客户' when customer_type='02'then '临时客户' else customer_type end cust_type,
+   case when  customer_type='01' then '长期' when customer_type='02'then '临时' else customer_type end cust_type,
     channel_name,
     customer_name ,
     yyyy,
@@ -170,6 +170,6 @@ group by
     province_name,
     channel ,
     `attribute` ,
-     case when  customer_type='01' then '长期客户' when customer_type='02'then '临时客户' else customer_type end,
+     case when  customer_type='01' then '长期' when customer_type='02'then '临时' else customer_type end,
     channel_name,
     customer_name

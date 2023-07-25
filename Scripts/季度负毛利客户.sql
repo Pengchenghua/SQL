@@ -80,7 +80,7 @@ where
 	and attribute_code !=5;
 	
 
--- B端自营客户
+-- B端自营
  select
 	sum(sales_value) sale,
 	sum(profit),

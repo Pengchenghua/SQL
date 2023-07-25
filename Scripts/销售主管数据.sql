@@ -41,7 +41,7 @@ from
         sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000 as old_M_sales_value,  --老客-累计销售额
         sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000 as old_M_profit,  --老客-累计毛利额
         sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000 as old_H_sales_value,  --老客-环比累计销售额
-        count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end)as new_cust_count,  --新客-累计客户数
+        count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end)as new_cust_count,  --新客-累计数
         sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000 as new_Md_sales_value, --新客-昨日销售额
         sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000 as new_M_sales_value,  --新客-累计销售额
         sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000 as new_M_profit,  --新客-累计毛利额
@@ -53,7 +53,7 @@ from
         GROUPING__ID 
         from (select *,
                 case when channel_name='商超' then 'M端'
-                     when channel_name='大客户' or channel_name like '企业购%' then 'B端'
+                     when channel_name='大' or channel_name like '企业购%' then 'B端'
                      else '其他' end channel_name_1
                 from csx_tmp.tmp_supervisor_day_detail)a
         group by region_name,

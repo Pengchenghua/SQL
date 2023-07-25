@@ -8,9 +8,9 @@ CREATE TABLE `csx_dw.ads_sale_r_d_city_channel_performance`(
   `province_name` STRING COMMENT '省区名称',
   `city_group_code` STRING COMMENT '城市组编码',
   `city_group_name` STRING COMMENT '城市组名称',
-  `channel_code` STRING COMMENT '渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)',
+  `channel_code` STRING COMMENT '渠道编码(1:大 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)',
   `channel_name` STRING COMMENT '渠道名称',
-  `change_channel_code` STRING COMMENT '转化后渠道编码(1:大客户 2:商超)',
+  `change_channel_code` STRING COMMENT '转化后渠道编码(1:大 2:商超)',
   `change_channel_name` STRING COMMENT '转化后渠道名称',
   `sales_value` decimal(20,6) COMMENT '含税销售金额',
   `profit` decimal(20,6) COMMENT '含税定价毛利额',
@@ -18,10 +18,10 @@ CREATE TABLE `csx_dw.ads_sale_r_d_city_channel_performance`(
   `excluding_tax_profit` decimal(20,6) COMMENT '不含税定价毛利额',
   `reach_sales_value` decimal(20,6) COMMENT '达成含税销售金额(剔除批发内购)',
   `reach_profit` decimal(20,6) COMMENT '达成含税定价毛利额(剔除批发内购)',
-  `self_sales_value` decimal(20,6) COMMENT '自营含税销售金额(大客户:剔除城市服务商 商超:出库地点非E开头 其他渠道:0)',
-  `self_profit` decimal(20,6) COMMENT '自营含税定价毛利额(大客户:剔除城市服务商 商超:出库地点非E开头 其他渠道:0)',
-  `joint_sales_value` decimal(20,6) COMMENT '联营含税销售金额(大客户:城市服务商 商超:出库地点E开头 其他渠道:0)',
-  `joint_profit` decimal(20,6) COMMENT '联营含税定价毛利额(大客户:城市服务商 商超:出库地点E开头 其他渠道:0)',
+  `self_sales_value` decimal(20,6) COMMENT '自营含税销售金额(大:剔除城市服务商 商超:出库地点非E开头 其他渠道:0)',
+  `self_profit` decimal(20,6) COMMENT '自营含税定价毛利额(大:剔除城市服务商 商超:出库地点非E开头 其他渠道:0)',
+  `joint_sales_value` decimal(20,6) COMMENT '联营含税销售金额(大:城市服务商 商超:出库地点E开头 其他渠道:0)',
+  `joint_profit` decimal(20,6) COMMENT '联营含税定价毛利额(大:城市服务商 商超:出库地点E开头 其他渠道:0)',
   `normal_sales_value` decimal(20,6) COMMENT '日配含税销售金额',
   `normal_profit` decimal(20,6) COMMENT '日配含税定价毛利额'
 ) COMMENT '城市业绩销售日统计'
@@ -91,7 +91,7 @@ from
     region_code, region_name, province_code, province_name, city_group_code, city_group_name,
     channel_code, channel_name, business_type_code, operation_mode, dc_code, goods_code,
     if(channel_code <> '2' and substr(customer_no, 1, 1) <> 'S', '1', '2') as change_channel_code,
-    if(channel_code <> '2' and substr(customer_no, 1, 1) <> 'S', '大客户', '商超') as change_channel_name,
+    if(channel_code <> '2' and substr(customer_no, 1, 1) <> 'S', '大', '商超') as change_channel_name,
     customer_no, regexp_replace(substr(sign_time, 1, 10), '-', '') as sign_date, sales_value, sales_cost,
     profit, excluding_tax_sales, excluding_tax_profit, sales_qty, sdt
   from ${hiveconf:source_table_name}

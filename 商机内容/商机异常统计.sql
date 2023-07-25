@@ -23,7 +23,7 @@
 
 
 
--- 1.1 计算重复商机客户
+-- 1.1 计算重复商机
 drop  table  csx_tmp.temp_sj_01 ;
 create temporary table csx_tmp.temp_sj_01 as 
  select province_code,
@@ -88,7 +88,7 @@ group by province_code,
  ;
 
 
--- 1.3 计算更新日期30天以内的客户数 
+-- 1.3 计算更新日期30天以内的数 
   select 
 a.province_code,
 a.province_name,
@@ -440,7 +440,7 @@ GROUP BY province_code,
 
 
 
--- 统计异常配送额客户数
+-- 统计异常配送额数
 
 
 select 

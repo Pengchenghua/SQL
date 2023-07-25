@@ -18,7 +18,7 @@ as
 select 
   a.hkont,
   a.bukrs as comp_code, -- 公司代码
-  case when length(a.kunnr) < 3 then a.lifnr else a.kunnr end as kunnr, -- 客户号
+  case when length(a.kunnr) < 3 then a.lifnr else a.kunnr end as kunnr, -- 号
   a.budat, -- 过机时间
   'A' as prctr,
   '' as shop_name,
@@ -163,14 +163,14 @@ where c.amount is null;
 
 insert overwrite table csx_dw.account_age_dtl_fct partition (sdt) 
 select 
-  c.sflag, -- 客户类型
+  c.sflag, -- 类型
   a.hkont, -- 科目代码
   d.account_name, -- 科目名称
   a.comp_code, -- 公司代码
   b.comp_name,
   a.prctr, -- 利润中心
   a.shop_name,
-  a.kunnr, -- 客户编码
+  a.kunnr, -- 编码
   c.cust_name as name,
   zterm, -- 账期类型
   case when zterm like 'Y%' then concat('月结', diff) else concat('票到', diff) end as diff, -- 账期

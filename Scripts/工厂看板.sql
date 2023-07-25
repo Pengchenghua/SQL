@@ -78,7 +78,7 @@ group by
 select sales_belong_flag,workshop_name,province_code ,province_name,sales_value/10000 sale ,profit/10000 profit  
 from csx_dw.ads_sale_r_d_sc_sale_month where smonth='202007' and province_code ='1' 
 union all 
-select '大客户' as sales_belong_flag,workshop_name,province_code ,province_name,sum(sales_value )/10000 as sale,sum(profit )/10000 profit  
+select '大' as sales_belong_flag,workshop_name,province_code ,province_name,sum(sales_value )/10000 as sale,sum(profit )/10000 profit  
 from csx_dw.dws_sale_r_d_customer_sale where sdt>='20200701' and is_factory_goods_code =1 and channel in('1','7')
 and province_code ='1'
 group by workshop_name,province_code ,province_name

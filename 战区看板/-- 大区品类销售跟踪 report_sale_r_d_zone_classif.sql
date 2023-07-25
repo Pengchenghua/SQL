@@ -57,7 +57,7 @@ select
     case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
     end channel,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
     end channel_name,
     business_type_name as attribute_name,
@@ -99,7 +99,7 @@ sdt,
     case when a.channel_code in ('1','7','9') then '1'
         else a.channel_code
     end  ,
-    case when a.channel_code in ('1','7','9') then '大客户'
+    case when a.channel_code in ('1','7','9') then '大'
         else a.channel_name
     end  ,
     business_type_name,
@@ -299,15 +299,15 @@ create temporary table csx_tmp.temp_sales_class_01 as
     month_profit_fill_rate,  --毛利额完成率
     month_profit_rate,       --毛利率
     month_sales_sku,         --销售SKU   
-    month_sale_cust_num,     --成交客户数
+    month_sale_cust_num,     --成交数
     penetration_rate cust_penetration_rate,  -- 本期渗透率
-    all_sale_cust_num,      --本期成交客户
+    all_sale_cust_num,      --本期成交
     last_month_sale,        --上期销售额
     a.last_month_profit,    --上期毛利额
     a.last_month_profit/last_month_sale as last_profit_rate,    --上期毛利率
     last_month_sale_cust_num/last_all_sale_cust as  last_cust_penetration_rate, --上期渗透率
-    a.last_month_sale_cust_num,  --上期成交客户数
-    last_all_sale_cust,     --上期总成交客户数
+    a.last_month_sale_cust_num,  --上期成交数
+    last_all_sale_cust,     --上期总成交数
     coalesce(last_month_sale/sum(last_month_sale)over(partition by a.province_code,a.attribute_code,a.channel),0) last_month_sale_ratio,
     row_num
 from  csx_tmp.temp_attribute_sale_02 a
@@ -377,8 +377,8 @@ select
     last_month_profit,
     a.last_month_profit/last_month_sale as last_profit_rate,    --上期毛利率
     last_month_sale_cust_num/last_all_sale_cust as  last_cust_penetration_rate, --上期渗透率
-    a.last_month_sale_cust_num,  --上期成交客户数
-    last_all_sale_cust,     --上期总成交客户数
+    a.last_month_sale_cust_num,  --上期成交数
+    last_all_sale_cust,     --上期总成交数
     coalesce(last_month_sale/sum(last_month_sale)over(partition by a.zone_id,a.attribute_code,a.channel),0) last_month_sale_ratio,
     row_number()over(partition by a.zone_id ,a.attribute_code,a.channel order by month_sale desc) as row_num
 from(
@@ -512,22 +512,22 @@ select
     sum(month_profit_fill_rate ) month_profit_fill_rate,  --毛利额完成率
     sum(month_profit_rate      ) month_profit_rate,       --毛利率
     sum(month_sales_sku        ) month_sales_sku,         --销售SKU   
-    sum(month_sale_cust_num    ) month_sale_cust_num,     --成交客户数
+    sum(month_sale_cust_num    ) month_sale_cust_num,     --成交数
     sum(cust_penetration_rate) cust_penetration_rate,  -- 本期渗透率
-    sum(all_sale_cust_num  ) all_sale_cust_num,      --本期成交客户
+    sum(all_sale_cust_num  ) all_sale_cust_num,      --本期成交
     sum(last_month_sale    ) last_month_sale,        --上期销售额
     sum(a.last_month_profit) last_month_profit,    --上期毛利额
     sum(last_profit_rate          ) last_profit_rate,                        --上期毛利率
     sum(last_cust_penetration_rate) last_cust_penetration_rate,             --上期渗透率
-    sum(last_month_sale_cust_num  ) last_month_sale_cust_num,               --上期成交客户数
-    sum(last_all_sale_cust        ) last_all_sale_cust,                 --上期总成交客户数
+    sum(last_month_sale_cust_num  ) last_month_sale_cust_num,               --上期成交数
+    sum(last_all_sale_cust        ) last_all_sale_cust,                 --上期总成交数
     sum(last_month_sale_ratio) last_month_sale_ratio,
     0 as same_period_sale,       --  '同期销售额',
     0 as same_period_profit,         -- '同期毛利额',
     0 as same_period_profit_rate,    --'同期毛利率',
-    0 as same_period_cust_penetration_rate ,     --  '同期客户渗透率',
-    0 as same_period_sale_cust_num ,     -- '同期成交客户数',
-    0 as same_period_all_sale_cust,      --  '同期总成交客户数',
+    0 as same_period_cust_penetration_rate ,     --  '同期渗透率',
+    0 as same_period_sale_cust_num ,     -- '同期成交数',
+    0 as same_period_all_sale_cust,      --  '同期总成交数',
     0 as same_sale_ratio,
     row_num,   
     current_timestamp() ,

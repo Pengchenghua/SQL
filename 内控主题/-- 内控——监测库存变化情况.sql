@@ -113,7 +113,7 @@ create table csx_analyse_tmp.csx_analyse_fr_internal_abnormal_stock_di as
      material_qty_30d decimal(30,6) comment '近30天原料量',
      material_amt_30d decimal(30,6) comment '近30天原料金额',
      update_time timestamp comment  '更新时间'
-) comment '内控-大客户物流仓库存变化异常分析'
+) comment '内控-大物流仓库存变化异常分析'
 partitioned by (month string comment '月分区，每月底执行')
 
 	STORED AS parquet

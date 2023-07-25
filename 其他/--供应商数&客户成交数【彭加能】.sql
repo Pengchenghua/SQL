@@ -1,4 +1,4 @@
-  --供应商数&客户成交数【彭加能】
+  --供应商数&成交数【彭加能】
   --剔除云超配送、合伙人仓、联营仓
   select province_code,province_name,count(distinct supplier_code)  from csx_tmp.temp_order_entry where mon>='202106'
   group by province_code,province_name;

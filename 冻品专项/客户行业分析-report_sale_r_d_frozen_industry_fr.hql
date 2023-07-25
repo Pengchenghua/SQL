@@ -92,7 +92,7 @@ group by
 
 -- select * from csx_tmp.tmp_sale_frozen_02;
 
--- 客户行业销售额/成交客户数
+-- 行业销售额/成交数
 drop table if exists csx_tmp.tmp_sale_frozen_02;
 create temporary table csx_tmp.tmp_sale_frozen_02 as 
 select
@@ -117,8 +117,8 @@ select
     sum(last_sales_qty) as last_sales_qty,
     sum(last_sales_value) as last_sales_value,
     sum(last_profit) as last_profit,
-    count(distinct case when sales_value>0 then customer_no end ) as sales_cust_number, --商品成交客户数
-    count(distinct case when last_sales_value>0 then customer_no end )as last_sales_cust_number,  --商品环比冻品成交客户数
+    count(distinct case when sales_value>0 then customer_no end ) as sales_cust_number, --商品成交数
+    count(distinct case when last_sales_value>0 then customer_no end )as last_sales_cust_number,  --商品环比冻品成交数
     grouping__id
 from csx_tmp.tmp_sale_frozen_01 a
 where classify_middle_code in('B0304','B0305')
@@ -281,7 +281,7 @@ grouping sets
 
 
    
--- 总客户数
+-- 总数
 drop table if exists  csx_tmp.tmp_sale_frozen_03;
 create  temporary table csx_tmp.tmp_sale_frozen_03 as 
 select 
@@ -389,14 +389,14 @@ select
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交数
     coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
     coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
+    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
+    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交
     coalesce(small_sales_qty,  0) as small_sales_qty,                                   --小类销量
     coalesce(small_sales_value, 0) as small_sales,                                      --小类销售额
     small_profit ,                                                  --小类毛利额
@@ -488,14 +488,14 @@ select
     coalesce(last_sales_qty,0) as last_sales_qty,
     coalesce(a.last_sales_value,0) as last_sales_value,
     coalesce(last_profit,0) as last_profit,
-    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交客户数
-    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交客户数
+    coalesce(sales_cust_number,    0) as sales_cust_number,                                  --成交数
+    coalesce(last_sales_cust_number,0) as last_sales_cust_number,                             --环期成交数
     coalesce(b_sales_value, 0) as b_sales_value,                                     --B端行业销售额
     coalesce(b_profit, 0) as b_profit,                                         --B端行业销售毛利
-    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交客户
+    coalesce(b_cust_number,0) as b_cust_number,                                         --B端行业成交
     coalesce(last_b_sales_value, 0) as last_b_sales_value,                               --环期B端销售额
     coalesce(last_b_profit,0) as last_b_profit,                                         --环期B端行业毛利额
-    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交客户
+    coalesce(last_b_cust_number, 0) as last_b_cust_number,                               --环期B端行业成交
     coalesce(sum(sales_qty)over(partition by a.region_code,a.province_code),  0) as small_sales_qty,                                   --小类销量
     coalesce(sum(sales_value)over(partition by a.region_code,a.province_code), 0) as small_sales, 
     coalesce(sum(profit)over(partition by a.region_code,a.province_code), 0) as small_profit ,                                                  --小类毛利额

@@ -44,7 +44,7 @@ CREATE TEMPORARY TABLE IF NOT EXISTS csx_tmp.p_invt_1 AS
 ---业务类型“货到即配”，选择关单时间，查询后，导出，就能得到线上地采的入库明细
 
 
--- 取出库 客户配送、客户直送、一件代发 据号
+-- 取出库 配送、直送、一件代发 据号
 create TEMPORARY TABLE csx_tmp.p_shipped_data as 
 select origin_order_no
 from csx_dw.wms_shipped_order 
@@ -110,7 +110,7 @@ group by
 	
 
 
---- 计算销售数据剔除相关的单据号 单据类型客户配送、客户直送
+--- 计算销售数据剔除相关的单据号 单据类型配送、直送
 drop TABLE if exists csx_tmp.p_sales_data ;
 create TEMPORARY TABLE csx_tmp.p_sales_data as 
 select dc_code,

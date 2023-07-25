@@ -1,6 +1,6 @@
 -- 帐龄表：csx_dw.account_age_dtl_fct_new 
--- 客户表：csx_dw.dws_crm_w_a_customer_m_v1
--- 客户帐期表 ：csx_dw.dws_crm_r_a_customer_account_day 
+-- 表：csx_dw.dws_crm_w_a_customer_m_v1
+-- 帐期表 ：csx_dw.dws_crm_r_a_customer_account_day 
 drop table csx_tmp.temp_account_age;
 CREATE temporary table csx_tmp.temp_account_age
 as
@@ -296,7 +296,7 @@ select
 	c.last_sales_date,
 	c.last_to_now_days,
 
-	c.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+	c.customer_active_sts_code as customer_active_sts_code,  --活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）
 	c.customer_active_sts as customer_active_sts,
 	'' as tmp_1,
 	'' as tmp_2,
@@ -313,7 +313,7 @@ left  join
 	select 
 		*
 	from 
-		csx_dw.dws_crm_r_a_customer_account_day    --客户账期表
+		csx_dw.dws_crm_r_a_customer_account_day    --账期表
 	where 
 		sdt='current'
 ) as b 	on a.customer_no =b.customer_id
@@ -326,10 +326,10 @@ left join
 		last_sales_date,
 		last_to_now_days,
 		customer_active_sts_code,
-		case when  customer_active_sts_code = 1 then '活跃客户'
-			when customer_active_sts_code = 2 then '沉默客户'
-			when customer_active_sts_code = 3 then '预流失客户'
-			when customer_active_sts_code = 4 then '流失客户'
+		case when  customer_active_sts_code = 1 then '活跃'
+			when customer_active_sts_code = 2 then '沉默'
+			when customer_active_sts_code = 3 then '预流失'
+			when customer_active_sts_code = 4 then '流失'
 			else '其他'
 			end  as  customer_active_sts
 		

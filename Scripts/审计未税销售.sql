@@ -4,7 +4,7 @@
 
 select a.province_code,
     province_name,
-    case when (a.channel_sale like'大客户%' or a.channel_sale like'企业购%') then 
+    case when (a.channel_sale like'大%' or a.channel_sale like'企业购%') then 
     if((a.smonth>substr(d.break_date,1,6) or d.break_date is null),a.channel_sale,'合伙人')
     else a.channel_sale end channel_name,
     a.smonth,
@@ -28,7 +28,7 @@ from
       province_name ,
       customer_no,
       case when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-        when channel in ('5','6') and a.customer_no not like 'S%'then '大客户' 
+        when channel in ('5','6') and a.customer_no not like 'S%'then '大' 
         else channel_name 
       end channel_sale,
       goods_code ,
@@ -53,7 +53,7 @@ from
       department_name ,
       customer_no,
       case when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-        when channel in ('5','6') and a.customer_no not like 'S%'then '大客户' 
+        when channel in ('5','6') and a.customer_no not like 'S%'then '大' 
         else channel_name 
       end,
       substr(sdt,1,6) ,
@@ -91,7 +91,7 @@ where sdt='current'
 group by a.province_code,
     province_name,
     a.customer_no,
-     case when (a.channel_sale like'大客户%' or a.channel_sale like'企业购%') then 
+     case when (a.channel_sale like'大%' or a.channel_sale like'企业购%') then 
     if((a.smonth>substr(d.break_date,1,6) or d.break_date is null),a.channel_sale,'合伙人')
     else a.channel_sale end ,
     a.smonth,

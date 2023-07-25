@@ -1,4 +1,4 @@
---日配客户分级查询
+--日配分级查询
 
 SELECT region_code,
        region_name,
@@ -75,7 +75,7 @@ GROUP BY region_code,
 
 
 
--- 非日配客户销售情况
+-- 非日配销售情况
         SELECT region_code,
        region_name,
        province_code,
@@ -159,7 +159,7 @@ GROUP BY region_code,
     
     
 SHOW create table csx_dw.report_sale_r_m_customer_level;
-客户分级季度数据：csx_dw.report_sale_r_q_customer_level;
+分级季度数据：csx_dw.report_sale_r_q_customer_level;
 
 
 select * from csx_dw.dws_sale_r_d_detail where sdt>='20220215' and customer_no='106920'

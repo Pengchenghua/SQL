@@ -1,7 +1,7 @@
 -- 市场部数据需求
--- 1、 重庆市分行业客户数、2021年销售额、销售占比（重点是教育行业、政府机关单位、部队、团餐企业、事业单、金融、商超渠道等）
+-- 1、 重庆市分行业数、2021年销售额、销售占比（重点是教育行业、政府机关单位、部队、团餐企业、事业单、金融、商超渠道等）
 -- 2、 重庆市按产品分类销售占比，蔬菜、水果、肉禽、冻品、调味料、食百等
--- 3、 重庆预制菜（调理品、沙拉、半成品菜、净菜）2021年销售渠道（商超、餐饮、团餐等）及销售占比；前10大客户名称及销售额
+-- 3、 重庆预制菜（调理品、沙拉、半成品菜、净菜）2021年销售渠道（商超、餐饮、团餐等）及销售占比；前10大名称及销售额
 
 select classify_large_name,classify_middle_name,sum(sales_value) sales,count(distinct customer_no) cn from csx_dw.dws_sale_r_d_detail
 where sdt>='20210101'
@@ -58,7 +58,7 @@ classify_middle_name,classify_small_code,classify_small_name from csx_dw.dws_bas
 
 
 
--- 二级行业TOP20客户
+-- 二级行业TOP20
 
 select a.customer_no,a.customer_name, a.first_category_name,second_category_name,sales,rank()over(partition by second_category_name order by sales desc)
 from (

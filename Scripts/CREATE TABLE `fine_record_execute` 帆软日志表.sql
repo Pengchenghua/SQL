@@ -11,7 +11,7 @@ CREATE TABLE `fine_record_execute` (
   `time` date DEFAULT NULL COMMENT '日志开始时间',
   `sql` longtext CHARACTER SET utf8 COLLATE utf8_bin COMMENT 'SQL语句',
   `sqlTime` int(11) DEFAULT NULL COMMENT '执行SQL时长',
-  `browser` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '客户端访问报表所用的浏览器版本',
+  `browser` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '端访问报表所用的浏览器版本',
   `memory` int(11) DEFAULT NULL COMMENT '报表占用内存，单位 B若因宕机等情况计算中断，记录的是报表开始计算到计算中断所占用的内存（根据格子数估算，一格子占用0.2KB）,  当模板 complete 字段值为0时，这个里记录的是0，若计算完成，记录的数据除200之后返回的是报表从开始计算到计算完成所生成的格子数',
   `reportId` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '模板编码',
   `userId` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL COMMENT '用户ID',

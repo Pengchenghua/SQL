@@ -8,10 +8,10 @@ CREATE TABLE `csx_dw.ads_supply_customer_division_level_sales`
 		`business_division_name` string COMMENT '采购部名称'      ,
 		`purchase_group_code` string COMMENT '课组编码'          ,
 		`purchase_group_name` string COMMENT '课组名称'          ,
-		`customer_no` string COMMENT '客户编码'                  ,
-		`customer_name` string COMMENT '客户名称'                ,
-		`attribute_code` int COMMENT '客户属性编码'                ,
-		`attribute` string COMMENT '客户属性名称'                  ,
+		`customer_no` string COMMENT '编码'                  ,
+		`customer_name` string COMMENT '名称'                ,
+		`attribute_code` int COMMENT '属性编码'                ,
+		`attribute` string COMMENT '属性名称'                  ,
 		`first_category_code` string COMMENT '企业类型编码一级'      ,
 		`first_category` string COMMENT '企业类型类型名称一级'         ,
 		`second_category_code` string COMMENT '企业类型类型编码二级'   ,
@@ -45,7 +45,7 @@ CREATE TABLE `csx_dw.ads_supply_customer_division_level_sales`
 		`rank_num`     int COMMENT '销售排名',
 		`write_time` TIMESTAMP COMMENT'写入时间'
 	)
-	COMMENT '客户月销售报表' partitioned BY
+	COMMENT '月销售报表' partitioned BY
 	(
 		sdt string COMMENT '日期分区,按月分区',`date_m` STRING COMMENT '日期维度 m 月、y 年累计')
 	)
@@ -66,7 +66,7 @@ SET s_date=regexp_replace(to_date(trunc(${hiveconf:i_edate},'YY')),'-','');
 -- SELECT ${hiveconf:s_date},substr(regexp_replace(trunc(${hiveconf:i_edate},'YY'),'-',''),1,4) as sales_year,
 --         substr(regexp_replace(trunc(${hiveconf:i_edate},'MM'),'-',''),1,6) as sales_months;
 
--- 计算月至今客户销售
+-- 计算月至今销售
 -- 1.合计
 -- SHOW
 -- CREATE TABLE csx_dw.ads_sale_customer_division_level_sales;

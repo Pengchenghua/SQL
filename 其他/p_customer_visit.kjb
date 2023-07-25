@@ -491,7 +491,7 @@ select
 'Z008'payment_terms,'票到8天' payment_name
 ;
 
--- 客户属性表    sys_customer_category_ods
+-- 属性表    sys_customer_category_ods
  DROP
 	TABLE
 		IF EXISTS b2b_tmp.p_cust_info;
@@ -566,9 +566,9 @@ CREATE TEMPORARY
 				second_category,
 				third_category_code,
 				third_category,
-				-- 档案分类：01法人，02政府/事业单位，03军队，04其他非法人，05一次性客户
+				-- 档案分类：01法人，02政府/事业单位，03军队，04其他非法人，05一次性
 				 archive_category,
-				-- 合作模式：01长期客户；02临时客户
+				-- 合作模式：01长期；02临时
 				customer_type ,
 				social_credit_code,
 				legal_person_name,
@@ -609,11 +609,11 @@ CREATE TEMPORARY
 				province_name,
 				city_name,
 				CASE
-					WHEN customer_level = 'AA' THEN 'AA优质客户'
-					WHEN customer_level = 'A' THEN 'A良好客户'
-					WHEN customer_level = 'B' THEN 'B良好客户'
-					WHEN customer_level = 'C' THEN 'C一般客户'
-					WHEN customer_level = 'D' THEN 'D风险客户'
+					WHEN customer_level = 'AA' THEN 'AA优质'
+					WHEN customer_level = 'A' THEN 'A良好'
+					WHEN customer_level = 'B' THEN 'B良好'
+					WHEN customer_level = 'C' THEN 'C一般'
+					WHEN customer_level = 'D' THEN 'D风险'
 				END customer_level,
 				credit_limit,
 				temp_credit_limit,
@@ -746,7 +746,7 @@ CREATE
 		GROUP BY
 			customer_no ,
 			sdt;
--- 2.0计算最近销售客户
+-- 2.0计算最近销售
  DROP
 	TABLE
 		IF EXISTS b2b_tmp.p_max_sale;

@@ -3,7 +3,7 @@
         SELECT
           CASE
             WHEN province_name LIKE '平台-B%' THEN '平台'
-            WHEN channel IN ('1', '3') THEN '大客户'
+            WHEN channel IN ('1', '3') THEN '大'
             when channel in ('2') then '商超'
             ELSE a.channel_name
           END AS STYPE,
@@ -23,7 +23,7 @@
         GROUP BY
           CASE
             WHEN province_name LIKE '平台-B%' THEN '平台'
-            WHEN channel IN ('1', '3') THEN '大客户'
+            WHEN channel IN ('1', '3') THEN '大'
             when channel in ('2') then '商超'
             ELSE a.channel_name
           END,
@@ -69,15 +69,15 @@ select
     round(case when SUM(ac_all)* payment_days <= 0 then 0  else coalesce(SUM(case when over_days>0 then ac_all*over_days end ), 0)/ coalesce(SUM(ac_all)* payment_days, 0) end, 4) rate, 
 sum(ac_all) as ac_all 
 from csx_dw.ads_fis_r_a_customer_days_overdue_dtl a 
-where channel = '大客户' and sdt = '20200425' 
+where channel = '大' and sdt = '20200425' 
 group by channel, customer_no, customer_name, zterm, payment_days, payment_terms, comp_code, comp_name;
 
-   -- 客户逾期明细
+   -- 逾期明细
 select *  from csx_dw.ads_fis_r_a_customer_days_overdue_dtl  where sdt='20200425';
 select * from ods_ecc.ecc_ytbcustomer  where sdt='20200428';
 
    select channel,subject_code,subject_name,comp_code,comp_name,customer_no,customer_name,zterm,payment_days,payment_terms,sdate,edate,over_days,sum(ac_all)amt
-   from csx_dw.ads_fis_r_a_customer_days_overdue_dtl  where channel='大客户' and sdt='20200423'
+   from csx_dw.ads_fis_r_a_customer_days_overdue_dtl  where channel='大' and sdt='20200423'
    group by channel,subject_code,subject_name,comp_code,comp_name,customer_no,customer_name,zterm,payment_days,payment_terms,sdate,edate,over_days
   ;
   

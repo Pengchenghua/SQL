@@ -1,11 +1,11 @@
         drop table csx_tmp.ads_sss_r_d_customer_accounts_fr;
         create table csx_tmp.ads_sss_r_d_customer_accounts_fr  
-          ( customer_no string comment '客户编码',
-            customer_name       string   comment '客户名称'           ,
+          ( customer_no string comment '编码',
+            customer_name       string   comment '名称'           ,
             channel_code string comment '渠道编码',
 	        channel_name string comment '渠道名称',
-            attribute_code      string   comment '客户属性编码 '           ,
-            attribute_name      string   comment '客户属性名称'           ,
+            attribute_code      string   comment '属性编码 '           ,
+            attribute_name      string   comment '属性名称'           ,
             first_category_code string   comment '企业一级分类名称'           ,
             first_category_name string   comment '企业一级分类名称'           ,
             second_category_code  string comment '企业二级分类编码'             ,
@@ -27,7 +27,7 @@
             payment_terms string         comment '付款条件'                    ,
             payment_name  string         comment '付款条件名称'                    ,
             payment_days  int            comment '账期值'                  ,
-            customer_level   string      comment '客户等级'                     ,
+            customer_level   string      comment '等级'                     ,
             credit_limit       decimal(26,2)    comment '信控额度'             ,
             temp_credit_limit  decimal(26,2)    comment '临时额度'                 ,
             temp_begin_time    timestamp        comment '临时额度起始时间'             ,
@@ -53,10 +53,10 @@
             overdue_coefficient              decimal(15,2)  comment '逾期系数'                        ,
             last_sales_date     string   comment '最后销售日期'     ,
 	        last_to_now_days     int     comment '未销售天数'  ,
-	        customer_active_status_code      string  comment '客户标识名称'  ,
-	        customer_active_status   string comment '客户标识'     
+	        customer_active_status_code      string  comment '标识名称'  ,
+	        customer_active_status   string comment '标识'     
             
-           ) comment '新系统客户帐龄表--帆软' 
+           ) comment '新系统帐龄表--帆软' 
            partitioned by (sdt string comment '日分区')
            stored as parquet
            
@@ -173,10 +173,10 @@ from    (
             last_sales_date,
             last_to_now_days,
               customer_active_status_code,
-            case when  customer_active_status_code = 1 then '活跃客户'
-	        		when customer_active_status_code = 2 then '沉默客户'
-	        		when customer_active_status_code = 3 then '预流失客户'
-	        		when customer_active_status_code = 4 then '流失客户'
+            case when  customer_active_status_code = 1 then '活跃'
+	        		when customer_active_status_code = 2 then '沉默'
+	        		when customer_active_status_code = 3 then '预流失'
+	        		when customer_active_status_code = 4 then '流失'
 	        		else '其他'
 	        		end  as  customer_active_status,
             a.sdt

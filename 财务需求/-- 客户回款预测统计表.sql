@@ -1,4 +1,4 @@
--- 客户回款预测统计表20220119
+-- 回款预测统计表20220119
 SET hive.execution.engine=spark; 
 set hive.exec.dynamic.partition=true;
 set hive.exec.dynamic.partition.mode=nonstrict;
@@ -24,12 +24,12 @@ set l_sdt=regexp_replace(add_months( trunc(${hiveconf:e_date},'MM'),-1),'-','');
 
 
 -- 1.  预测回款金额=月底预测逾期金额（取1号的预测逾期金额，当月的预测逾期金额保持不变）-特殊原因无法回款金额。
--- 2. 客户号G,V开头的客户也要纳入到月度回款预测。
+-- 2. 号G,V开头的也要纳入到月度回款预测。
 -- 3. 增加还需回款金额=回款目标值-当期回款金额
--- 4. 在月底预测逾期金额列后增加一列，名称叫“特殊原因无法回款金额”，此金额每月初手动导入（导入字段a签约主体编码，b客户号,c金额）。
--- 5. 城市服务商客户标识取数-数据中心-城市服务商主题-各省区城市服务客户业绩表，匹配逻辑按签约主体+客户号匹配，匹配到即为城市服务商客户（营运资金看板需要按此展示）。
--- 6. 供应链(生鲜)及供应链(食百)及平台-B客户，预测回款金额=上期含税销售金额。（取上期的销售金额，展示的上期完整月的金额，若无销售金额展示为0）
--- 7. 增加法务已介入客户手动标识，点击确认及点击取消（营运资金看板需要按此标识展示）。
+-- 4. 在月底预测逾期金额列后增加一列，名称叫“特殊原因无法回款金额”，此金额每月初手动导入（导入字段a签约主体编码，b号,c金额）。
+-- 5. 城市服务商标识取数-数据中心-城市服务商主题-各省区城市服务业绩表，匹配逻辑按签约主体+号匹配，匹配到即为城市服务商（营运资金看板需要按此展示）。
+-- 6. 供应链(生鲜)及供应链(食百)及平台-B，预测回款金额=上期含税销售金额。（取上期的销售金额，展示的上期完整月的金额，若无销售金额展示为0）
+-- 7. 增加法务已介入手动标识，点击确认及点击取消（营运资金看板需要按此标识展示）。
 -- 8. 表格内需要增加字段已标注颜色
 
 
@@ -48,7 +48,7 @@ from csx_dw.account_age_dtl_fct_new_scar a
 		and hkont like '1122%'
 ;
 
--- 1.2 计算上月整月销售额 取客户签约公司
+-- 1.2 计算上月整月销售额 取签约公司
 drop table if exists csx_tmp.temp_account_02 ;
 create temporary table csx_tmp.temp_account_02 as 
 	select channel_code,
@@ -95,10 +95,10 @@ CREATE temporary table csx_tmp.temp_channel as
 
 ;
 
--- 1.7 查找客户渠道,城市服务商从销售表取，渠道从客户信息表取
+-- 1.7 查找渠道,城市服务商从销售表取，渠道从信息表取
 drop table if exists  csx_tmp.temp_channel_04 ;
 CREATE temporary table csx_tmp.temp_channel_04 as 
--- 剔除一样的客户 
+-- 剔除一样的 
 select   a.sign_company_code,
          a.customer_no,
          a.channel_name as sales_channel_name
@@ -115,7 +115,7 @@ from csx_tmp.temp_channel a
 ;
 
 
--- 处理帐龄数据，将团购客户号单独处理，根据公司代码划分省区
+-- 处理帐龄数据，将团购号单独处理，根据公司代码划分省区
 drop table csx_tmp.temp_account_age;
 CREATE temporary table csx_tmp.temp_account_age
 as
@@ -274,10 +274,10 @@ from
 	        	ac_all_month_last_day,
 	        	ac_wdq_month_last_day,
 	        	customer_active_sts_code,
-	        	case when  customer_active_sts_code = 1 then '活跃客户'
-	        		when customer_active_sts_code = 2 then '沉默客户'
-	        		when customer_active_sts_code = 3 then '预流失客户'
-	        		when customer_active_sts_code = 4 then '流失客户'
+	        	case when  customer_active_sts_code = 1 then '活跃'
+	        		when customer_active_sts_code = 2 then '沉默'
+	        		when customer_active_sts_code = 3 then '预流失'
+	        		when customer_active_sts_code = 4 then '流失'
 	        		else '其他'
 	        		end  as  customer_active_sts,
 	        	sdt
@@ -385,10 +385,10 @@ union all
 	        ac_all_month_last_day,
 	        ac_wdq_month_last_day,
 	        customer_active_sts_code,
-	        case when  customer_active_sts_code = 1 then '活跃客户'
-	        	when customer_active_sts_code = 2 then '沉默客户'
-	        	when customer_active_sts_code = 3 then '预流失客户'
-	        	when customer_active_sts_code = 4 then '流失客户'
+	        case when  customer_active_sts_code = 1 then '活跃'
+	        	when customer_active_sts_code = 2 then '沉默'
+	        	when customer_active_sts_code = 3 then '预流失'
+	        	when customer_active_sts_code = 4 then '流失'
 	        else '其他'
 	        end  as  customer_active_sts,
 	        sdt
@@ -438,7 +438,7 @@ from
   (select customer_id,customer_no from csx_dw.dws_crm_w_a_customer where sdt='current') b on a.customer_id=b.customer_id
   where sdt = regexp_replace(date_sub(current_date,1),'-','')
     
-   --  and target_code in (1,3)    --存量与增量客户
+   --  and target_code in (1,3)    --存量与增量
     and project_code in (1)     --取预测销售额
     -- and target_year >= '2022'
 ) a lateral VIEW explode(month_map) col1s AS month,target_value
@@ -491,7 +491,7 @@ select
    a.ac_over3y,
    a.last_sales_date,
    a.last_to_now_days,
-   a.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+   a.customer_active_sts_code as customer_active_sts_code,  --活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）
    a.customer_active_sts as customer_active_sts,
 	ac_all_month_last_day,
     ac_wdq_month_last_day,
@@ -521,7 +521,7 @@ left  join
 		city_code,
 		city_name
 	from 
-		csx_dw.dws_crm_w_a_customer_company   --客户账期表
+		csx_dw.dws_crm_w_a_customer_company   --账期表
 	where 
 		sdt='current'
 ) as b 	on a.customer_no =b.customer_no and a.comp_code=b.company_code
@@ -603,7 +603,7 @@ select
    ac_over3y,
    last_sales_date,
    last_to_now_days,
-   customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+   customer_active_sts_code,  --活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）
    customer_active_sts,
    a.ac_all_month_last_day,
    a.ac_wdq_month_last_day,
@@ -670,8 +670,8 @@ show create table csx_tmp.ads_fr_r_d_account_receivables_scar_20211223 ;
       
   drop table       `csx_tmp.ads_fr_r_d_forecast_collection_report`;
 CREATE TABLE `csx_tmp.ads_fr_r_d_forecast_collection_report`(
-  `channel_name` string COMMENT '客户类型', 
-  `sales_channel_name` string COMMENT '客户销售渠道,增加城市服务商,其他根据CRM渠道', 
+  `channel_name` string COMMENT '类型', 
+  `sales_channel_name` string COMMENT '销售渠道,增加城市服务商,其他根据CRM渠道', 
   `hkont` string COMMENT '科目代码', 
   `account_name` string COMMENT '科目名称', 
   `comp_code` string COMMENT '公司代码', 
@@ -681,8 +681,8 @@ CREATE TABLE `csx_tmp.ads_fr_r_d_forecast_collection_report`(
   `sales_city` string COMMENT '销售城市名称', 
   `prctr` string COMMENT '利润中心', 
   `shop_name` string COMMENT '利润中心名称', 
-  `customer_no` string COMMENT '客户编码', 
-  `customer_name` string COMMENT '客户名称', 
+  `customer_no` string COMMENT '编码', 
+  `customer_name` string COMMENT '名称', 
   `first_category` string COMMENT '第一分类', 
   `second_category` string COMMENT '第二分类', 
   `third_category` string COMMENT '第三分类', 
@@ -724,27 +724,27 @@ CREATE TABLE `csx_tmp.source_fr_w_a_customer_unable_payment_collection` (
   `id` string COMMENT '唯一ID ',
   `months` string   COMMENT '月份',
   `company_code` string COMMENT '公司代码',
-  `customer_no` string COMMENT '客户',
+  `customer_no` string COMMENT '',
   `amount` decimal(12,4)  COMMENT '无法回款金额',
   `create_by` string COMMENT '创建人',
   `create_time` TIMESTAMP comment '创建时间',
   `update_time`TIMESTAMP comment '更新时间',
   `update_by` string COMMENT '更新人'
 )
-COMMENT'财务客户无法回款入口表'
+COMMENT'财务无法回款入口表'
 PARTITIONED BY (sdt STRING COMMENT '同步日期')
 ;
 
 CREATE TABLE `csx_tmp.source_fr_w_a_customer_legallegal_intervene` (
   `id` string COMMENT '唯一ID company_code&customer_no ',
   `company_code`string COMMENT '公司代码',
-  `customer_no`string COMMENT '客户',
+  `customer_no`string COMMENT '',
   `is_flag` int COMMENT '是否介入 0 否，1是',
   `create_by`string COMMENT '创建人',
   `create_time` timestamp COMMENT '创建时间',
   `update_time` timestamp COMMENT '更新时间',
   `update_by` string comment'sys' 
-)  COMMENT'财务_法务介入客户'
+)  COMMENT'财务_法务介入'
 partitioned by (sdt string comment '同步日期分区')
 
 

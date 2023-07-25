@@ -1,5 +1,5 @@
 --供应链管理分类销售分析【20211118】
---迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4'),2、自营大客户渠道 business_type_code not in('4','9')
+--迭代说明 ：1、日配业务剔除dc_code not in ('W0Z7','W0K4'),2、自营大渠道 business_type_code not in('4','9')
 set edt='${enddate}';
 set e_dt =regexp_replace('${edate}','-','');
 set s_dt=regexp_replace(trunc('${edate}','MM'),'-','');

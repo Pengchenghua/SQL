@@ -1,12 +1,12 @@
 /*20190807更改战报数据源b2b销售表为发票表汇总出来的csx_dw.sale_b2b_item表
 qyg  gc
-W0H4卖给彩食鲜外部客户的这部分数据算入供应链S端*/
+W0H4卖给彩食鲜外部的这部分数据算入供应链S端*/
 战报里：泉州改成：沈峰   上海：改成徐学亮  
 --20190814S端拆分食百生鲜部门，且报表呈现种S端销售至门店部门拆分成S端M端，其余为S端B端
 福建省城市门店重新划分
 --20190917BBC全部换名字为企业购
 --20190923销售表分区里面增加sc,即为安徽的商超数据
---20191015,平台数据不放入省区汇总中，命名改为大客户平台，商超：重庆W0M1，福建W0M4，北京W0J6，四川W0M6，昆山W0K5专门做转配的仓，数据单独一行，放入：商超平台
+--20191015,平台数据不放入省区汇总中，命名改为大平台，商超：重庆W0M1，福建W0M4，北京W0J6，四川W0M6，昆山W0K5专门做转配的仓，数据单独一行，放入：商超平台
 
 
 
@@ -67,7 +67,7 @@ case when x.dist='福建' then coalesce(c.city_real,'福州、宁德、三明')e
 case when x.dist='福建' then coalesce(c.cityjob,'沈锋')else '-' end cityjob,
 cust_id,cust_name,bd_name,sum(xse)xse,sum(mle)mle,sdt
 from 
-(select case when qdflag is null or qdflag='' then '大客户' when dist='平台' and qdflag='大客户' then '平台'else qdflag end qdflag,
+(select case when qdflag is null or qdflag='' then '大' when dist='平台' and qdflag='大' then '平台'else qdflag end qdflag,
 case when dist='BB' then '福建'else dist end dist,
 case when qdflag='商超(对内)' and dist ='福建' then city_name 
 when dist='BB' then '福州' 
@@ -77,7 +77,7 @@ sum(xse) xse,
 sum(mle) mle,
 sdt
 from b2b_tmp.temp_sale
-group by case when qdflag is null or qdflag='' then '大客户' when dist='平台' and qdflag='大客户' then '平台'else qdflag end,
+group by case when qdflag is null or qdflag='' then '大' when dist='平台' and qdflag='大' then '平台'else qdflag end,
 case when dist='BB' then '福建'else dist end,
 case when qdflag='商超(对内)' and dist ='福建' then city_name 
 when dist='BB' then '福州' 
@@ -147,7 +147,7 @@ city_real,
 cityjob,
 cust_id,sum(xse/10000) xse,sum(mle/10000) mle,sdt
 from 
-(select case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+(select case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
 qdflag,dist,diro,manage,
@@ -156,7 +156,7 @@ cityjob,
 cust_id,bd_name,xse,mle,sdt 
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','平台','供应链(S端)') and dist not in ('商超平台')
 union all 
-select 1 qdrno,'大客户'qdflag,'大客户平台'dist,102 diro,''manage,
+select 1 qdrno,'大'qdflag,'大平台'dist,102 diro,''manage,
 ''city_real,
 ''cityjob,
 cust_id,bd_name,xse,mle,sdt
@@ -164,7 +164,7 @@ from b2b_tmp.temp_sale01 a where qdflag in ('平台')
 
 union all 
 select 
-case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,qdflag,'商超平台'dist,101 diro,''manage,
 ''city_real,
@@ -173,7 +173,7 @@ cust_id,bd_name,xse,mle,sdt
 from b2b_tmp.temp_sale01 a where dist in ('商超平台')
 union all 
 select 
-case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
 qdflag,dist,diro,manage,
@@ -181,24 +181,24 @@ qdflag,dist,diro,manage,
 '-'cityjob,
 cust_id,bd_name,sum(xse)xse,sum(mle)mle,sdt
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','平台','供应链(S端)') and dist='福建'
-group by case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+group by case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end,
 qdflag,dist,diro,manage,cust_id,bd_name,sdt
 union all 
 select 
-case when qdflag in ('大客户','平台') then 1 when qdflag='商超(对内)' then 2 
+case when qdflag in ('大','平台') then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
-case when qdflag='平台' then '大客户' else qdflag end qdflag,'总计'dist,100 diro,''manage,
+case when qdflag='平台' then '大' else qdflag end qdflag,'总计'dist,100 diro,''manage,
 '' city_real,
 '-'cityjob,
 cust_id,bd_name,sum(xse)xse,sum(mle)mle,sdt 
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','供应链(S端)','平台')  and dist not in ('商超平台')
-group by case when qdflag in ('大客户','平台') then 1 when qdflag='商超(对内)' then 2 
+group by case when qdflag in ('大','平台') then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end,
-case when qdflag='平台' then '大客户' else qdflag end,cust_id,bd_name,sdt
+case when qdflag='平台' then '大' else qdflag end,cust_id,bd_name,sdt
 )x
 group by qdrno,diro,
 qdflag,dist,manage,city_real,cityjob,cust_id,sdt
@@ -209,14 +209,14 @@ order by diro,qdrno,city_real desc;
 
 create table csx_dw.sale_warzone01_detail_dtl
 (
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 diro int comment '省区序号',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
-cust_name string comment '客户名称',
+cust_id string comment '编码',
+cust_name string comment '名称',
 bd_name string comment '部门名称',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
@@ -310,14 +310,14 @@ order by diro,city_real desc
 DROP TABLE IF EXISTS csx_dw.sale_warzone02_detail_dtl;
 create table csx_dw.sale_warzone02_detail_dtl
 (
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 diro int comment '省区序号',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
-cust_name string comment '客户名称',
+cust_id string comment '编码',
+cust_name string comment '名称',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
 )
@@ -331,12 +331,12 @@ create table csx_dw.display_warzone02_res_dtl
 (
 qdrno int comment '渠道序号',
 diro int comment '省区序号',
-qdflag string comment '客户渠道',
+qdflag string comment '渠道',
 dist string comment '省区',
 manage string comment '区总',
 city_real string comment '城市调整',
 cityjob string comment '城市负责人',
-cust_id string comment '客户编码',
+cust_id string comment '编码',
 xse decimal(26,4) comment '销额',
 mle decimal(26,4) comment '毛利额'
 )

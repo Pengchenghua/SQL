@@ -45,7 +45,7 @@ sales_province_code,sales_province_name,
 
 -- 供应商配送	01
 -- 云超配送	02
--- 客户直送	03
+-- 直送	03
 -- 实物直通	04
 -- 货到即配	54
 -- 商超直送	67

@@ -2,7 +2,7 @@ SET edate                                   = date_sub(current_date(),1);
 SET sdate                                   = trunc(date_sub(current_date(),1),'MM');
 set years=regexp_replace(trunc(add_months(${hiveconf:sdate},-12),'YY'), '-', '');
 
--- 取出库 客户配送、客户直送单据号
+-- 取出库 配送、直送单据号
 drop table if exists csx_tmp.p_shipped_data;
 create TEMPORARY TABLE csx_tmp.p_shipped_data as 
 select origin_order_no

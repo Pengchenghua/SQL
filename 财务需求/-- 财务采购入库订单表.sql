@@ -86,7 +86,7 @@ CREATE TABLE csx_tmp.report_fr_r_m_financial_purchase_detail(
   supplier_type_name string COMMENT '供应商类型名称',  
   business_owner_code STRING comment '业态归属编码',
   business_owner_name STRING comment '业态归属名称',
-  special_customer STRING comment '专项客户',
+  special_customer STRING comment '专项',
   borrow_flag STRING comment'是否借用',
   direct_trans_flag STRING comment '是否直供',
   supplier_classify_code STRING comment '供应商类型编码  0：基础供应商   1:农户供应商',
@@ -324,7 +324,7 @@ left join
     company_code as settle_company_code,
     company_name as settle_company_name,
     case when source_type = 1 then '采购导入'
-    when source_type = 2 then '直送客户'
+    when source_type = 2 then '直送'
     when source_type = 3 then '一键代发'
     when source_type = 4 then '项目合伙人'
     when source_type = 5 then '无单入库'
@@ -594,7 +594,7 @@ select  sdt,
     supplier_type_name,
     business_owner_code ,       --业态归属
     business_owner_name ,       --业态归属名称
-    special_customer ,          --专项客户
+    special_customer ,          --专项
     borrow_flag ,               --是否借资质
     direct_trans_flag,          --是否直供
     supplier_classify_code,     --供应商类型编码 0：基础供应商   1:农户供应商
@@ -609,7 +609,7 @@ left join
         purchase_org_code,  
        business_owner_code  ,     -- 业态归属编码
        business_owner_name ,      --业态归属名称
-       special_customer  ,        --专项客户
+       special_customer  ,        --专项
        borrow_flag ,              -- 是否借用
        direct_trans_flag,           -- 是否直供
        supplier_classify_code       -- 供应商类型编码  0：基础供应商   1:农户供应商

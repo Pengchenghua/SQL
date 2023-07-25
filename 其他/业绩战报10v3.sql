@@ -26,9 +26,9 @@ select
   ,''strategy_code 
   ,a.nature_code
   ,a.nature_name
-  ---,if(d.customer_no is null,'否','是')   strategy_code ---'是否战略客户',
-  ---,if(d.customer_type is null,a.nature_code,if(d.customer_type='日配客户',1,0))  nature_code  ----'自营,联营(非自营)标识: 1自营,0联营(非自营)'
-  ---,if(d.customer_type is null,a.nature_name,if(d.customer_type='日配客户','自营','非自营'))  ----'性质名称'
+  ---,if(d.customer_no is null,'否','是')   strategy_code ---'是否战略',
+  ---,if(d.customer_type is null,a.nature_code,if(d.customer_type='日配',1,0))  nature_code  ----'自营,联营(非自营)标识: 1自营,0联营(非自营)'
+  ---,if(d.customer_type is null,a.nature_name,if(d.customer_type='日配','自营','非自营'))  ----'性质名称'
   ,a.sales_month                                      ---'销售所有月'
   ,sum(if(a.sdt=regexp_replace(date_sub(current_date,1),'-',''),a.sales_value,0))/10000 sales_value ---'昨日业绩'
   ,sum(a.sales_value)/10000  sales_value_m                                                    --- '月至今业绩'
@@ -58,9 +58,9 @@ left join
     region_code
     ,region_name
 ---,if(channel_code=7,1,channel_code) channel_code
----,if(channel_name='企业购','大客户',channel_name) channel_name
+---,if(channel_name='企业购','大',channel_name) channel_name
 	,case when channel_code in (1,7,8,9) then '1' else channel_code end channel_code
-    ,case when channel_code in (1,7,8,9) then '大客户' else channel_name end channel_name
+    ,case when channel_code in (1,7,8,9) then '大' else channel_name end channel_name
     ,province_code
     ,province_name
     ,city_group_code
@@ -68,7 +68,7 @@ left join
     ,nature_code
     ,nature_name
     ,sales_month
-	,customer_no  --客户号
+	,customer_no  --号
     ,sales_value
     ,profit
     ,round_sales_value
@@ -82,7 +82,7 @@ left join (SELECT *
 left join (SELECT *
 			from csx_dw.dim_area
 			where area_rank=12 ) c on c.city_group_code=aa.city_group_code
----left join csx_dw.sale_customer_name d on d.customer_no=a.customer_no ----战略客户表
+---left join csx_dw.sale_customer_name d on d.customer_no=a.customer_no ----战略表
 left join csx_dw.sale_m_target f on substr(f.province_name,1,2)=aa.qs  -----目标销售表
 										and f.channel=aa.channel_name
 										and f.sdt=substr(regexp_replace(date_sub(current_date,1),'-',''),1,6)
@@ -104,8 +104,8 @@ group by
   ,a.nature_code
   ,a.nature_name 
 ---  ,if(d.customer_no is null,'否','是') 
----  ,if(d.customer_type is null,a.nature_code,if(d.customer_type='日配客户',1,0)) 
----  ,if(d.customer_type is null,a.nature_name,if(d.customer_type='日配客户','自营','非自营'))
+---  ,if(d.customer_type is null,a.nature_code,if(d.customer_type='日配',1,0)) 
+---  ,if(d.customer_type is null,a.nature_name,if(d.customer_type='日配','自营','非自营'))
   ,a.sales_month;
 
 
@@ -121,23 +121,23 @@ create table csx_tmp.sale_m_target (
 STORED AS TEXTFILE;
 
 create table csx_tmp.sale_customer_name (
-  `customer_no` string COMMENT '客户号',
-  `customer_type` string COMMENT '客户属性',
+  `customer_no` string COMMENT '号',
+  `customer_type` string COMMENT '属性',
   `channel` string COMMENT '渠道',
   `province_name` string COMMENT '所属省区',
   `sdt` string COMMENT '日期分区'
-  ) COMMENT '战略客户表 '
+  ) COMMENT '战略表 '
 STORED AS TEXTFILE;
 insert into 
 csx_tmp.sale_m_target(province_name,channel,sales_value,sdt)
  VALUES 
-('广东','大客户',53,'202006'),
+('广东','大',53,'202006'),
 
 insert into 
 csx_tmp.sale_customer_name(customer_no,customer_type,channel,province_name,sdt)
  VALUES 
-('107125','日配客户','大客户','北京','202005'),
-('107113','日配客户','大客户','北京','202005');
+('107125','日配','大','北京','202005'),
+('107113','日配','大','北京','202005');
 
 
 
@@ -159,7 +159,7 @@ create table csx_dw.report_data_center_plat_sale_gather (
 `city_group_name`  string COMMENT '城市组名称',
 `city_manager_id`  string COMMENT '城市主管id',
 `city_manager_name`  string COMMENT '城市主管名称',
-`strategy_code`  string COMMENT '是否战略客户',
+`strategy_code`  string COMMENT '是否战略',
 `nature_code`  int COMMENT '自营,联营(非自营)标识: 1自营,0联营(非自营)',
 `nature_name`  string COMMENT '性质名称',
 `sales_month`  string COMMENT '销售所有月',

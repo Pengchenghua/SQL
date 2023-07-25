@@ -1,4 +1,4 @@
--- 日配客户分析&首次成交日期下单频次
+-- 日配分析&首次成交日期下单频次
 with temp as 
 (select substr(sdt,1,6) mon,
     sdt,

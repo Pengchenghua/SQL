@@ -27,8 +27,8 @@ CREATE TABLE fixation_report_customer_sale_month (
   sales_city_code varchar(64) DEFAULT NULL COMMENT '城市编码',
   sales_city varchar(64) DEFAULT NULL COMMENT '城市',
   channel  varchar(64) DEFAULT NULL COMMENT '渠道',
-  customer_no varchar(64) DEFAULT NULL COMMENT '客户编码',
-  customer_name varchar(64) DEFAULT NULL COMMENT '客户名称',
+  customer_no varchar(64) DEFAULT NULL COMMENT '编码',
+  customer_name varchar(64) DEFAULT NULL COMMENT '名称',
   first_category_code varchar(64) DEFAULT NULL COMMENT '一级分类编码',
   first_category varchar(64) DEFAULT NULL COMMENT '一级分类',
   second_category_code varchar(64) DEFAULT NULL COMMENT '二级分类编码',
@@ -50,7 +50,7 @@ CREATE TABLE fixation_report_customer_sale_month (
   sum_proate decimal(26,6) DEFAULT '0.000000' COMMENT '合计毛利率',
   sdt  varchar(64) DEFAULT NULL COMMENT 'hive更新时间'
 
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='客户销售月汇总表';
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='销售月汇总表';
 
 
 
@@ -63,8 +63,8 @@ CREATE TABLE csx_dw.fixation_report_customer_sale_month (
   sales_city_code string COMMENT '城市编码',
   sales_city string COMMENT '城市',
   channel  string COMMENT '渠道',
-  customer_no string COMMENT '客户编码',
-  customer_name string COMMENT '客户名称',
+  customer_no string COMMENT '编码',
+  customer_name string COMMENT '名称',
   first_category_code string COMMENT '一级分类编码',
   first_category string COMMENT '一级分类',
   second_category_code string COMMENT '二级分类编码',
@@ -84,7 +84,7 @@ CREATE TABLE csx_dw.fixation_report_customer_sale_month (
   sum_hz int COMMENT '合计频次',
   sum_sales_value decimal(26,6)  COMMENT '合计销售额',
   sum_proate decimal(26,6)  COMMENT '合计毛利率'
-)  COMMENT '客户销售月汇总表'
+)  COMMENT '销售月汇总表'
 PARTITIONED BY (sdt string COMMENT '日期分区')
 STORED AS TEXTFILE 
 LOCATION 'hdfs://nameservice1/user/hive/warehouse/csx_dw.db/fixation_report_customer_sale_month';

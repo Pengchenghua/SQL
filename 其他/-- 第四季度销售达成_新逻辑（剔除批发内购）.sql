@@ -6,7 +6,7 @@ set sdt= to_date(concat(year(${hiveconf:edate}),'-',lpad(ceil(month(${hiveconf:e
 set last_edate = add_months(${hiveconf:edate},-3);
 set last_sdt = add_months(to_date(concat(year(${hiveconf:edate}),'-',lpad(ceil(month(${hiveconf:edate})/3) *3-2,2,0),'-01')),-3);
  
- -- 1：日配客户 2：福利客户 3：M端 4：BBC 5：大宗 6：贸易 7：内购
+ -- 1：日配 2：福利 3：M端 4：BBC 5：大宗 6：贸易 7：内购
  -- 不含('OC20111000000022','OC20111000000023','OC20111000000021','OC20111000000024','OC20111000000025')
 drop table if exists csx_tmp.sale_01;
 create table csx_tmp.sale_01 as 
@@ -24,9 +24,9 @@ select
         when channel=2 then 'M端'
         when channel=7 then 'BBC'
 		when (customer_name like '%内购%' or customer_name like '%内%购%' or customer_name like '%临保%') 
-		  or (channel in ('1','9') and attribute='贸易客户' and profit_rate<=0.015 ) then '批发内购'
-		when channel in ('1','9') and attribute='贸易客户' and profit_rate>0.015 then '省区大宗'
-        when channel in ('1','9') and attribute='合伙人客户' then '城市服务商'
+		  or (channel in ('1','9') and attribute='贸易' and profit_rate<=0.015 ) then '批发内购'
+		when channel in ('1','9') and attribute='贸易' and profit_rate>0.015 then '省区大宗'
+        when channel in ('1','9') and attribute='合伙人' then '城市服务商'
         when channel in ('1','9')  and order_kind='WELFARE' then '福利单'
 		when channel in ('4','5','6')  then '大宗&供应链'
        else  '日配单'
@@ -80,9 +80,9 @@ select
         when channel=2 then 'M端'
         when channel=7 then 'BBC'
 		when (customer_name like '%内购%' or customer_name like '%内%购%' or customer_name like '%临保%') 
-		  or (channel in ('1','9') and attribute='贸易客户' and profit_rate<=0.015 ) then '批发内购'
-		when channel in ('1','9') and attribute='贸易客户' and profit_rate>0.015 then '省区大宗'
-        when channel in ('1','9') and attribute='合伙人客户' then '城市服务商'
+		  or (channel in ('1','9') and attribute='贸易' and profit_rate<=0.015 ) then '批发内购'
+		when channel in ('1','9') and attribute='贸易' and profit_rate>0.015 then '省区大宗'
+        when channel in ('1','9') and attribute='合伙人' then '城市服务商'
         when channel in ('1','9')  and order_kind='WELFARE' then '福利单'
 		when channel in ('4','5','6')  then '大宗&供应链'
        ELSE  '日配单'
@@ -603,7 +603,7 @@ ORDER BY case when  region_code='2' then 1
 
 
  
--- 亏损客户
+-- 亏损
 SELECT 
        region_code,
        region_name,

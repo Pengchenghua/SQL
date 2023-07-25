@@ -155,10 +155,10 @@ from
 	        	last_sales_date,
 	        	last_to_now_days,
 	        	customer_active_sts_code,
-	        	case when  customer_active_sts_code = 1 then '活跃客户'
-	        		when customer_active_sts_code = 2 then '沉默客户'
-	        		when customer_active_sts_code = 3 then '预流失客户'
-	        		when customer_active_sts_code = 4 then '流失客户'
+	        	case when  customer_active_sts_code = 1 then '活跃'
+	        		when customer_active_sts_code = 2 then '沉默'
+	        		when customer_active_sts_code = 3 then '预流失'
+	        		when customer_active_sts_code = 4 then '流失'
 	        		else '其他'
 	        		end  as  customer_active_sts,
 	        	sdt
@@ -263,10 +263,10 @@ from
 			last_sales_date,
 	        last_to_now_days,
 	        customer_active_sts_code,
-	        case when  customer_active_sts_code = 1 then '活跃客户'
-	        	when customer_active_sts_code = 2 then '沉默客户'
-	        	when customer_active_sts_code = 3 then '预流失客户'
-	        	when customer_active_sts_code = 4 then '流失客户'
+	        case when  customer_active_sts_code = 1 then '活跃'
+	        	when customer_active_sts_code = 2 then '沉默'
+	        	when customer_active_sts_code = 3 then '预流失'
+	        	when customer_active_sts_code = 4 then '流失'
 	        else '其他'
 	        end  as  customer_active_sts,
 	        sdt
@@ -331,7 +331,7 @@ select
    a.ac_over3y,
    a.last_sales_date,
    a.last_to_now_days,
-   a.customer_active_sts_code as customer_active_sts_code,  --客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）
+   a.customer_active_sts_code as customer_active_sts_code,  --活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）
    a.customer_active_sts as customer_active_sts,
 	'' as tmp_01,
 	'' as tmp_02,
@@ -359,7 +359,7 @@ left  join
 		city_code,
 		city_name
 	from 
-		csx_dw.dws_crm_w_a_customer_company   --客户账期表
+		csx_dw.dws_crm_w_a_customer_company   --账期表
 	where 
 		sdt='current'
 ) as b 	on a.customer_no =b.customer_no and a.comp_code=b.company_code

@@ -6,10 +6,10 @@ CREATE TABLE `csx_dw.ads_sale_customer_division_level_sales_months` (
   `business_division_name` string comment '采购部名称',
   `purchase_group_code` string comment '课组编码',
   `purchase_group_name` string comment '课组名称',
-  `customer_no` string comment '客户编码',
-  `customer_name` string comment '客户名称',
-  `attribute_code` int comment '客户属性编码',
-  `attribute` string comment '客户属性名称',
+  `customer_no` string comment '编码',
+  `customer_name` string comment '名称',
+  `attribute_code` int comment '属性编码',
+  `attribute` string comment '属性名称',
   `first_category_code` string comment '企业类型编码一级',
   `first_category` string comment '企业类型类型名称一级',
   `second_category_code` string comment '企业类型类型编码二级',
@@ -41,4 +41,4 @@ CREATE TABLE `csx_dw.ads_sale_customer_division_level_sales_months` (
   `profit_rate` decimal(38, 6) comment '毛利率',
   `return_amt` decimal(36, 6) comment '退货额',
   `rank_num` int comment '销售排名'
-) comment '客户月销售报表' partitioned by (sdt string comment '日期分区') STORED AS parquet LOCATION 'hdfs://nameservice1/user/hive/warehouse/csx_dw.db/ads_sale_customer_division_level_sales'
+) comment '月销售报表' partitioned by (sdt string comment '日期分区') STORED AS parquet LOCATION 'hdfs://nameservice1/user/hive/warehouse/csx_dw.db/ads_sale_customer_division_level_sales'

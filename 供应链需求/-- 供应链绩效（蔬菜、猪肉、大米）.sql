@@ -161,7 +161,7 @@ group by province_code,
     ;
     
     
--- 品类成交客户数
+-- 品类成交数
 
 drop table  csx_tmp.temp_cust_01;
 create temporary table csx_tmp.temp_cust_01 as 
@@ -213,7 +213,7 @@ from csx_tmp.temp_sale_cl_03
 
 ;
 
--- 全国客户成交数
+-- 全国成交数
 drop table  csx_tmp.temp_cust_02;
 create temporary table csx_tmp.temp_cust_02 as 
 select 
@@ -419,7 +419,7 @@ SELECT a.province_code,
      -- 全国销售增长
     diff_qg_sale_rate,
     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_sale_rate desc) as diff_qg_sale_rate_rank,
-     --客户渗透率高于全国
+     --渗透率高于全国
      diff_cust_r_rate,
       dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_cust_r_rate desc) as diff_qg_cust_rate_rank,
      --OEM全国占比
@@ -467,7 +467,7 @@ SELECT a.province_code,
      profit_rate-all_profit_rate  as diff_qg_profit_rate,
      -- 全国销售增长
      sales_growth_rate-all_sales_growth_rate as diff_qg_sale_rate,
-     --客户渗透率高于全国
+     --渗透率高于全国
      cust_p_rate-all_qg_p_rate as diff_cust_r_rate,
      --OEM全国占比
     oem_sale_rate-all_oem_sale_ratio as diff_oem_sale_rate,
@@ -550,7 +550,7 @@ SELECT a.province_code,
      -- 销售环比高于或等于全国销售增长
      diff_qg_sale_rate,
      diff_qg_sale_rate_rank,
-     --客户渗透率高于全国
+     --渗透率高于全国
      diff_cust_r_rate,
       diff_qg_cust_rate_rank,
      --OEM全国占比
@@ -607,7 +607,7 @@ SELECT a.province_code,
          when diff_profit_rate_rank=2 then 20
          when diff_profit_rate_rank=3 then 10 
          else 0 end diff_profit_rate_rank_intrgral,    --毛利率环比增长率排名积分35、20、10
-      --客户渗透率高于全国
+      --渗透率高于全国
      diff_cust_r_rate,
      case when diff_cust_r_rate>=0 then 5 else 0 end diff_cust_r_rate_integral,         --渗透率高于全国得5分 
     cust_p_rate_rank,                                   --渗透率比增长率排名
@@ -663,8 +663,8 @@ diff_qg_sale_rate_integral	int comment '销售环比高于或等于全国环比'
 sales_growth_rate_rank_intrgral	int comment '销售环比增长率',
 diff_qg_profit_rate_rank_integral	int comment '毛利率高于或等于全国环比',
 diff_profit_rate_rank_intrgral	int comment '毛利率环比增长率',
-diff_cust_r_rate_integral	int comment '客户渗透率高于全国',
-cust_p_rate_rank_intrgral	int comment '组内客户渗透率',
+diff_cust_r_rate_integral	int comment '渗透率高于全国',
+cust_p_rate_rank_intrgral	int comment '组内渗透率',
 diff_oem_sale_rate_integral	int comment 'OEM高于或等于全国',
 oem_sale_rate_rank_integral	int comment 'OEM组内',
 ring_cost_rate_rank_integral	int comment '猪肉平均成本环比',
@@ -683,32 +683,32 @@ last_profit	decimal(26,6) comment '环期毛利额',
 last_profit_rate	decimal(26,6) comment '环期毛利率',
 last_oem_sales	decimal(26,6) comment '环期OEM销售额',
 last_oem_profit	decimal(26,6) comment '环期OEM毛利额',
-class_cust_num	decimal(26,6) comment '客户成交数',
-last_class_cust_num	decimal(26,6) comment '环期客户成交数',
-all_cust_num	decimal(26,6) comment 'B端客户成交数',
-last_all_cust_num	decimal(26,6) comment '环期B端客户成交数',
+class_cust_num	decimal(26,6) comment '成交数',
+last_class_cust_num	decimal(26,6) comment '环期成交数',
+all_cust_num	decimal(26,6) comment 'B端成交数',
+last_all_cust_num	decimal(26,6) comment '环期B端成交数',
 sales_growth_rate	decimal(26,6) comment '销售额环比增长率',
 all_sales_growth_rate	decimal(26,6) comment '全国销售增长率',
 diff_profit_rate	decimal(26,6) comment '毛利率环比',
 all_profit_rate	decimal(26,6) comment '全国毛利率',
 all_oem_sale_ratio	decimal(26,6) comment '全国OEM占比',
-cust_p_rate	decimal(26,6) comment '客户渗透率',
-all_qg_p_rate	decimal(26,6) comment '全国客户渗透率',
+cust_p_rate	decimal(26,6) comment '渗透率',
+all_qg_p_rate	decimal(26,6) comment '全国渗透率',
 sales_growth_rate_rank	int comment '销售环比排名',
 diff_profit_rate_rank	int comment '毛利率排名',
-cust_p_rate_rank	int comment '客户渗透率排名',
+cust_p_rate_rank	int comment '渗透率排名',
 oem_sale_rate_rank	int comment 'OEM销售占比排名',
 ring_cost_rate_rank	int comment '猪肉平均成本排名',
 diff_qg_profit_rate	int comment '全国毛利率差',
 diff_qg_profit_rate_rank	int comment '全国毛利率差排名',
 diff_qg_sale_rate	int comment '全国销售环比率差',
 diff_qg_sale_rate_rank	int comment '全国销售环比率差排名',
-diff_cust_r_rate	int comment '全国客户渗透率差',
-diff_qg_cust_rate_rank	int comment '全国客户渗透率差排名',
+diff_cust_r_rate	int comment '全国渗透率差',
+diff_qg_cust_rate_rank	int comment '全国渗透率差排名',
 diff_oem_sale_rate	int comment '全国OEM占比差',
 diff_qg_oem_rate_rank	int comment '全国OEM占比差排名',
-qg_class_num	int comment '	全国管理二级成交客户数',
-qg_cust_num	int comment '全国客户数',
+qg_class_num	int comment '	全国管理二级成交数',
+qg_cust_num	int comment '全国数',
 ring_cost_rate	decimal(26,6) comment '猪肉入库平均成本环比增长率',
 pig_avg_cost	decimal(26,6) comment '猪肉入库平均成本',
 last_pig_avg_cost	decimal(26,6) comment '环期猪肉入库平均成本',

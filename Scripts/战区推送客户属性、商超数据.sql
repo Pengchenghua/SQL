@@ -1,4 +1,4 @@
--- 客户属性销售  
+-- 属性销售  
 
 select  
        zone_id,zone_name ,
@@ -23,10 +23,10 @@ from (
        province_code ,
        province_name ,
        case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end attribute,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
@@ -56,10 +56,10 @@ from (
     sdt = 'current') as b on a.customer_no =b.customer_no
    where sdt>='${sdate}' and sdt<= '${edate}' and a.channel in('1','7')
    group by case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'   end ,
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'   end ,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
             when a.order_kind='WELFARE' then '2'
@@ -72,10 +72,10 @@ from (
        province_code ,
        province_name ,
        case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end attribute,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'
@@ -105,10 +105,10 @@ from (
     sdt = 'current') as b on a.customer_no =b.customer_no
    where sdt>= '${l_sdate}' and sdt<= '${l_edate}' and a.channel in('1','7')
    group by case when a.channel='7' then 'BBC'
-            when b.attribute_code=3 then '贸易客户'
-            when a.order_kind='WELFARE' then '福利客户'
-            when b.attribute_code=5 then '合伙人客户'
-            else '日配客户'
+            when b.attribute_code=3 then '贸易'
+            when a.order_kind='WELFARE' then '福利'
+            when b.attribute_code=5 then '合伙人'
+            else '日配'
             end ,
        case when a.channel='7' then '7'
             when b.attribute_code=3 then '3'

@@ -537,7 +537,7 @@ refresh csx_dw.wms_entry_order;
 			
 			select
 	a.bukrs comp_code                                                                ,--公司代码
-	a.kunnr                                                                          ,--客户编码
+	a.kunnr                                                                          ,--编码
 	a.budat                                                                          ,--日期
 	regexp_extract(a.prctr, '(0|^)([^0].*)',2) prctr                                 ,--利润中心代码
 	e.shop_name                                                                      ,--利润中心名称

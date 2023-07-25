@@ -49,7 +49,7 @@ SET hive.optimize.sort.dynamic.partition=true;
    items_close_time,    --  明细关单时间
    source_type            ,
    case when source_type='1'     then '采购导入'
-        when source_type='2'     then '直送客户'
+        when source_type='2'     then '直送'
         when source_type='3'     then '一键代发'
         when source_type='4'     then '项目合伙人'
         when source_type='5'     then '无单入库'
@@ -70,7 +70,7 @@ SET hive.optimize.sort.dynamic.partition=true;
    purchase_group_name    ,
    direct_flag            ,
    zm_direct_flag         ,
-   customer_direct_flag   , --是否客户直送
+   customer_direct_flag   , --是否直送
    local_purchase_flag    , --是否地采
    is_compensation        ,
    addition_order_flag    ,
@@ -236,11 +236,11 @@ WHERE (( sdt>=${hiveconf:sdate}
    shipped_date                                                  as shipped_date              , --出库日期
    coalesce(shipped_status ,'') shipped_status,                                           -- 出库单据状态
    order_status         ,                                                                   --单据状态(1-已创建、2-已发货、3-部分入库、4-已完成、5-已取消)
-   source_type          ,                                                                   --来源类型(1-采购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)
+   source_type          ,                                                                   --来源类型(1-采购导入、2-直送、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)
    source_type_name     ,                                                                   --来源类型名称
    direct_flag          ,                                                                   --是否直通(0-否、1-是)
    zm_direct_flag       ,                                                                   --是否账面直通(0-否、1-是)
-   customer_direct_flag ,                                                                   --是否客户直送(0-否、1-是)
+   customer_direct_flag ,                                                                   --是否直送(0-否、1-是)
    local_purchase_flag  ,                                                                   --是否地采(0-否、1-是)
    is_compensation      ,                                                                   --是否申偿(1是,0否)
    addition_order_flag  ,                                                                   --是否加配单(0-否、1-是)
@@ -354,11 +354,11 @@ CREATE TABLE `csx_dw.ads_supply_order_flow`(
   `shipped_date` string COMMENT '出库日期', 
   `shipped_status` string COMMENT '状态 0-初始 1-已集波 2-分配中 3-已分配 4-拣货中 5-拣货完成 6-已发货 7-已完成', 
   `order_status` int COMMENT '状态(1-已创建、2-已发货、3-部分入库、4-已完成、5-已取消)', 
-  `source_type` int COMMENT '来源类型(1-采购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购、10-智能补货、11-商超直送、12-WMS调拨、13-云超门店采购、14-临时地采、15-联营直送)', 
+  `source_type` int COMMENT '来源类型(1-采购导入、2-直送、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购、10-智能补货、11-商超直送、12-WMS调拨、13-云超门店采购、14-临时地采、15-联营直送)', 
   `source_type_name` string COMMENT '来源类型名称', 
   `direct_flag` string COMMENT '是否直通(0-否、1-是)', 
   `zm_direct_flag` string COMMENT '是否账面直通(0-否、1-是)', 
-  `customer_direct_flag` string COMMENT '是否客户直送(0-否、1-是)', 
+  `customer_direct_flag` string COMMENT '是否直送(0-否、1-是)', 
   `local_purchase_flag` string COMMENT '是否地采(0-否、1-是)', 
   `is_compensation` int COMMENT '是否申偿(1是,0否)', 
   `addition_order_flag` int COMMENT '是否加配单(0-否、1-是)', 

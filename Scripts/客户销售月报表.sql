@@ -1,7 +1,7 @@
 
 
 
--- 客户销售月报表
+-- 销售月报表
  select
     customer_no ,
     customer_name ,

@@ -220,10 +220,10 @@ LEFT JOIN
         last_sales_date,
         last_to_now_days,
          customer_active_status_code  customer_active_sts_code,
-    case when  customer_active_status_code = 1 then '活跃客户'
-	    when customer_active_status_code = 2 then '沉默客户'
-	    when customer_active_status_code = 3 then '预流失客户'
-	    when customer_active_status_code = 4 then '流失客户'
+    case when  customer_active_status_code = 1 then '活跃'
+	    when customer_active_status_code = 2 then '沉默'
+	    when customer_active_status_code = 3 then '预流失'
+	    when customer_active_status_code = 4 then '流失'
 	    else '其他'
 	end  as  customer_active_sts
 	from csx_dw.dws_sale_w_a_customer_company_active

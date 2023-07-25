@@ -232,7 +232,7 @@ select *
     ;
 
 
---逾期客户前5
+--逾期前5
     select
         calmonth,
         sales_province_code,
@@ -246,7 +246,7 @@ select *
      (select max(m.calday)as max_sdt ,m.calmonth from csx_dw.dws_w_a_date_m as m where calmonth >='201912' and  calmonth<='202006'group by calmonth )c on a.sdt=c.max_sdt
      join
      (select customer_no,cm.province_code ,cm.province_name,cm.sales_province,cm.sales_province_code 
-        from csx_dw.dws_crm_w_a_customer_m as cm where sdt='20200608' and customer_no !='' and channel like '%大客户%')b on regexp_replace(kunnr,'^0*','')=b.customer_no
+        from csx_dw.dws_crm_w_a_customer_m as cm where sdt='20200608' and customer_no !='' and channel like '%大%')b on regexp_replace(kunnr,'^0*','')=b.customer_no
  group by  calmonth,
        sales_province_code,
         sales_province;

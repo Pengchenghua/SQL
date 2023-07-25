@@ -1,4 +1,4 @@
---统计供应商&客户成交数21年
+--统计供应商&成交数21年
 
 SELECT count(DISTINCT supplier_code)
 FROM csx_dw.dws_wms_r_d_entry_detail

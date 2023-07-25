@@ -93,7 +93,7 @@ left join (
       cust_name,case
         when type_1_id_new = '321'
         and source_id_new = '22' then '商超'
-        else 'B端客户'
+        else 'B端'
       end stype,
       a.salename,
       a.dist
@@ -133,7 +133,7 @@ join (
       cust_name,case
         when type_1_id_new = '321'
         and source_id_new = '22' then '商超'
-        else 'B端客户'
+        else 'B端'
       end stype,
       a.salename,
       a.dist
@@ -165,7 +165,7 @@ join (
   ) d on a.shop_id = d.shop_id
   and sdt >= '20190401'
 where
-  stype = 'B端客户'
+  stype = 'B端'
   and retflag != 'X'
 group by
   sdt,

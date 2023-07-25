@@ -64,7 +64,7 @@ case when x.dist='福建' then coalesce(c.city_real,'福州、宁德、三明')e
 case when x.dist='福建' then coalesce(c.cityjob,'沈锋')else '-' end cityjob,
 cust_id,cust_name,bd_name,sum(xse)xse,sum(mle)mle,sdt
 from 
-(select case when qdflag is null or qdflag='' then '大客户' when dist='平台' and qdflag='大客户' then '平台'else qdflag end qdflag,
+(select case when qdflag is null or qdflag='' then '大' when dist='平台' and qdflag='大' then '平台'else qdflag end qdflag,
 case when dist='BB' then '福建'else dist end dist,
 case when qdflag='商超(对内)' and dist ='福建' then city_name 
 when dist='BB' then '福州' 
@@ -74,7 +74,7 @@ sum(xse) xse,
 sum(mle) mle,
 sdt
 from b2b_tmp.temp_sale
-group by case when qdflag is null or qdflag='' then '大客户' when dist='平台' and qdflag='大客户' then '平台'else qdflag end,
+group by case when qdflag is null or qdflag='' then '大' when dist='平台' and qdflag='大' then '平台'else qdflag end,
 case when dist='BB' then '福建'else dist end,
 case when qdflag='商超(对内)' and dist ='福建' then city_name 
 when dist='BB' then '福州' 
@@ -144,7 +144,7 @@ city_real,
 cityjob,
 cust_id,sum(xse/10000) xse,sum(mle/10000) mle,sdt
 from 
-(select case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+(select case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
 qdflag,dist,diro,manage,
@@ -153,7 +153,7 @@ cityjob,
 cust_id,bd_name,xse,mle,sdt 
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','平台','供应链(S端)') and dist not in ('商超平台')
 union all 
-select 1 qdrno,'大客户'qdflag,'大客户平台'dist,102 diro,''manage,
+select 1 qdrno,'大'qdflag,'大平台'dist,102 diro,''manage,
 ''city_real,
 ''cityjob,
 cust_id,bd_name,xse,mle,sdt
@@ -161,7 +161,7 @@ from b2b_tmp.temp_sale01 a where qdflag in ('平台')
 
 union all 
 select 
-case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,qdflag,'商超平台'dist,101 diro,''manage,
 ''city_real,
@@ -170,7 +170,7 @@ cust_id,bd_name,xse,mle,sdt
 from b2b_tmp.temp_sale01 a where dist in ('商超平台')
 union all 
 select 
-case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
 qdflag,dist,diro,manage,
@@ -178,24 +178,24 @@ qdflag,dist,diro,manage,
 '-'cityjob,
 cust_id,bd_name,sum(xse)xse,sum(mle)mle,sdt
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','平台','供应链(S端)') and dist='福建'
-group by case when qdflag='大客户' then 1 when qdflag='商超(对内)' then 2 
+group by case when qdflag='大' then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end,
 qdflag,dist,diro,manage,cust_id,bd_name,sdt
 union all 
 select 
-case when qdflag in ('大客户','平台') then 1 when qdflag='商超(对内)' then 2 
+case when qdflag in ('大','平台') then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end qdrno,
-case when qdflag='平台' then '大客户' else qdflag end qdflag,'总计'dist,100 diro,''manage,
+case when qdflag='平台' then '大' else qdflag end qdflag,'总计'dist,100 diro,''manage,
 '' city_real,
 '-'cityjob,
 cust_id,bd_name,sum(xse)xse,sum(mle)mle,sdt 
 from b2b_tmp.temp_sale01 a where qdflag not in ('大宗','供应链(S端)','平台')  and dist not in ('商超平台')
-group by case when qdflag in ('大客户','平台') then 1 when qdflag='商超(对内)' then 2 
+group by case when qdflag in ('大','平台') then 1 when qdflag='商超(对内)' then 2 
 when qdflag='商超(对外)' then 3
 when qdflag='企业购' then 4 end,
-case when qdflag='平台' then '大客户' else qdflag end,cust_id,bd_name,sdt
+case when qdflag='平台' then '大' else qdflag end,cust_id,bd_name,sdt
 )x
 group by qdrno,diro,
 qdflag,dist,manage,city_real,cityjob,cust_id,sdt

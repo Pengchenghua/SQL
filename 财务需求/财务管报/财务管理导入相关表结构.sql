@@ -109,7 +109,7 @@ CREATE TABLE `source_fis_r_m_adjustment_sale_import` (
   `labor_cost` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '定价成本_人工',
   `machine_cost` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '定价成本_机时',
   `other_cost` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '定价成本_其他',
-  `customer_num` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '客户数量',
+  `customer_num` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '数量',
   `adjustment_amount` decimal(26,6) NOT NULL DEFAULT '0.000000' COMMENT '调整金额',
   `remarks` varchar(255) DEFAULT NULL COMMENT '备注',
   `update_by` varchar(64) NOT NULL DEFAULT 'sys' COMMENT '更新人',

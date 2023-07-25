@@ -40,7 +40,7 @@ select
     case when a.channel_code not in ('2','4','5','6') then '1'
         else a.channel_code
         end channel,
-    case when a.channel_code not in ('2','4','5','6') then '大客户'
+    case when a.channel_code not in ('2','4','5','6') then '大'
         else a.channel_name
         end channel_name,
         a.business_type_name as    business_type_name,
@@ -75,7 +75,7 @@ group by
     case when a.channel_code not in ('2','4','5','6') then '1'
         else a.channel_code
         end ,
-    case when a.channel_code not in ('2','4','5','6') then '大客户'
+    case when a.channel_code not in ('2','4','5','6') then '大'
         else a.channel_name
         end ,
      a.business_type_code,
@@ -89,7 +89,7 @@ select
    case when a.channel_code not in ('2','4','5','6') then '1'
         else a.channel_code
         end channel,
-    case when a.channel_code not in ('2','4','5','6') then '大客户'
+    case when a.channel_code not in ('2','4','5','6') then '大'
         else a.channel_name
         end channel_name,
       a.business_type_name as business_type_name,
@@ -124,7 +124,7 @@ group by
     case when a.channel_code not in ('2','4','5','6') then '1'
         else a.channel_code
         end ,
-    case when a.channel_code not in ('2','4','5','6') then '大客户'
+    case when a.channel_code not in ('2','4','5','6') then '大'
         else a.channel_name
         end ,
      a.business_type_code ,
@@ -404,12 +404,12 @@ CREATE TABLE `csx_analyse.csx_analyse_fr_sale_kanban_city_catg_di`(
 	  `month_profit_fill_rate` decimal(26,6) COMMENT '月度毛利完成率', 
 	  `month_profit_rate` decimal(26,6) COMMENT '月至今毛利率', 
 	  `month_sales_sku` bigint COMMENT '销售SKU数', 
-	  `month_sale_cust_num` bigint COMMENT '课组成交客户数', 
-	  `cust_penetration_rate` decimal(26,6) COMMENT '客户渗透率', 
-	  `all_sale_cust_num` bigint COMMENT '合计客户数', 
+	  `month_sale_cust_num` bigint COMMENT '课组成交数', 
+	  `cust_penetration_rate` decimal(26,6) COMMENT '渗透率', 
+	  `all_sale_cust_num` bigint COMMENT '合计数', 
 	  `row_num` bigint COMMENT '行数', 
 	  `update_time` timestamp COMMENT '更新时间')
-	COMMENT '大客户课组销售与客户渗透率'
+	COMMENT '大课组销售与渗透率'
 	PARTITIONED BY ( 
 	  `months` string COMMENT '按月分区')
 	STORED AS parquet 

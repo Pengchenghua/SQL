@@ -375,7 +375,7 @@ WHERE sdt='20210623'
   ;
 
 
---逾期客户
+--逾期
  -- 逾期率>80% 应收金额>5000元
     select * from csx_dw.dws_sss_r_a_customer_accounts 
     where sdt='20210623' 
@@ -388,8 +388,8 @@ WHERE sdt='20210623'
 
 -----返利数据			
 select
-		customer_no,---客户编码
-		customer_name,---客户名称
+		customer_no,---编码
+		customer_name,---名称
 		region_code,
 		region_name,
 		second_category_name,
@@ -407,8 +407,8 @@ select
 		from 
 (select	substr(sdt,1,6) as mon,
         sdt,
-		customer_no,---客户编码
-		customer_name,---客户名称
+		customer_no,---编码
+		customer_name,---名称
 		second_category_name,
 		region_code,
 		region_name,
@@ -427,9 +427,9 @@ where sdt>='20210401' and sales_type ='fanli' and region_name ='华西大区'
 group by 
 	    substr(sdt,1,6),
         sdt,
-	    customer_no,---客户编码
+	    customer_no,---编码
 	    second_category_name,
-		customer_name,---客户名称
+		customer_name,---名称
 		region_code,
 		region_name,
 		province_code,---省区编码
@@ -440,8 +440,8 @@ group by
 		business_type_name,
 		sales_type
 )a where sales_value<0
-group by customer_no,---客户编码
-		customer_name,---客户名称
+group by customer_no,---编码
+		customer_name,---名称
 		second_category_name,
 		region_code,
 		region_name,
@@ -578,7 +578,7 @@ select
 ;
 
 
--- 1、取逾期客户关联销售表，销售天数<逾期天数,且销售额大于0，随机抽取10个客户，
+-- 1、取逾期关联销售表，销售天数<逾期天数,且销售额大于0，随机抽取10个，
 with temp01 as 
 (select *,over_amt-(claim_amount-payment_amount_1) as overdue_amount from  csx_dw.report_sss_r_d_cust_receivable_amount
   where sdt=regexp_replace(to_date(date_sub(current_timestamp(), 1)), '-', '')

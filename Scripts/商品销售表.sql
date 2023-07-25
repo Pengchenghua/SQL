@@ -254,7 +254,7 @@ where sdt>='${SBJ}' and sdt<='${EBJ}'
 group by qdrno,diro,qdflag,dist,5,city_real,7
 union all 
 select case when cust_id not like 'S%' then 1 else 2 end qdrno,103 diro,
-case when cust_id not like 'S%' then '大客户' else '商超' end qdflag,
+case when cust_id not like 'S%' then '大' else '商超' end qdflag,
 case when qdflag='大宗' then '大宗' else 'S端' end dist,
 case when qdflag='大宗' then'林恩平' else '-' end manage
 ,'Z-小计'city_real,'-'cityjob,count(distinct cust_id)cust_num,
@@ -266,7 +266,7 @@ group by 1,3,4,5
 union all 
 select 
 case when cust_id not like 'S%' then 1 else 2 end qdrno,103 diro,
-case when cust_id not like 'S%' then '大客户' else '商超' end qdflag,
+case when cust_id not like 'S%' then '大' else '商超' end qdflag,
 case when qdflag='大宗' then '大宗' else 'S端' end dist,
 case when qdflag='大宗' then'林恩平' else '-' end manage
 ,'Z-小计'city_real,'-'cityjob,0 cust_num,0 xse,0 mle,sum(xse)/10000 xse_lm 
@@ -277,7 +277,7 @@ group by 1,3,4,5
 union all 
 select 
 case when cust_id not like 'S%' then 1 else 2 end qdrno,103 diro,
-case when cust_id not like 'S%' then '大客户' else '商超' end qdflag,
+case when cust_id not like 'S%' then '大' else '商超' end qdflag,
 'S端'dist,
 '-' manage,
 bd_name city_real,'-'cityjob,count(distinct cust_id)cust_num
@@ -288,7 +288,7 @@ and qdflag in ('供应链(S端)') and bd_name<>'其他'
 group by 1,3,bd_name
 union all 
 select case when cust_id not like 'S%' then 1 else 2 end qdrno,103 diro,
-case when cust_id not like 'S%' then '大客户' else '商超' end qdflag,
+case when cust_id not like 'S%' then '大' else '商超' end qdflag,
 'S端'dist,
 '-' manage,
 bd_name city_real,'-'cityjob,0 cust_num,0 xse,0 mle,sum(xse)/10000 xse_lm 

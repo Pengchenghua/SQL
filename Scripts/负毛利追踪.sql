@@ -200,7 +200,7 @@ select
   
   
   
--- 负毛利客户追踪 2-2--822  
+-- 负毛利追踪 2-2--822  
 select  region_code,
           region_name,
           a.province_code,
@@ -452,7 +452,7 @@ SELECT * from csx_dw.dws_sale_r_d_sale_item_simple where goods_code ='874186' an
 
 
 
--- 负毛利客户追踪 2-2--822  
+-- 负毛利追踪 2-2--822  
 select  region_code,
           region_name,
           a.province_code,
@@ -668,7 +668,7 @@ group by mon,
 
 
 
--- 负毛利客户追踪 2-2--822  
+-- 负毛利追踪 2-2--822  
 drop table  csx_tmp.temp_negative_profit;
 create  table csx_tmp.temp_negative_profit
 as 
@@ -818,7 +818,7 @@ group by mon,
           if(substr(first_sale_day,1,6)=mon,'是','否');
 
 -----------------------------------使用Impala 查询
----------负毛利客户 
+---------负毛利 
 select region_code,
           region_name,
           province_code,
@@ -905,7 +905,7 @@ and (round(sales_value_04,0)>0 or round(sales_value_05,0)>0 or sales_value_06>0 
 -- ;
 ;
 
------------------低毛利客户 ---------------------------
+-----------------低毛利 ---------------------------
 
 select region_code,
           region_name,

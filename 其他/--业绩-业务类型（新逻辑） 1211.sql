@@ -2,10 +2,10 @@
 select
 	a.province_name,a.smonth,
 	case when a.channel ='7' then 'BBC'	
-		when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
+		when a.channel in ('1','9') and b.attribute='合伙人' then '城市服务商' 
 		when a.channel in ('1','9') and (b.customer_name like '%内%购%' or b.customer_name like '%临保%') then '批发内购'		
-		when a.channel in ('1','9') and b.attribute='贸易客户' and d.order_profit_rate<=0.015 then '批发内购' 
-		when a.channel in ('1','9') and b.attribute='贸易客户' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
+		when a.channel in ('1','9') and b.attribute='贸易' and d.order_profit_rate<=0.015 then '批发内购' 
+		when a.channel in ('1','9') and b.attribute='贸易' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
 		when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'   
 		else '日配单' end sale_group, 	
 	sum(a.sales_value)as sales_value,
@@ -40,9 +40,9 @@ left join --尽量消除退货单误归到批发内购影响，算毛利率往�
 	)d on a.order_no_new = d.order_no_new 	
 group by a.province_name,a.smonth,
 	case when a.channel ='7' then 'BBC'	
-		when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
+		when a.channel in ('1','9') and b.attribute='合伙人' then '城市服务商' 
 		when a.channel in ('1','9') and (b.customer_name like '%内%购%' or b.customer_name like '%临保%') then '批发内购'		
-		when a.channel in ('1','9') and b.attribute='贸易客户' and d.order_profit_rate<=0.015 then '批发内购' 
-		when a.channel in ('1','9') and b.attribute='贸易客户' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
+		when a.channel in ('1','9') and b.attribute='贸易' and d.order_profit_rate<=0.015 then '批发内购' 
+		when a.channel in ('1','9') and b.attribute='贸易' and (d.order_profit_rate>0.015 or d.order_profit_rate is null) then '省区大宗'
 		when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'   
 		else '日配单' end;

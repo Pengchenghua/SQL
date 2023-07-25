@@ -37,7 +37,7 @@ select  sdt,
 	    case when division_code='10' then 'U00' else b.department_code end 	department_code,
 	    case when division_code='10' then '加工课' else b.department_name end department_name,
 	    case when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-	         when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 	
+	         when channel in ('5','6') and a.customer_no not like 'S%' then '大' 	
 	         else regexp_replace(channel_name,'\\s','') 
 	    end channel_name,
 	    a.customer_no,
@@ -65,7 +65,7 @@ group by
 	    case when division_code='10' then 'U00' else b.department_code end 	,
 	    case when division_code='10' then '加工课' else b.department_name end ,
 	    case when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-	         when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 	
+	         when channel in ('5','6') and a.customer_no not like 'S%' then '大' 	
 	         else regexp_replace(channel_name,'\\s','') 
 	    end ,
 	    a.customer_no,

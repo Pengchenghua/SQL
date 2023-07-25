@@ -91,5 +91,5 @@ GROUP by
 	b.valid_tag_name
 	)a left join 
 	(select DISTINCT goods_code from csx_dw.dws_sale_r_d_customer_sale where sdt >= '20191201'
-	and sdt <= '20200423' and channel_name='大客户')c  on a.goods_code=c.goods_code
+	and sdt <= '20200423' and channel_name='大')c  on a.goods_code=c.goods_code
 	where product_status_name in ('B 正常商品','A 新品')

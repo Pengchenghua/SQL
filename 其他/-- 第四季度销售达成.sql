@@ -525,7 +525,7 @@ ORDER BY case when  region_code='2' then 1
 
 
  
--- 亏损客户
+-- 亏损
 SELECT 
        region_code,
        region_name,

@@ -26,7 +26,7 @@ FROM
    GROUP BY goods_code) a
 ORDER BY sales_value DESC;
 
--- 每月客户销售情况
+-- 每月销售情况
 
 CREATE TEMPORARY TABLE csx_tmp.temp_goods_sale_02 AS
 SELECT goods_code,

@@ -8,12 +8,12 @@
 -- -- 按月计算
 -- 销售波动最大，
 -- 销售波动最小，
--- 客户数（去重），
--- 月平均客户数，
--- 客户数波动最大，
--- 客户数波动最小，
+-- 数（去重），
+-- 月平均数，
+-- 数波动最大，
+-- 数波动最小，
 -- 月销售频次，
--- 客户天数，
+-- 天数，
 
 DROP TABLE csx_tmp.temp_goods_top;
 
@@ -118,7 +118,7 @@ SELECT province_code,
        count(DISTINCT substring(sdt,1,6)) AS sale_mon,
        sum(sales_value)/6 AS avg_sale,
        sum(sales_value)AS sales_value,
-       count(DISTINCT customer_no)AS sale_cust, --销售客户数
+       count(DISTINCT customer_no)AS sale_cust, --销售数
  --   avg(customer_no) as avg_cust,
  count(DISTINCT sdt) AS sale_sdt --   count(DISTINCT sdt)over(PARTITION BY goods_code,substring(sdt,1,6)) as sale_sdt,
  --   max(sum(sales_value))over(PARTITION BY a.goods_code,substring(sdt,1,6)) as max_sale
@@ -156,7 +156,7 @@ SELECT province_code,
        goods_code,
        max(sales_value)AS max_sale,
        min(sales_value) AS min_sale,
-       sum(sale_cust)/6 AS avg_sale_cust, --平均客户数
+       sum(sale_cust)/6 AS avg_sale_cust, --平均数
        sum(sale_cust)as sale_cust,
  max(sale_cust)AS max_sale_cust,
  min(sale_cust)AS min_sale_cust,
@@ -166,7 +166,7 @@ FROM
           province_code,
           goods_code,
           sum(sales_value)AS sales_value,
-          count(DISTINCT customer_no)AS sale_cust, --销售客户数
+          count(DISTINCT customer_no)AS sale_cust, --销售数
           count(DISTINCT sdt) AS sale_sdt
    FROM csx_dw.dws_sale_r_d_customer_sale a
    WHERE sdt>='20200101'
@@ -193,7 +193,7 @@ left join
        goods_code,
        max_sale,
        min_sale,
-      sale_cust, --平均客户数
+      sale_cust, --平均数
        max_sale_cust,
        min_sale_cust,
        sale_sdt ,avg_sale_cust

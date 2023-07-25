@@ -79,8 +79,8 @@ FROM
 	(
 	SELECT
 			case
-			when channel in('1','7') then '大客户'
-			WHEN province_name in ('大客户平台','商超平台') then province_name 	else channel_name
+			when channel in('1','7') then '大'
+			WHEN province_name in ('大平台','商超平台') then province_name 	else channel_name
 	END 
 		 channel,
 		sgm2.province_name ,
@@ -98,8 +98,8 @@ FROM
 		and sales_type in ('qyg','gc','anhui','sc') 
 	group by
 		case
-			when channel in('1','7')  then '大客户'
-			WHEN province_name in ('大客户平台','商超平台') then province_name 	else channel_name
+			when channel in('1','7')  then '大'
+			WHEN province_name in ('大平台','商超平台') then province_name 	else channel_name
 	END ,
 		goods_code ,
 		province_name,

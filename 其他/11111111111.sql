@@ -37,7 +37,7 @@ select
   aa.channel,
 
   case
-    when channel = '1'  OR channel = '' then '大客户'
+    when channel = '1'  OR channel = '' then '大'
     when channel = '2' then '商超(对内)'
     when channel = '3' then '商超(对外)'
     when channel = '4' then '大宗'
@@ -87,7 +87,7 @@ select
       or (b.channel like '供应链%' and a.category_code in ('12','13','14'))then '5'
     when (a.shop_id = 'W0H4' and a.customer_no like 'S%' and a.category_code in ('10','11'))
       or (b.channel like '供应链%' and a.category_code in ('10', '11'))then '6'  
-    when b.channel = '大客户' or b.channel = 'B端' then '1'
+    when b.channel = '大' or b.channel = 'B端' then '1'
     when b.channel ='M端'  or b.channel like '%对内%' then '2'
     when b.channel like '%对外%' then '3'
     when b.channel = '大宗' then '4'  
@@ -321,7 +321,7 @@ select
     a.channel_name,
     case when a.province_name='商超平台'  then '-100' else g.province_code end province_code,
 
-    case when a.province_name='平台-B' then '大客户平台' else a.province_name end province_name,
+    case when a.province_name='平台-B' then '大平台' else a.province_name end province_name,
     
     a.city_name,
 
@@ -369,7 +369,7 @@ from
   
 
     case when channel is null or channel='' then '1' when province_name='平台-B' and channel='1' then '1' else channel end channel,
-    case when channel is null or channel='' then '大客户' when province_name='平台-B' and channel='1' then '大客户' else channel_name end channel_name,
+    case when channel is null or channel='' then '大' when province_name='平台-B' and channel='1' then '大' else channel_name end channel_name,
     case when province_name ='成都省' then '四川省' when channel='7' then '福建省' else province_name end province_name,
     case when channel='2'  then city_name 
         --when channel='7' then '福州' 

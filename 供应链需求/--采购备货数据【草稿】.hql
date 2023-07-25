@@ -305,7 +305,7 @@ group by  a.dc_code,
 ;
 
 
--- 客户满足率  剔除客户直送\福利单出库
+-- 满足率  剔除直送\福利单出库
 drop table csx_tmp.temp_cust_sale_01;
 create temporary table csx_tmp.temp_cust_sale_01 as  
 select dc_code,
@@ -380,7 +380,7 @@ left join
 -- 存储商品销售
 csx_tmp.temp_sale_01 c on a.dc_code=c.dc_code and a.classify_small_code=c.classify_small_code
 left join
--- 客户满足率
+-- 满足率
  csx_tmp.temp_cust_sale_01 d on a.dc_code=d.dc_code and a.classify_small_code=d.classify_small_code
  left join 
  csx_tmp.temp_supplier_fill_rate    j on a.dc_code=j.receive_location_code and a.classify_small_code=j.classify_small_code      --供应商满足率
@@ -404,12 +404,12 @@ create temporary table csx_tmp.temp_all_00 as
     sum(receive_qty  )  receive_qty ,   --入库数量
     sum(receive_amt  )  receive_amt ,   --入库金额
     sum(receive_qty  ) /sum(order_qty)  order_sign_rate,       --满足标识 
-    sum(zs_order_amt  ) zs_order_amt  ,       --客户直送订单金额
-    sum(zs_receive_amt)  zs_receive_amt,        --客户直送金额
-    sum(zs_receive_amt)/sum(receive_amt) zs_ratio,   --客户直送入库占比
-    sum(order_value )  order_value,     --客户配送订单金额 剔除地采 
-    sum(sales_value )  sales_value,     --客户配送出库金额 剔除地采
-    sum(sales_value )/ sum(order_value ) cust_sale_ratio,       --客户配送满足率占比
+    sum(zs_order_amt  ) zs_order_amt  ,       --直送订单金额
+    sum(zs_receive_amt)  zs_receive_amt,        --直送金额
+    sum(zs_receive_amt)/sum(receive_amt) zs_ratio,   --直送入库占比
+    sum(order_value )  order_value,     --配送订单金额 剔除地采 
+    sum(sales_value )  sales_value,     --配送出库金额 剔除地采
+    sum(sales_value )/ sum(order_value ) cust_sale_ratio,       --配送满足率占比
     sum(daily_sales_value )  daily_sales_value,     --日配销售金额
     sum(stock_sale_value )  stock_sale_value,       --存储商品销售额
     sum(return_sku )  return_sku,                   --退货标识SKU
@@ -479,12 +479,12 @@ select
     (receive_qty  )  receive_qty ,   --入库数量
     (receive_amt  )/10000  receive_amt ,   --入库金额
     (receive_qty  ) /(order_qty)  order_sign_rate,       --满足标识 
-    (zs_order_amt)/10000 zs_order_amt,       --客户直送订单金额
-    (zs_receive_amt )/10000  zs_receive_amt,         --客户直送金额
-    (zs_receive_amt)/(receive_amt) zs_receive_ratio,   --客户直送入库占比
-    (order_value )/10000  order_value,     --客户配送订单金额 剔除地采 
-    (sales_value )/10000  sales_value,     --客户配送出库金额 剔除地采
-    (sales_value )/ (order_value ) cust_sale_ratio,       -- 客户配送满足率
+    (zs_order_amt)/10000 zs_order_amt,       --直送订单金额
+    (zs_receive_amt )/10000  zs_receive_amt,         --直送金额
+    (zs_receive_amt)/(receive_amt) zs_receive_ratio,   --直送入库占比
+    (order_value )/10000  order_value,     --配送订单金额 剔除地采 
+    (sales_value )/10000  sales_value,     --配送出库金额 剔除地采
+    (sales_value )/ (order_value ) cust_sale_ratio,       -- 配送满足率
     (daily_sales_value )/10000  daily_sales_value,     --日配销售金额
     (stock_sale_value )/10000  stock_sale_value,       --存储商品销售额
     stock_sale_value/daily_sales_value as stock_sale_ratio, -- 存储商品销售占比

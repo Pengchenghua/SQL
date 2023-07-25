@@ -101,7 +101,7 @@ from
   ) a 
   ;
 
--- 客户是供应商&供应商是客户稽核
+-- 是供应商&供应商是稽核
   with aa as (
   select
     basic_performance_province_name,
@@ -220,7 +220,7 @@ from
 
 
 
--- 客户是供应商&供应商是客户稽核 品类一致的商品明细
+-- 是供应商&供应商是稽核 品类一致的商品明细
   with aa as (
   select
     basic_performance_province_name,
@@ -241,6 +241,7 @@ from
     c.supplier_tax_code,
     goods_code,
     goods_name,
+    sum(receive_qty-shipped_qty) as net_qty,
     sum(no_tax_receive_amt - no_tax_shipped_amt) net_amt
   from
     csx_analyse.csx_analyse_scm_purchase_order_flow_di a
@@ -255,7 +256,7 @@ from
         sdt = 'current'
        -- and company_code = '2304'
         and purpose not in('09', '04', '06')
-        and basic_performance_province_name = '湖北'
+        and basic_performance_province_name = '浙江'
     ) b on a.dc_code = b.shop_code
     join (
       select
@@ -298,6 +299,7 @@ bb as (
     classify_middle_name,
     goods_code,
     goods_name,
+    sum(sale_qty) sale_qty,
     sum(sale_amt_no_tax) sale_amt
   from
     csx_dws.csx_dws_sale_detail_di a
@@ -311,7 +313,8 @@ bb as (
         sdt = 'current'
     ) b on a.customer_code = b.customer_code
   where
-    sdt >= '20221001' --   and performance_province_name='北京市'
+    sdt >= '20221001'
+--   and performance_province_name='北京市'
  --   and performance_province_name='湖北省'
   group by
     goods_code,
@@ -333,6 +336,7 @@ select
   bb.goods_code,
   bb.goods_name,
   sale_amt,
+  sale_qty,
   basic_performance_province_name,
   aa.classify_middle_code a_classify_middle_code,
   aa.classify_middle_name a_classify_middle_name,
@@ -341,7 +345,8 @@ select
   aa.supplier_code,
   supplier_name,
   supplier_tax_code,
-  net_amt
+  net_amt,
+  net_qty
 from
   bb
   join aa on bb.social_credit_code = aa.supplier_tax_code 

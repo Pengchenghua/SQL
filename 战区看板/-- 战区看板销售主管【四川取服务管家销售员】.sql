@@ -106,7 +106,7 @@ left join
       first_supervisor_name,
       attribute as attribute_0,
     regexp_replace(split(sign_time, ' ')[0], '-', '') as sign_time,
-    if(channel_code in('1','7','9'),case when attribute is null then '日配客户'  else attribute end,'') as  attribute
+    if(channel_code in('1','7','9'),case when attribute is null then '日配'  else attribute end,'') as  attribute
   -- from csx_dw.dws_crm_w_a_customer_m_v1
   from ${hiveconf:table_customer}
   where sdt ='current'
@@ -163,7 +163,7 @@ select channel,
    coalesce(sum(new_plan_sale_cust_num),0)as new_plan_sale_cust_num,
    coalesce(sum(all_plan_sale),0)as all_plan_sale,
    sum(all_plan_profit)all_plan_profit,
-   sum(sign_cust_num) as new_sign_cust_num,     --新签约客户数
+   sum(sign_cust_num) as new_sign_cust_num,     --新签约数
    sum(sign_amount) as new_sign_amount,  --新签约金额
     sum(daily_sign_cust_num) as daily_sign_cust_num,
     sum(daily_sign_amount) as daily_sign_amount,
@@ -178,12 +178,12 @@ from
     city_group_code,
     city_group_name,
     first_supervisor_name as manager_name,
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end),0)as old_cust_count,  --老客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then Md_sales_value end)/10000,0) as old_daily_sale, --老客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then sales_value end)/10000,0) as old_month_sale,  --老客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='否' then profit end)/10000,0) as old_month_profit,  --老客-累计毛利额
     coalesce(sum(case when smonth='环比月' and is_new_sale='否' then sales_value end)/10000,0) as old_last_month_sale,  --老客-环比累计销售额
-    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计客户数
+    coalesce(count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end),0)as new_cust_count,  --新客-累计数
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000,0) as new_daily_sale, --新客-昨日销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000,0) as new_month_sale,  --新客-累计销售额
     coalesce(sum(case when smonth='本月' and is_new_sale='是' then profit end)/10000,0) as new_month_profit,  --新客-累计毛利额
@@ -232,10 +232,10 @@ from (SELECT channel,
              smonth,
              substr(sdt,1,6)as months,
              case when channel_name='商超' then '商超'
-        when channel_name='大客户' or channel_name like '企业购%' then '大客户'
+        when channel_name='大' or channel_name like '企业购%' then '大'
         else channel_name end channel_name_1,
       case when channel_name='商超' then '2'
-        when channel_name='大客户' or channel_name like '企业购%' then '1'
+        when channel_name='大' or channel_name like '企业购%' then '1'
         else channel end channel_name_code
         FROM csx_tmp.temp_supervisor_sale_01 a 
         left join 
@@ -297,7 +297,7 @@ from (SELECT channel,
       WHERE MONTH= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
       and sdt =substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
       and customer_attribute_name!='批发内购'
-       --  AND channel_name='大客户'
+       --  AND channel_name='大'
       GROUP BY b.region_code,
             b.region_name,
             b.province_code,
@@ -441,7 +441,7 @@ SELECT
         coalesce((new_month_sale-new_last_month_sale)/abs(new_last_month_sale),0) as new_mom_sale_growth_rate,
         new_month_profit,
         coalesce(new_month_profit/new_month_sale,0) new_month_profit_rate,
-        new_sign_cust_num,     --新签约客户数
+        new_sign_cust_num,     --新签约数
         new_sign_amount,  --新签约金额
         daily_sign_cust_num,
         daily_sign_amount,

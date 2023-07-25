@@ -39,9 +39,9 @@ SELECT a.channel_name,
 FROM 
 (
 SELECT CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        a.province_code,
@@ -75,9 +75,9 @@ GROUP BY province_code,
          a.city_group_code,
          a.city_group_name,
          CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END
 )a 
@@ -114,9 +114,9 @@ FROM
 csx_tmp.temp_war_city_sale  a 
 left join 
 (select CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        province_code,
@@ -126,9 +126,9 @@ left join
     from csx_dw.dws_sale_r_d_customer_sale a
     where sdt=regexp_replace(date_sub(${hiveconf:edate},7),'-','')
     group by CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END ,
        a.city_group_code,
@@ -143,9 +143,9 @@ left join
 DROP TABLE IF EXISTS csx_tmp.temp_ring_war_zone_sale;
 CREATE TEMPORARY TABLE csx_tmp.temp_ring_war_zone_sale AS
 SELECT CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END channel_name,
        province_code,
@@ -164,9 +164,9 @@ GROUP BY province_code,
          a.city_group_code,
     a.city_group_name,
          CASE
-           WHEN a.channel IN ('1','7','9') THEN '大客户'
+           WHEN a.channel IN ('1','7','9') THEN '大'
  		   when channel in ('5','6') and a.customer_no like 'S%' then '商超' 
-		   when channel in ('5','6') and a.customer_no not like 'S%' then '大客户' 
+		   when channel in ('5','6') and a.customer_no not like 'S%' then '大' 
            ELSE a.channel_name
        END ;
 
@@ -179,7 +179,7 @@ DROP TABLE IF EXISTS csx_tmp.temp_war_zone_sale_02;
 CREATE TEMPORARY TABLE csx_tmp.temp_war_zone_sale_02 AS
 
 select
-    '大客户' as channel_name,
+    '大' as channel_name,
     province_code ,
     province_name  ,
     a.city_group_code,
@@ -240,7 +240,7 @@ select trim(province_code)province_code,
     sum(plan_sales_value)plan_sales_value ,
     sum(plan_profit)plan_profit 
    from 
-   (select province_code,'大客户' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
+   (select province_code,'大' as channel_name,0 daily_plan_sales_value,0 daily_plan_profit,(plan_sales_value)plan_sales_value ,(plan_profit)plan_profit 
    from csx_tmp.dws_csms_province_month_sale_plan_tmp
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6)
     and sdt=substr(regexp_replace(${hiveconf:edate},'-',''),1,6)
@@ -250,7 +250,7 @@ select trim(province_code)province_code,
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
      and sdt=substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
      union all 
-     select province_code,'大客户' as channel_name,coalesce(plan_sale_value,0) daily_plan_sales_value ,coalesce(plan_profit,0)daily_plan_profit,0 plan_sales_value,0 plan_profit 
+     select province_code,'大' as channel_name,coalesce(plan_sale_value,0) daily_plan_sales_value ,coalesce(plan_profit,0)daily_plan_profit,0 plan_sales_value,0 plan_profit 
       from csx_tmp.dws_daily_sales_plan
      where month= substr(regexp_replace(${hiveconf:edate},'-',''),1,6) 
       and plan_sdt=${hiveconf:edate}
@@ -270,7 +270,7 @@ SELECT '1' level_id,
        substr(regexp_replace(${hiveconf:edate},'-',''),1,6) as  sales_months,
        zone_id,
        zone_name,
-       case when a.channel_name='大客户' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
+       case when a.channel_name='大' then '1' when a.channel_name='商超' then '2' else channel_name end  as channel_code,
        a.channel_name,
        a.province_code,
        a.province_name,

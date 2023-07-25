@@ -36,7 +36,7 @@ create temporary table if not exists csx_tmp.temp_fina_sale_00 as
         dc_code, 
         goods_code, 
         case when channel_code in ('1','7','9') then '1' when channel_code in ('5','6') then '4' else  channel_code end channel_code,
-        case when channel_code in ('1','7','9') then '大客户'  when channel_code in ('5','6') then '大宗'  else  channel_name end channel_name ,
+        case when channel_code in ('1','7','9') then '大'  when channel_code in ('5','6') then '大宗'  else  channel_name end channel_name ,
         case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '21'
             when channel_code='2' then '22' else business_type_code  end business_type_code,
         case when channel_code ='2' and dc_code in ('W0R1','W0T6','W0M4','W0T3','W0T7','W0M6','W0S8','W0T5','W0X5','W0X4') then '代加工'
@@ -520,7 +520,7 @@ create temporary table if not exists csx_tmp.temp_cbgb_tz_v11
 as 
 select 
     coalesce(c.channel_code,'1') as channel_code,
-    coalesce(c.channel_name,'大客户') as channel_name,
+    coalesce(c.channel_name,'大') as channel_name,
     coalesce(c.business_type_code,'6')as business_type_code,
     coalesce(c.business_type_name,'BBC') as business_type_name,
     coalesce(c.province_code,b.province_code) as province_code,
@@ -674,7 +674,7 @@ left join
 (select shop_id,sales_province_code province_code,sales_province_name as province_name,city_group_code as city_code,city_group_name as city_name
 from csx_dw.dws_basic_w_a_csx_shop_m where sdt = 'current') b on b.shop_id=a.location_code
 group by   coalesce(c.channel_code,'1') ,
-    coalesce(c.channel_name,'大客户') ,
+    coalesce(c.channel_name,'大') ,
     coalesce(c.business_type_code,'6'),
     coalesce(c.business_type_name,'BBC'),
     coalesce(c.province_code,b.province_code) ,
@@ -1383,7 +1383,7 @@ SELECT month as months,
        from 
 (SELECT  month,
     case when channel_code in ('1','7','9') then '1' else channel_code end channel_code,
-    case when channel_code in ('1','7','9') then '大客户' else channel_name end channel_name,
+    case when channel_code in ('1','7','9') then '大' else channel_name end channel_name,
         business_type_code,
        business_type_name,
        classify_large_code,
@@ -1402,7 +1402,7 @@ FROM csx_dw.report_sale_r_m_company_pricing a
 where month=substr(${hiveconf:edt},1,6)
 GROUP BY 
  case when channel_code in ('1','7','9') then '1' else channel_code end ,
-    case when channel_code in ('1','7','9') then '大客户' else channel_name end ,
+    case when channel_code in ('1','7','9') then '大' else channel_name end ,
         business_type_code,
        business_type_name,
        classify_large_code,

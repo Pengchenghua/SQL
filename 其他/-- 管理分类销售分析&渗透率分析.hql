@@ -230,8 +230,8 @@ select
     sum(case when business_type_code='1' then last_sales_value end ) as last_daily_sales_value,
     sum(case when business_type_code='1' then profit end ) as daily_profit,             --日配毛利额
     sum(case when business_type_code='1' then last_profit end ) as last_daily_profit,   --环期日配毛利额
-    count(distinct case when sales_value>0 and business_type_code='1' then customer_no end ) as daily_cust_number, --日配成交客户数
-    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_daily_cust_number,  --环比日配冻品成交客户数
+    count(distinct case when sales_value>0 and business_type_code='1' then customer_no end ) as daily_cust_number, --日配成交数
+    count(distinct case when last_sales_value>0 and business_type_code='1' then customer_no end )as last_daily_cust_number,  --环比日配冻品成交数
     grouping__id
 from csx_tmp.temp_sale_all a
 -- where business_type_code!='4'  --剔除城市服务商
@@ -366,7 +366,7 @@ grouping sets
 ;
 
    
--- 计算日配客户数
+-- 计算日配数
 drop table if exists  csx_tmp.temp_sale_cust;
 create  temporary table csx_tmp.temp_sale_cust as 
 select 
@@ -584,7 +584,7 @@ grouping sets
     );
 
 
--- 统计期末库存 01大客户物流 07 BBC物流
+-- 统计期末库存 01大物流 07 BBC物流
 drop table if exists csx_tmp.temp_sale_02;
 create temporary table csx_tmp.temp_sale_02 as
 select zone_id as sales_region_code,
@@ -741,10 +741,10 @@ select a.channel_name,
     profit ,                                            --本期毛利额
     last_sales_value,                                   --环比销售额
     last_profit,                                        --环比毛利额
-    daily_cust_number,                                  --日配成交客户数
-    last_daily_cust_number,                             --环比日配成交客户数
-    b.b_daily_cust_number,                                --B端本期客户数
-    b.last_b_daily_cust_number,                           --B端环期客户数
+    daily_cust_number,                                  --日配成交数
+    last_daily_cust_number,                             --环比日配成交数
+    b.b_daily_cust_number,                                --B端本期数
+    b.last_b_daily_cust_number,                           --B端环期数
     c.all_sales_value,                                  --省区销售额
     all_profit,                                         --省区毛利额
     all_profit/all_sales_value as all_profit_rate,      --省区毛利率
@@ -835,10 +835,10 @@ select
     b.profit_30day,
     final_qty,      --期末库存量
     final_amt ,     --期末库存额
-    daily_cust_number,                                  --日配成交客户数
-    last_daily_cust_number,                             --环比日配成交客户数
-    b_daily_cust_number,                                --B端本期客户数
-    last_b_daily_cust_number,                           --B端环期客户数
+    daily_cust_number,                                  --日配成交数
+    last_daily_cust_number,                             --环比日配成交数
+    b_daily_cust_number,                                --B端本期数
+    last_b_daily_cust_number,                           --B端环期数
     IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number) as daily_cust_penetration_rate ,   ---日配业务渗透率
     IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number) as last_daily_cust_penetration_rate ,   ---环期日配业务渗透率
     coalesce(IF(daily_cust_number/b_daily_cust_number>=1,1,daily_cust_number/b_daily_cust_number)- IF(last_daily_cust_number/last_b_daily_cust_number>=1,1,last_daily_cust_number/last_b_daily_cust_number),0) as diff_daily_cust_penetration_rate ,   --- 日配业务渗透率环比
@@ -917,10 +917,10 @@ CREATE TABLE `csx_tmp.report_sale_r_d_classify_ratio_fr`(
   `profit_30day` decimal(30,6) comment '近30天毛利额', 
   `final_qty` decimal(30,6) comment '期末库存量', 
   `final_amt` decimal(30,6) comment '期末库存额', 
-  `daily_cust_number` bigint comment '日配成交客户数', 
-  `last_daily_cust_number` bigint comment '环期日配成交客户数', 
-  `b_daily_cust_number` bigint comment 'B端日配客户', 
-  `last_b_daily_cust_number` decimal(30,6) comment '环期B端日配客户', 
+  `daily_cust_number` bigint comment '日配成交数', 
+  `last_daily_cust_number` bigint comment '环期日配成交数', 
+  `b_daily_cust_number` bigint comment 'B端日配', 
+  `last_b_daily_cust_number` decimal(30,6) comment '环期B端日配', 
   `daily_cust_penetration_rate` decimal(30,6) comment '日配渗透率', 
   `last_daily_cust_penetration_rate` decimal(30,6) comment '环期日配渗透率', 
   `diff_daily_cust_penetration_rate` decimal(30,6) comment '日配渗透率差', 

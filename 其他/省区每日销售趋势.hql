@@ -29,7 +29,7 @@ FROM (
     LEFT JOIN (
         SELECT sdt,
             CASE
-                WHEN channel IN ('1', '7') THEN '大客户'
+                WHEN channel IN ('1', '7') THEN '大'
                 WHEN channel IN ('2') THEN '商超'
                 ELSE channel_name
             END channel_name,
@@ -47,7 +47,7 @@ FROM (
             division_code,
             division_name,
             CASE
-                WHEN channel IN ('1', '7') THEN '大客户'
+                WHEN channel IN ('1', '7') THEN '大'
                 WHEN channel IN ('2') THEN '商超'
                 ELSE channel_name
             END,
@@ -263,7 +263,7 @@ FROM (
     LEFT JOIN (
         SELECT from_unixtime(unix_timestamp(sdt, 'yyyyMMdd'), 'yyyy-MM-dd') AS sdt,
             CASE
-                WHEN channel IN('1', '7') THEN '大客户'
+                WHEN channel IN('1', '7') THEN '大'
                 WHEN channel IN('2') THEN '商超'
             END AS channel_name,
             province_code,
@@ -274,7 +274,7 @@ FROM (
         GROUP BY sdt,
             province_code,
             CASE
-                WHEN channel IN('1', '7') THEN '大客户'
+                WHEN channel IN('1', '7') THEN '大'
                 WHEN channel IN('2') THEN '商超'
             END
         UNION ALL

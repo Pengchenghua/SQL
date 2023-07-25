@@ -250,7 +250,7 @@ UNION ALL
 )a
 ;
 
--- 客户明细
+-- 明细
 SELECT
 	province_code,
 		province_name,

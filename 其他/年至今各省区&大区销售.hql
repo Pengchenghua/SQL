@@ -13,9 +13,9 @@ from (
 			a.smonth,
 			case
 				when a.channel = '7' then 'BBC'
-				--when a.channel in ('1') and b.attribute='合伙人客户' then '合伙人客户'
+				--when a.channel in ('1') and b.attribute='合伙人' then '合伙人'
 				when a.channel in ('1')
-				and c.customer_no is not null then '合伙人客户'
+				and c.customer_no is not null then '合伙人'
 				when a.channel in ('1')
 				and a.smonth <= '202006'
 				and c.customer_no in(
@@ -49,9 +49,9 @@ from (
 					'106311',
 					'111874',
 					'107694'
-				) then '合伙人客户'
+				) then '合伙人'
 				when a.channel in ('1')
-				and b.attribute = '贸易客户' then '贸易客户'
+				and b.attribute = '贸易' then '贸易'
 				when a.channel in ('1')
 				and a.order_kind = 'WELFARE' then '福利单' - -
 				when a.channel in ('1')
@@ -108,7 +108,7 @@ from (
 					customer_no,
 					order_kind
 			) a
-			left join --CRM客户信息取每月最后一天 剔除合伙人
+			left join --CRM信息取每月最后一天 剔除合伙人
 			(
 				select substr(sdt, 1, 6) smonth,
 					customer_no,
@@ -136,9 +136,9 @@ from (
 			a.province_name,
 			a.smonth,
 			case
-				when a.channel = '7' then 'BBC' --when a.channel in ('1') and b.attribute='合伙人客户' then '合伙人客户'
+				when a.channel = '7' then 'BBC' --when a.channel in ('1') and b.attribute='合伙人' then '合伙人'
 				when a.channel in ('1')
-				and c.customer_no is not null then '合伙人客户'
+				and c.customer_no is not null then '合伙人'
 				when a.channel in ('1')
 				and a.smonth <= '202006'
 				and c.customer_no in(
@@ -172,9 +172,9 @@ from (
 					'106311',
 					'111874',
 					'107694'
-				) then '合伙人客户'
+				) then '合伙人'
 				when a.channel in ('1')
-				and b.attribute = '贸易客户' then '贸易客户'
+				and b.attribute = '贸易' then '贸易'
 				when a.channel in ('1')
 				and a.order_kind = 'WELFARE' then '福利单' - -
 				when a.channel in ('1')

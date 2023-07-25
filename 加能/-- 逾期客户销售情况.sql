@@ -1,4 +1,4 @@
--- 逾期客户销售情况
+-- 逾期销售情况
 drop table csx_tmp.temp_aa;
 create temporary table csx_tmp.temp_aa as 
 select sdt,order_no,province_code,province_name,

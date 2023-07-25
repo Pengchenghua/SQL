@@ -41,13 +41,13 @@ select
     case when a.channel in ('1','7','9') then '1'
         else a.channel
         end channel,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
         end channel_name,
        case when a.channel='7' then 'BBC'
-            when ( a.channel='1' and  attribute_code=3) then '贸易客户'
+            when ( a.channel='1' and  attribute_code=3) then '贸易'
             when ( a.channel='1' and order_kind='WELFARE') then '福利单'
-            when ( a.channel='1' and attribute_code=5) then '合伙人客户'
+            when ( a.channel='1' and attribute_code=5) then '合伙人'
             when  a.channel in ('1') then '日配单'
            -- when a.channel not in ('1','7') then a.channel_name
             else  a.channel_name
@@ -88,13 +88,13 @@ group by
     case when a.channel in ('1','7','9') then '1'
         else a.channel
         end ,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
         end ,
      case when a.channel='7' then 'BBC'
-            when ( a.channel='1' and  attribute_code=3) then '贸易客户'
+            when ( a.channel='1' and  attribute_code=3) then '贸易'
             when ( a.channel='1' and order_kind='WELFARE') then '福利单'
-            when ( a.channel='1' and attribute_code=5) then '合伙人客户'
+            when ( a.channel='1' and attribute_code=5) then '合伙人'
             when  a.channel in ('1') then '日配单'
            -- when a.channel not in ('1','7') then a.channel_name
             else  a.channel_name
@@ -114,13 +114,13 @@ select
    case when a.channel in ('1','7','9') then '1'
         else a.channel
         end channel,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
         end channel_name,
      case when a.channel='7' then 'BBC'
-            when ( a.channel='1' and  attribute_code=3) then '贸易客户'
+            when ( a.channel='1' and  attribute_code=3) then '贸易'
             when ( a.channel='1' and order_kind='WELFARE') then '福利单'
-            when ( a.channel='1' and attribute_code=5) then '合伙人客户'
+            when ( a.channel='1' and attribute_code=5) then '合伙人'
             when  a.channel in ('1') then '日配单'
            -- when a.channel not in ('1','7') then a.channel_name
             else  a.channel_name
@@ -161,13 +161,13 @@ group by
     case when a.channel in ('1','7','9') then '1'
         else a.channel
         end ,
-    case when a.channel in ('1','7','9') then '大客户'
+    case when a.channel in ('1','7','9') then '大'
         else a.channel_name
         end ,
      case when a.channel='7' then 'BBC'
-            when ( a.channel='1' and  attribute_code=3) then '贸易客户'
+            when ( a.channel='1' and  attribute_code=3) then '贸易'
             when ( a.channel='1' and order_kind='WELFARE') then '福利单'
-            when ( a.channel='1' and attribute_code=5) then '合伙人客户'
+            when ( a.channel='1' and attribute_code=5) then '合伙人'
             when  a.channel in ('1') then '日配单'
            -- when a.channel not in ('1','7') then a.channel_name
             else  a.channel_name

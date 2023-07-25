@@ -35,9 +35,9 @@ select
 	a.dc_code,
 	a.dc_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end channel_name ,
 	customer_no,
 	customer_name,
@@ -81,9 +81,9 @@ where
 group by province_code ,
 	province_name,
 	case when channel in ('5','6') and customer_no like 'S%' then '商超'
-		when (channel in ('5','6') and customer_no not like 'S%' ) then '大客户' 
+		when (channel in ('5','6') and customer_no not like 'S%' ) then '大' 
 		when channel in ('2') then '商超'
-		else '大客户' 
+		else '大' 
 		end ,
 	customer_no,
 	customer_name,

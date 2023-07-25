@@ -30,10 +30,10 @@ period_amt          decimal(26,6)     comment '期末库存额',
 day_turnover        decimal(26,6)     comment '周转天数',
 negative_sku        decimal(26,6) 	  comment '负库存SKU',
 receive_amt         decimal(26,6)     comment '入库金额',
-shop_dept_cust     decimal(26,6)      comment '销售商超客户数',
-big_dept_cust      decimal(26,6)      comment '销售大客户数',
-sale_cust_ratio    decimal(26,6)      comment '大客户数占比 销售客户数/大客户总数',
-big_cust           decimal(26,6)      comment '大客户总数'
+shop_dept_cust     decimal(26,6)      comment '销售商超数',
+big_dept_cust      decimal(26,6)      comment '销售大数',
+sale_cust_ratio    decimal(26,6)      comment '大数占比 销售数/大总数',
+big_cust           decimal(26,6)      comment '大总数'
 ) comment '省区销售看板'
 partitioned by (sdt string comment'日期分区')
 stored as parquet

@@ -1,14 +1,14 @@
 --★★★华西大区日报需求：销售主管业绩日报
---★★★按照大区、省区、城市、渠道、3级主管、1级主管、业绩分类（下方规则）等维度的新老客户月至今业绩
+--★★★按照大区、省区、城市、渠道、3级主管、1级主管、业绩分类（下方规则）等维度的新老月至今业绩
 
 --说明：分类规则遇到同时属于两个类别时，归到先判断的规则（序号小的）
 --一、B端+BBC分类规则：
---1、合伙人：（B端+BBC），CRM中客户属性为合伙人的，本月以最新的为准，上月用上月最后一天为准
+--1、合伙人：（B端+BBC），CRM中属性为合伙人的，本月以最新的为准，上月用上月最后一天为准
 --2、BBC：渠道为企业购的	
---3、福利：订单标识为福利单的，与客户属性无关  
---4、贸易：客户属性为贸易客户
---5、商贸批发和其他：客户属性为商贸批发客户、战略客户等（非福利客户与日配的）
---6、日配：总业绩减去以上剩下的，客户属性可能为福利客户或日配客户
+--3、福利：订单标识为福利单的，与属性无关  
+--4、贸易：属性为贸易
+--5、商贸批发和其他：属性为商贸批发、战略等（非福利与日配的）
+--6、日配：总业绩减去以上剩下的，属性可能为福利或日配
 --
 --二、M端分类规则：
 --1、红旗/中百：'103097','103903','104842'
@@ -18,7 +18,7 @@
 --5、其他：业态不为以上几类的
 --
 --以上均可通过日报中“明细数据”sheet中，“最终分类”列前的几列灰色字段查看与“最终分类”对应关系；
---"三级主管姓名"	"一级主管姓名"均为CRM中关联客户编号取得，分别为城市经理和销售主管。
+--"三级主管姓名"	"一级主管姓名"均为CRM中关联编号取得，分别为城市经理和销售主管。
 
  
 -- 昨日、昨日月1日， 上月同日，上月1日，取近两月数据和战报一致
@@ -37,7 +37,7 @@ set table_sale =csx_dw.dws_sale_r_d_customer_sale;
 set table_customer =csx_dw.dws_crm_w_a_customer_m_v1;
 
 
---临时表1：客户最小最大成交日期
+--临时表1：最小最大成交日期
 drop table csx_tmp.tmp_sale_cust_min_max_01;
 create temporary table csx_tmp.tmp_sale_cust_min_max_01
 as 
@@ -50,7 +50,7 @@ and sales_type in('qyg','sapqyg','sapgc','sc','bbc')
 and (order_no not in ('OC200529000043','OC200529000044','OC200529000045','OC200529000046') or order_no is null)
 group by customer_no;
 
--- 临时表2：客户销售明细
+-- 临时表2：销售明细
 drop table csx_tmp.tmp_supervisor_day_01;
 create temporary table csx_tmp.tmp_supervisor_day_01
 as 
@@ -75,16 +75,16 @@ select
 	,y.city_group_manager_name,
 	a.order_kind
 	,d.sales_belong_flag
-	,if( b.attribute='合伙人客户','城市服务商',null) is_partner
+	,if( b.attribute='合伙人','城市服务商',null) is_partner
 	,b.attribute_0
 	,g.ascription_type_name,
 	--b.attribute,
 	--case when a.channel in ('1','7') and a.order_kind='WELFARE' then '福利' else b.attribute end attribute,
 	case when a.channel ='7' then 'BBC'	
-		 when a.channel in ('1','9') and b.attribute='合伙人客户' then '城市服务商' 
-	     when a.channel in ('1','9') and b.attribute='贸易客户'  then '贸易客户' 
+		 when a.channel in ('1','9') and b.attribute='合伙人' then '城市服务商' 
+	     when a.channel in ('1','9') and b.attribute='贸易'  then '贸易' 
 		 when a.channel in ('1','9') and a.order_kind='WELFARE' then '福利单'  
-		 when a.channel in ('1','9') and b.attribute not in('合伙人客户','贸易客户') and a.order_kind<>'WELFARE' then '日配单'
+		 when a.channel in ('1','9') and b.attribute not in('合伙人','贸易') and a.order_kind<>'WELFARE' then '日配单'
 		 when a.channel ='2' and d.sales_belong_flag ='8_云超MINI' then '云超-MINI' 
 		 when a.channel ='2' and d.sales_belong_flag in ('2_云创会员店','6_云创到家') then '云创-永辉生活' 
 		 when a.channel ='2' and d.sales_belong_flag like '%云超%' then '云超-门店' 	 
@@ -119,7 +119,7 @@ left join
 	(select customer_no,customer_name,third_supervisor_work_no,first_supervisor_work_no,third_supervisor_name
 	,first_supervisor_name,attribute attribute_0,
 		regexp_replace(split(sign_time, ' ')[0], '-', '') sign_time,
-		if(channel_code in('1','7','9'),case when attribute is null then '日配客户'
+		if(channel_code in('1','7','9'),case when attribute is null then '日配'
 										 else attribute end,
 									'') attribute
 	--from csx_dw.dws_crm_w_a_customer_m_v1
@@ -267,7 +267,7 @@ from
 		,channel_name_2 channel_name,third_supervisor_work_no
 		,third_supervisor_name,first_supervisor_work_no,first_supervisor_name,sale_group,
 		
-		count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end) old_cust_count,  --老客-累计客户数
+		count(distinct case when smonth='本月' and is_new_sale='否' then customer_no end) old_cust_count,  --老客-累计数
 		sum(case when smonth='本月' and is_new_sale='否' then Md_sales_value end)/10000 old_Md_sales_value, --老客-昨日销售额
 	sum(case when smonth='本月' and is_new_sale='否' then Md_profit end)/10000 old_Md_profit, --老客-昨日毛利额
 				
@@ -277,7 +277,7 @@ from
 	sum(case when smonth='环比月' and is_new_sale='否' then profit end)/10000 old_H_profit,  --老客-环比累计毛利额
 	sum(case when smonth='本月' and is_new_sale='否' then front_profit end)/10000 old_M_front_profit,  --老客-累计前端毛利额
 
-		count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end) new_cust_count,  --新客-累计客户数
+		count(distinct case when smonth='本月' and is_new_sale='是' then customer_no end) new_cust_count,  --新客-累计数
 		sum(case when smonth='本月' and is_new_sale='是' then Md_sales_value end)/10000 new_Md_sales_value, --新客-昨日销售额
 	sum(case when smonth='本月' and is_new_sale='是' then Md_profit end)/10000 new_Md_profit, --新客-昨日毛利额
 		sum(case when smonth='本月' and is_new_sale='是' then sales_value end)/10000 new_M_sales_value,  --新客-累计销售额
@@ -286,7 +286,7 @@ from
 	sum(case when smonth='环比月' and is_new_sale='是' then profit end)/10000 new_H_profit,  --新客-环比累计毛利额
 	sum(case when smonth='本月' and is_new_sale='是' then front_profit end)/10000 new_M_front_profit,  --新客-累计前端毛利额
 
-		count(distinct case when smonth='本月'  then customer_no end) all_cust_count,  --汇总-累计客户数
+		count(distinct case when smonth='本月'  then customer_no end) all_cust_count,  --汇总-累计数
 		sum(case when smonth='本月' then Md_sales_value end)/10000 ALL_Md_sales_value, --汇总-昨日销售额
 	sum(case when smonth='本月' then Md_profit end)/10000 ALL_Md_profit, --汇总-昨日毛利额		
 		sum(case when smonth='本月' then sales_value end)/10000 ALL_M_sales_value,  --汇总-累计销售额
@@ -375,7 +375,7 @@ create table csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total(
   `first_supervisor_name` string comment '一级主管姓名',
   `sale_group` string comment '分类',  
   `old_target_sales_value` decimal(19,6) comment '老客目标销售额',   
-  `old_cust_count` decimal(10,4) comment '老客累计客户数',
+  `old_cust_count` decimal(10,4) comment '老客累计数',
   `old_Md_sales_value` decimal(19,6) comment '老客昨日销售额',
   `old_Md_profit` decimal(19,6) comment '老客昨日毛利额',
   `old_M_sales_value` decimal(19,6) comment '老客累计销售额',  
@@ -384,7 +384,7 @@ create table csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total(
   `old_H_profit` decimal(19,6) comment '老客环比累计毛利额',
   `old_M_front_profit` decimal(19,6) comment '老客累计前端毛利额',
   `new_target_sales_value` decimal(19,6) comment '新客目标销售额', 
-  `new_cust_count` decimal(10,4) comment '新客累计客户数',  
+  `new_cust_count` decimal(10,4) comment '新客累计数',  
   `new_Md_sales_value` decimal(19,6) comment '新客昨日销售额',
   `new_Md_profit` decimal(19,6) comment '新客昨日毛利额',
   `new_M_sales_value` decimal(19,6) comment '新客累计销售额',
@@ -393,7 +393,7 @@ create table csx_tmp.ads_fr_sale_r_d_report_supervisor_day_total(
   `new_H_profit` decimal(19,6) comment '新客环比累计毛利额',
   `new_M_front_profit` decimal(19,6) comment '新客累计前端毛利额',
   `all_target_sales_value` decimal(19,6) comment '汇总目标销售额', 
-  `all_cust_count` decimal(10,4) comment '汇总累计客户数', 
+  `all_cust_count` decimal(10,4) comment '汇总累计数', 
   `ALL_Md_sales_value` decimal(19,6)  comment '汇总昨日销售额',
   `all_Md_profit` decimal(19,6)  comment '汇总昨日毛利额',
   `ALL_M_sales_value` decimal(19,6) comment '汇总累计销售额',  

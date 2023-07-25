@@ -142,8 +142,8 @@ select
     sum(  last_profit  ) as last_frozen_profit,
     sum(case when business_type_code='1'   then last_sales_value end)  last_frozen_daily_sales,
     sum(case when business_type_code='1'   then last_profit end ) last_frozen_daily_profit,
-    count(distinct case when note='1' and  business_type_code='1' then customer_no end ) as daily_cust_number, --日配成交客户数
-    count(distinct case when note='2' and  business_type_code='1' then customer_no end )as  last_daily_cust_number,  --环比日配冻品成交客户数
+    count(distinct case when note='1' and  business_type_code='1' then customer_no end ) as daily_cust_number, --日配成交数
+    count(distinct case when note='2' and  business_type_code='1' then customer_no end )as  last_daily_cust_number,  --环比日配冻品成交数
     grouping__id 
 from csx_tmp.tmp_dp_sale a
 where 1=1
@@ -254,7 +254,7 @@ grouping sets
     )
 ;
   
--- 日配总客户数
+-- 日配总数
 drop table if exists  csx_tmp.tmp_dp_sale_02;
 create  temporary table csx_tmp.tmp_dp_sale_02 as 
 select 
@@ -265,7 +265,7 @@ select
     province_name,
     city_group_code,
     city_group_name,
-    count(distinct case when  note='1'  and business_type_code='1' then customer_no end) as b_daily_cust_number,    --B端日配客户数
+    count(distinct case when  note='1'  and business_type_code='1' then customer_no end) as b_daily_cust_number,    --B端日配数
     count(distinct case when  note='2'  and business_type_code='1' then customer_no end ) as last_b_daily_cust_number,
     -- sum(frozen_sales_qty) as frozen_sales_qty,
     -- sum(frozen_sales) as frozen_sales,
@@ -365,8 +365,8 @@ select
     last_frozen_profit,
     last_frozen_daily_sales,
     last_frozen_daily_profit,
-    daily_cust_number, --日配成交客户数
-    last_daily_cust_number,  --环比日配冻品成交客户数
+    daily_cust_number, --日配成交数
+    last_daily_cust_number,  --环比日配冻品成交数
     b_daily_cust_number,
     last_b_daily_cust_number,
     b_sales_value,
@@ -651,12 +651,12 @@ select
     frozen_profit_day,          --30天毛利额
     b.final_qty,                --期末库存量
     b.final_amt,                --期末库存额
-    daily_cust_number as daily_sales_cust_number,          --日配成交客户数
-    last_daily_cust_number as last_daily_sales_cust_number,     --环比日配冻品成交客户数
-    b_daily_cust_number as b_daily_cust_number,        --B端日配客户成交数
-    last_b_daily_cust_number as last_b_daily_cust_number,   --B端环期日配客户成交数
-    daily_cust_number/b_daily_cust_number as daily_cust_penetration_rate,   --日配成交客户渗透率：日配客户
-    last_daily_cust_number/last_b_daily_cust_number as last_daily_cust_penetration_rate,   --日配成交客户渗透率：日配客户
+    daily_cust_number as daily_sales_cust_number,          --日配成交数
+    last_daily_cust_number as last_daily_sales_cust_number,     --环比日配冻品成交数
+    b_daily_cust_number as b_daily_cust_number,        --B端日配成交数
+    last_b_daily_cust_number as last_b_daily_cust_number,   --B端环期日配成交数
+    daily_cust_number/b_daily_cust_number as daily_cust_penetration_rate,   --日配成交渗透率：日配
+    last_daily_cust_number/last_b_daily_cust_number as last_daily_cust_penetration_rate,   --日配成交渗透率：日配
     (daily_cust_number/b_daily_cust_number)-(last_daily_cust_number/last_b_daily_cust_number) as diff_daily_cust_penetration_rate,
     frozen_daily_sales/B_daily_sale as frozen_daily_sales_ratio, --日配占比
     last_frozen_daily_sales/last_B_daily_sale as last_frozen_daily_sales_ratio, --环期日配占比
@@ -730,12 +730,12 @@ select
     frozen_profit_day,          --30天毛利额
     final_qty,                --期末库存量
     final_amt,                --期末库存额
-    daily_sales_cust_number,          --日配成交客户数
-    last_daily_sales_cust_number,     --环比日配冻品成交客户数
-    b_daily_cust_number,        --B端日配客户成交数
-    last_b_daily_cust_number,   --B端环期日配客户成交数
-    daily_sales_cust_number/b_daily_cust_number as daily_cust_penetration_rate,   --日配成交客户渗透率：日配客户
-    last_daily_sales_cust_number/last_b_daily_cust_number as last_daily_cust_penetration_rate,   --日配成交客户渗透率：日配客户
+    daily_sales_cust_number,          --日配成交数
+    last_daily_sales_cust_number,     --环比日配冻品成交数
+    b_daily_cust_number,        --B端日配成交数
+    last_b_daily_cust_number,   --B端环期日配成交数
+    daily_sales_cust_number/b_daily_cust_number as daily_cust_penetration_rate,   --日配成交渗透率：日配
+    last_daily_sales_cust_number/last_b_daily_cust_number as last_daily_cust_penetration_rate,   --日配成交渗透率：日配
     (daily_sales_cust_number/b_daily_cust_number)-(last_daily_sales_cust_number/last_b_daily_cust_number) as diff_daily_cust_penetration_rate,
     frozen_daily_sales/B_daily_sale as frozen_daily_sales_ratio, --日配占比
     last_frozen_daily_sales/last_B_daily_sale as last_frozen_daily_sales_ratio, --环期日配占比
@@ -796,13 +796,13 @@ CREATE TABLE `csx_tmp.report_sale_r_d_frozen_classify_ratio_fr`(
   `frozen_profit_day` decimal(38,6) COMMENT '30天毛利额', 
   `final_qty` decimal(38,6) COMMENT '期末库存量', 
   `final_amt` decimal(38,6) COMMENT '期末库存额', 
-  `daily_sales_cust_number` bigint COMMENT '日配成交客户数', 
-  `last_daily_sales_cust_number` bigint COMMENT '日配环期成交客户数', 
-  `b_daily_cust_number` bigint COMMENT 'B端日配成交客户', 
-  `last_b_daily_cust_number` bigint COMMENT 'B端日配环期成交客户', 
-  `daily_cust_penetration_rate` decimal(38,18) COMMENT '日配成交客户渗透率：日配客户/B端日配客户', 
-  `last_daily_cust_penetration_rate` decimal(38,18) COMMENT '环期日配成交客户渗透率：日配客户/B端日配客户', 
-  `diff_daily_cust_penetration_rate` decimal(38,18) COMMENT '日配成交客户渗透率差：当期渗透率-环期渗透率', 
+  `daily_sales_cust_number` bigint COMMENT '日配成交数', 
+  `last_daily_sales_cust_number` bigint COMMENT '日配环期成交数', 
+  `b_daily_cust_number` bigint COMMENT 'B端日配成交', 
+  `last_b_daily_cust_number` bigint COMMENT 'B端日配环期成交', 
+  `daily_cust_penetration_rate` decimal(38,18) COMMENT '日配成交渗透率：日配/B端日配', 
+  `last_daily_cust_penetration_rate` decimal(38,18) COMMENT '环期日配成交渗透率：日配/B端日配', 
+  `diff_daily_cust_penetration_rate` decimal(38,18) COMMENT '日配成交渗透率差：当期渗透率-环期渗透率', 
   `daily_sales_ratio` decimal(38,18) COMMENT '占比=小类行业销售额/B端行业销售额', 
   `last_daily_sales_ratio` decimal(38,18) COMMENT '占比=小类行业销售额/B端行业销售额', 
   `diff_daily_sale_ratio` decimal(38,18) COMMENT '占比差=当前占比-环期占比', 

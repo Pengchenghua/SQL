@@ -403,7 +403,7 @@ group by 	send_location_code,
 ;
 
 
--- 销售额大客户
+-- 销售额大
 -- select * from temp.p_wms_04;
 drop table if EXISTS temp.p_wms_04
 ;

@@ -25,8 +25,8 @@ select
   a.city_group_name,--城市组
   a.dc_code, --DC编码
   f.shop_name as dc_name,  --DC名称
-  a.customer_no,--客户编码
-  d.customer_name,--客户名称
+  a.customer_no,--编码
+  d.customer_name,--名称
   a.goods_code,--商品编码
   regexp_replace(regexp_replace(e.goods_name,'\n',''),'\r','') as goods_name,--商品名称
   e.unit,--单位
@@ -124,7 +124,7 @@ from
     )c on b.source_order_no = c.order_code and b.goods_code = c.goods_code
 	group by b.goods_code,b.credential_no,b.batch_no
   )c on a.goods_code = c.goods_code and a.credential_no = c.credential_no
-  --客户信息表
+  --信息表
   left outer join 
   (
     select 
@@ -335,8 +335,8 @@ CREATE TABLE `csx_tmp.tmp_sale_detail_abnormal_label`(
   `unit_name` string COMMENT '单位名称',
   `is_fact` string COMMENT '是否加工',
   `is_purchase` string COMMENT '是否有采购报价',
-  `customer_no` string COMMENT '客户编号',
-  `customer_name` string COMMENT '客户名称',
+  `customer_no` string COMMENT '编号',
+  `customer_name` string COMMENT '名称',
   `dc_code` string COMMENT '库存地点编码',
   `dc_name` string COMMENT '库存地点名称',
   `province_name` string COMMENT '战报省区名称',

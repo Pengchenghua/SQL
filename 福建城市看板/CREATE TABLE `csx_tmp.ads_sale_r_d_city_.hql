@@ -23,7 +23,7 @@ CREATE TABLE `csx_tmp.ads_sale_r_d_city_sales_fr`(
   `daily_negative_profit` decimal(26,6) COMMENT '负毛利金额', 
   `daily_often_cust_sale` decimal(26,6) COMMENT '昨日老客销售额，首次成交未在本月', 
   `daily_new_cust_sale` decimal(26,6) COMMENT '昨日新额销售额，首次成交在本月', 
-  `daily_sale_cust_num` bigint COMMENT '昨日成交客户数', 
+  `daily_sale_cust_num` bigint COMMENT '昨日成交数', 
   `month_plan_sale` decimal(26,6) COMMENT '月至今销售预算', 
   `month_sale_value` decimal(26,6) COMMENT '月至今销售额', 
   `real_month_sale_value` decimal(26,6) COMMENT '月至今销售额不含批发内购', 
@@ -38,11 +38,11 @@ CREATE TABLE `csx_tmp.ads_sale_r_d_city_sales_fr`(
   `month_negative_profit` decimal(26,6) COMMENT '负毛利额', 
   `month_often_cust_sale` decimal(26,6) COMMENT '月老客销售额', 
   `month_new_cust_sale` decimal(26,6) COMMENT '新客销售额', 
-  `month_sale_cust_num` bigint COMMENT '成交客户数', 
+  `month_sale_cust_num` bigint COMMENT '成交数', 
    `last_months_daily_sale` decimal(26,6) COMMENT '上月同日销售额', 
-  `daily_sign_cust_num` bigint comment '昨日新签约客户数',
+  `daily_sign_cust_num` bigint comment '昨日新签约数',
   `daily_sign_amount` decimal(26,6) COMMENT '昨日新签约合同金额',
-  `sign_cust_num` bigint COMMENT '本月新签约客户数',
+  `sign_cust_num` bigint COMMENT '本月新签约数',
   `sign_amount` decimal(26,6) COMMENT '本月签约金额', 
   `update_time` timestamp COMMENT '更新时间戳')
 COMMENT '城市组销售看板'

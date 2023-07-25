@@ -92,7 +92,7 @@ group by
 
 
 
--- 商品层级销售额/成交客户数
+-- 商品层级销售额/成交数
 drop table if exists csx_tmp.temp_sale_all_01;
 create temporary table csx_tmp.temp_sale_all_01 as 
 select
@@ -115,8 +115,8 @@ select
     sum(last_sales_qty) as last_goods_sales_qty,
     sum(last_sales_value) as last_goods_sales,
     sum(last_profit) as last_goods_profit,
-    count(distinct case when sales_value>0 then customer_no end ) as goods_cust_number, --商品成交客户数
-    count(distinct case when last_sales_value>0 then customer_no end )as last_goods_cust_number,  --商品环比冻品成交客户数
+    count(distinct case when sales_value>0 then customer_no end ) as goods_cust_number, --商品成交数
+    count(distinct case when last_sales_value>0 then customer_no end )as last_goods_cust_number,  --商品环比冻品成交数
     grouping__id
 from csx_tmp.tmp_dp_goods_sale a
 where classify_middle_code='B0304'
@@ -181,7 +181,7 @@ grouping sets
 ;
 
    
--- 总客户数
+-- 总数
 drop table if exists  csx_tmp.temp_sale_cust;
 create  temporary table csx_tmp.temp_sale_cust as 
 select 
@@ -407,14 +407,14 @@ select a.channel_name,
     last_goods_sales_qty,
     last_goods_sales,
     last_goods_profit,
-    goods_cust_number,                                  --商品成交客户数
-    last_goods_cust_number,                             --环期商品成交客户数
+    goods_cust_number,                                  --商品成交数
+    last_goods_cust_number,                             --环期商品成交数
     b.b_sales_value,                                     --B端销售额
     b.b_profit,                                         --B端销售毛利
-    b.b_cust_number,                                    --B端成交客户
+    b.b_cust_number,                                    --B端成交
     b.last_b_sales_value,                               --环期B端销售额
     b.last_b_profit,                                    --环期B端毛利额
-    b.last_b_cust_number,                               --环期B端成交客户
+    b.last_b_cust_number,                               --环期B端成交
     b.frozen_sales_qty,                                 --冻品销量
     b.frozen_sales,                                     --冻品销售额
     a.goods_sales/frozen_sales as goods_sales_ratio,    -- 商品销售/冻品销售占比
@@ -471,14 +471,14 @@ select
     last_goods_sales_qty,
     last_goods_sales,
     last_goods_profit,
-    goods_cust_number,                                  --商品成交客户数
-    last_goods_cust_number,                             --环期商品成交客户数
+    goods_cust_number,                                  --商品成交数
+    last_goods_cust_number,                             --环期商品成交数
     b_sales_value,                                     --B端销售额
     b_profit,                                         --B端销售毛利
-    b_cust_number,                                    --B端成交客户
+    b_cust_number,                                    --B端成交
     last_b_sales_value,                               --环期B端销售额
     last_b_profit,                                    --环期B端毛利额
-    last_b_cust_number,                               --环期B端成交客户
+    last_b_cust_number,                               --环期B端成交
     frozen_sales_qty,                                 --冻品销量
     frozen_sales,                                     --冻品销售额
     goods_sales/frozen_sales as goods_sales_ratio,    -- 商品销售/冻品销售占比
@@ -536,14 +536,14 @@ CREATE TABLE `csx_tmp.report_sale_r_d_frozen_goods_fr`(
   `last_goods_sales_qty` decimal(38,6) comment '环期商品销量', 
   `last_goods_sales` decimal(38,6) comment '环期商品销售额', 
   `last_goods_profit` decimal(38,6) comment '环期商品毛利额', 
-  `goods_cust_number` bigint comment '商品成交客户数', 
-  `last_goods_cust_number` bigint comment '商品成交客户数环期', 
+  `goods_cust_number` bigint comment '商品成交数', 
+  `last_goods_cust_number` bigint comment '商品成交数环期', 
   `b_sales_value` decimal(38,6) comment 'B端总销售额（剔除城市服务商）', 
   `b_profit` decimal(38,6) comment 'B端总毛利额（剔除城市服务商）', 
-  `b_cust_number` bigint comment 'B端成交客户数（剔除城市服务商）', 
+  `b_cust_number` bigint comment 'B端成交数（剔除城市服务商）', 
   `last_b_sales_value` decimal(38,6) comment '环期B端总销售额（剔除城市服务商）', 
   `last_b_profit` decimal(38,6) comment '环期B端总毛利额（剔除城市服务商）', 
-  `last_b_cust_number` bigint comment '环期B端成交客户数（剔除城市服务商）', 
+  `last_b_cust_number` bigint comment '环期B端成交数（剔除城市服务商）', 
   `frozen_sales_qty` decimal(38,6) comment '冻品总销售量', 
   `frozen_sales` decimal(38,6) comment '冻品总销售额', 
   `goods_sales_ratio` decimal(38,6) comment '商品销售额占比=商品销售额/冻品销售额', 
@@ -551,8 +551,8 @@ CREATE TABLE `csx_tmp.report_sale_r_d_frozen_goods_fr`(
   `goods_ring_sales_ratio` decimal(38,6) comment '商品销售额环比增长率', 
   `goods_profit_rate` decimal(38,6) comment '冻品毛利率', 
   `goods_diff_profit_rate` decimal(38,6) comment '商品环比毛利率差', 
-  `cust_penetration_rate` decimal(38,6) comment '商品客户渗透率', 
-  `last_cust_penetration_rate` decimal(38,6) comment '环期客户渗透率', 
+  `cust_penetration_rate` decimal(38,6) comment '商品渗透率', 
+  `last_cust_penetration_rate` decimal(38,6) comment '环期渗透率', 
   `diff_cust_penetration_rate` decimal(38,6) comment '环期渗透率差', 
   `b_sales_ratio` decimal(38,6) comment '商品销售占比=商品销售额/B端销售额', 
   `last_b_sales_ratio` decimal(38,6) comment '环期商品销售占比=商品销售额/B端销售额', 

@@ -1,7 +1,7 @@
     -- 帐龄【20220512】切换底层
      create table  csx_tmp.ads_fr_r_d_account_receivables_scar_new
      (
-      channel_name string COMMENT '客户类型', 
+      channel_name string COMMENT '类型', 
 	  `hkont` string COMMENT '科目代码', 
 	  `account_name` string COMMENT '科目名称', 
 	  `comp_code` string COMMENT '公司代码', 
@@ -13,9 +13,9 @@
 	  `sales_city` string COMMENT '销售城市名称', 
 	  `prctr` string COMMENT '利润中心', 
 	  `shop_name` string COMMENT '利润中心名称', 
-	  `customer_no` string COMMENT '客户编码', 
-	  `customer_name` string COMMENT '客户名称', 
-       attribute_desc string COMMENT '客户属性',
+	  `customer_no` string COMMENT '编码', 
+	  `customer_name` string COMMENT '名称', 
+       attribute_desc string COMMENT '属性',
        first_category_code string COMMENT '第一分类编码',
 	  `first_category` string COMMENT '第一分类', 
       second_category_code string COMMENT '第二分类编码',
@@ -48,8 +48,8 @@
 	  `ac_over3y` decimal(26,4) COMMENT '逾期3年账款', 
 	  `last_sales_date` string COMMENT '最后一次销售日期', 
 	  `last_to_now_days` string COMMENT '最后一次销售距今天数', 
-	  `customer_active_sts_code` string COMMENT '客户活跃状态标签编码（1 活跃客户；2 沉默客户；3预流失客户；4 流失客户）', 
-	  `customer_active_sts` string COMMENT '客户活跃状态名称', 
+	  `customer_active_sts_code` string COMMENT '活跃状态标签编码（1 活跃；2 沉默；3预流失；4 流失）', 
+	  `customer_active_sts` string COMMENT '活跃状态名称', 
 	  `ac_all_month_last_day` decimal(26,4) COMMENT '月底全部账款', 
 	  `ac_wdq_month_last_day` decimal(26,4) COMMENT '月底未到期账款', 
 	  `max_overdue_day` string COMMENT '最大逾期天数', 
@@ -165,7 +165,7 @@ LEFT JOIN
 		city_code,
 		city_name
 	from 
-		csx_dw.dws_crm_w_a_customer_company   --客户账期表
+		csx_dw.dws_crm_w_a_customer_company   --账期表
 	where 
 		sdt='current'
 ) d on x.customer_code=d.customer_no and x.company_code=d.company_code
@@ -281,10 +281,10 @@ LEFT JOIN
         last_sales_date,
         last_to_now_days,
          customer_active_status_code  customer_active_sts_code,
-    case when  customer_active_status_code = 1 then '活跃客户'
-	    when customer_active_status_code = 2 then '沉默客户'
-	    when customer_active_status_code = 3 then '预流失客户'
-	    when customer_active_status_code = 4 then '流失客户'
+    case when  customer_active_status_code = 1 then '活跃'
+	    when customer_active_status_code = 2 then '沉默'
+	    when customer_active_status_code = 3 then '预流失'
+	    when customer_active_status_code = 4 then '流失'
 	    else '其他'
 	end  as  customer_active_sts
 	from csx_dw.dws_sale_w_a_customer_company_active

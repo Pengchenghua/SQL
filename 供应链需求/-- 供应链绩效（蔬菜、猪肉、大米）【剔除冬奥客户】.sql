@@ -1,4 +1,4 @@
--- 供应链品类竞赛【剔除冬奥客户】
+-- 供应链品类竞赛【剔除冬奥】
 set edt ='${enddate}';
 set edate=regexp_replace(${hiveconf:edt},'-','');
 set sdate=regexp_replace(trunc(${hiveconf:edt},'MM'),'-','');
@@ -160,7 +160,7 @@ group by province_code,
     ;
     
     
--- 品类成交客户数
+-- 品类成交数
 
 drop table  csx_tmp.temp_cust_01;
 create temporary table csx_tmp.temp_cust_01 as 
@@ -212,7 +212,7 @@ from csx_tmp.temp_sale_cl_03
 
 ;
 
--- 全国客户成交数
+-- 全国成交数
 drop table  csx_tmp.temp_cust_02;
 create temporary table csx_tmp.temp_cust_02 as 
 select 
@@ -425,7 +425,7 @@ SELECT a.province_code,
      -- 全国销售增长
     diff_qg_sale_rate,
     dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_qg_sale_rate desc) as diff_qg_sale_rate_rank,
-     --客户渗透率高于全国
+     --渗透率高于全国
      diff_cust_r_rate,
       dense_rank()over(PARTITION BY classify_middle_code ORDER BY diff_cust_r_rate desc) as diff_qg_cust_rate_rank,
      --OEM全国占比
@@ -473,7 +473,7 @@ SELECT a.province_code,
      profit_rate-all_profit_rate  as diff_qg_profit_rate,
      -- 全国销售增长
      sales_growth_rate-all_sales_growth_rate as diff_qg_sale_rate,
-     --客户渗透率高于全国
+     --渗透率高于全国
      cust_p_rate-all_qg_p_rate as diff_cust_r_rate,
      --OEM全国占比
     oem_sale_rate-all_oem_sale_ratio as diff_oem_sale_rate,
@@ -556,7 +556,7 @@ SELECT a.province_code,
      -- 销售环比高于或等于全国销售增长
      diff_qg_sale_rate,
      diff_qg_sale_rate_rank,
-     --客户渗透率高于全国
+     --渗透率高于全国
      diff_cust_r_rate,
       diff_qg_cust_rate_rank,
      --OEM全国占比
@@ -615,7 +615,7 @@ SELECT a.province_code,
          when diff_profit_rate_rank=2 then 20
          when diff_profit_rate_rank=3 then 10 
          else 0 end diff_profit_rate_rank_intrgral,    --毛利率环比增长率排名积分35、20、10
-      --客户渗透率高于全国
+      --渗透率高于全国
      diff_cust_r_rate,
      case when diff_cust_r_rate>=0 then 5 else 0 end diff_cust_r_rate_integral,         --渗透率高于全国得5分 
     cust_p_rate_rank,                                   --渗透率比增长率排名

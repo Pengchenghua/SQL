@@ -1,4 +1,4 @@
---福利单-中台已直接处理好(客户单品门店层级直接有采购报价销售成本)但库存移动平均价，销售价格需取销售表，或自己计算
+--福利单-中台已直接处理好(单品门店层级直接有采购报价销售成本)但库存移动平均价，销售价格需取销售表，或自己计算
 /*select a.customer_number,a.customer_name,a.warehouse_code
 ,a.delivery_date,a.query_time,a.query_user_id,a.query_user_name,a.quotation_time
 ,a.quote_user_id,a.quote_user_name,a.valid_begin_time
@@ -51,9 +51,9 @@ select
   order_kind,
   --订单类型：NORMAL-普通单，WELFARE-福利单',
   sap_cus_code cust_id,
-  --sap客户编码
+  --sap编码
   sap_sub_cus_code,
-  --sap子客户编码
+  --sap子编码
   product_code goodsid,
   --商品编码
   self_product_name,
@@ -122,9 +122,9 @@ select
   a.order_kind,
   --订单类型：NORMAL-普通单，WELFARE-福利单'
   cust_id,
-  --sap客户编码
+  --sap编码
   sap_sub_cus_code,
-  --sap子客户编码
+  --sap子编码
   goodsid,
   --商品编码
   self_product_name,
@@ -225,9 +225,9 @@ select
   order_kind,
   --订单类型：NORMAL-普通单，WELFARE-福利单'
   cust_id,
-  --sap客户编码
+  --sap编码
   sap_sub_cus_code,
-  --sap子客户编码
+  --sap子编码
   a.goodsid,
   --商品编码
   self_product_name,
@@ -314,9 +314,9 @@ select
   a.order_kind,
   --订单类型：NORMAL-普通单，WELFARE-福利单'
   a.cust_id,
-  --sap客户编码
+  --sap编码
   a.sap_sub_cus_code,
-  --sap子客户编码
+  --sap子编码
   a.goodsid,
   --商品编码
   self_product_name,
@@ -371,9 +371,9 @@ from (
       order_kind,
       --订单类型：NORMAL-普通单，WELFARE-福利单'
       cust_id,
-      --sap客户编码
+      --sap编码
       sap_sub_cus_code,
-      --sap子客户编码
+      --sap子编码
       goodsid,
       --商品编码
       tax_rate,
@@ -837,8 +837,8 @@ id string comment '主键ID',
   prefer_dc_code string comment '库存dc编码',
   receive_mode string comment '收货方式',
   order_kind string comment '订单类型',
-  cust_id string comment '客户编码',
-  sap_sub_cus_code string comment 'SAP买家客户子账号',
+  cust_id string comment '编码',
+  sap_sub_cus_code string comment 'SAP买家子账号',
   goodsid string comment '商品编码',
   tax_rate decimal(26, 4) comment '税费比例',
   origin_price decimal(26, 4) comment '正常售价',

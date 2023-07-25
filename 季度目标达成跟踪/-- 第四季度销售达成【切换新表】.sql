@@ -72,13 +72,13 @@ from
           province_code,
           sum(sales_value) as sales_value,
           sum(profit) as profit,
-          sum(case when attribute_code ='1' then a.sales_value end ) as daily_cust_sale,  --日配客户
+          sum(case when attribute_code ='1' then a.sales_value end ) as daily_cust_sale,  --日配
           sum(case when a.business_type_code ='1' then a.sales_value end ) as daily_match_sale,  --日配单销售额
           0 last_sale,
           0 last_profit,
           count(DISTINCT a.customer_no) as sale_cust_num,
-          count(distinct case when attribute_code ='1' then a.customer_no end ) as sale_daily_cust_num,  --日配客户数
-          count(DISTINCT case when a.business_type_code='1' then a.customer_no end ) as daily_order_cust,    --日配单客户数
+          count(distinct case when attribute_code ='1' then a.customer_no end ) as sale_daily_cust_num,  --日配数
+          count(DISTINCT case when a.business_type_code='1' then a.customer_no end ) as daily_order_cust,    --日配单数
           0 last_sale_cust_num,
           0 plan_cust_num
    FROM csx_dw.dws_sale_r_d_detail a 
@@ -523,7 +523,7 @@ ORDER BY case when  region_code='2' then 1
 
 
  
--- 亏损客户
+-- 亏损
 SELECT 
        region_code,
        region_name,

@@ -1,5 +1,5 @@
 
---根据业务属性关联客户
+--根据业务属性关联
 --新客销售统计
 select mon, region_code,region_name,province_name,a.business_type_code,a.business_type_name,a.customer_no,sales_value,first_order_date
 from
@@ -21,7 +21,7 @@ where b.customer_no is not null
 -- and a.business_type_code='6'
 ;
 
---按照客户关联客户销售
+--按照关联销售
 select mon, region_code,region_name,province_name,a.business_type_code,a.business_type_name,a.customer_no,sales_value,first_order_date
 from
 (select substr(sdt,1,6) mon,region_code,region_name,province_name,channel_code,business_type_code,business_type_name,customer_no,sum(sales_value) sales_value

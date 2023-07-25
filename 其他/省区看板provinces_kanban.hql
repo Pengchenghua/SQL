@@ -129,7 +129,7 @@ from (
 	 -- workshop_code ,
 	  workshop_name ,
     CASE WHEN channel IN ('1','7','3') THEN '1'	else a.channel END channel,
-		CASE WHEN channel IN ('1','7','3') THEN '大客户'   WHEN channel IN ('2') then '商超' else a.channel_name END channel_name,
+		CASE WHEN channel IN ('1','7','3') THEN '大'   WHEN channel IN ('2') then '商超' else a.channel_name END channel_name,
 	customer_no,
 	goods_code,
 	case when division_code  in ('12','13','14') then '12' 
@@ -158,7 +158,7 @@ from (
       a.province_code,
 	  a.province_name,
      CASE WHEN channel IN ('1','7','3') THEN '1'	else a.channel END ,
-		CASE WHEN channel IN ('1','7','3') THEN '大客户'   WHEN channel IN ('2') then '商超' else a.channel_name END ,
+		CASE WHEN channel IN ('1','7','3') THEN '大'   WHEN channel IN ('2') then '商超' else a.channel_name END ,
 	customer_no,
 	goods_code,
 		case when division_code  in ('12','13','14') then '12' 
@@ -442,7 +442,7 @@ GROUP BY a.province_code,a.province_name
        
 ;
 
---计算商超/大客户销售
+--计算商超/大销售
 --select * from temp.factory_stock_06;
 drop table if exists temp.factory_stock_06;
 CREATE temporary table temp.factory_stock_06
@@ -497,7 +497,7 @@ temp.factory_sale_01 a
 GROUP BY province_code,province_name
 ;
 
--- 计算车间客户数
+-- 计算车间数
 drop table if exists temp.factory_cust_01;
 CREATE temporary table temp.factory_cust_01
 as 
@@ -505,27 +505,27 @@ select a.province_code,a.province_name,c.workshop_code,a.workshop_name,shop_dept
 mon_big_dept_cust from
 (select province_code,province_name,workshop_name,
   count( distinct case when channel_name ='商超'and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
+  count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
   where label='1'
 group by  province_code,workshop_name,province_name
 union all 
 select province_code,province_name,'工厂'workshop_name,
   count( distinct case when channel_name ='商超'and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
+  count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
   where label='1'
 group by  province_code,province_name
 )a
 left join 
 (select province_code,province_name,
-  count( distinct case when channel_name ='大客户' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
+  count( distinct case when channel_name ='大' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
   where label='1'
 group by  province_code,province_name) b on a.province_code=b.province_code and a.province_name=b.province_name
 left join 
 (select distinct workshop_code,workshop_name from csx_dw.factory_bom where sdt=regexp_replace(date_sub(current_date(),1),'-','')) c on a.workshop_name=c.workshop_name
 ;
---计算部类客户数
+--计算部类数
 drop table if exists temp.factory_cust_02;
 CREATE temporary table temp.factory_cust_02
 as 
@@ -536,25 +536,25 @@ round(big_dept_cust/big_cust,4) sale_cust_ratio ,
 big_cust,mon_big_dept_cust from
 (select province_code,province_name,bd_id,bd_name,
   count( distinct case when channel_name ='商超' and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
+  count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
   from temp.factory_sale
 group by  province_code,bd_id,bd_name,province_name
 union all 
 select province_code,province_name,'00'bd_id,'物流'bd_name,
   count( distinct case when channel_name ='商超' and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
+  count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
   from temp.factory_sale
 group by  province_code,province_name
 )a
 left join 
 (select province_code,province_name,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
 group by  province_code,province_name) b on a.province_code=b.province_code and a.province_name=b.province_name
 ;
  
---  --计算部类汇总客户数
+--  --计算部类汇总数
 -- drop table if exists temp.factory_cust_03;
 -- CREATE temporary table temp.factory_cust_03
 -- as  
@@ -565,16 +565,16 @@ group by  province_code,province_name) b on a.province_code=b.province_code and 
 -- big_cust,mon_big_dept_cust from
 -- (select nvl(province_code,'')province_code,province_name,channel,channel_name,
 --   count( distinct case when channel_name ='商超' and sale!=0 then customer_no end) as shop_dept_cust,
---   count( distinct case when channel_name ='大客户'and sale!=0 then customer_no end) as big_dept_cust,
---   count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
+--   count( distinct case when channel_name ='大'and sale!=0 then customer_no end) as big_dept_cust,
+--   count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust 
 -- from temp.factory_sale
 -- group by  province_code,province_name,channel,channel_name)a
 -- left join 
 -- (select nvl(province_code,'') province_code,province_name,
---   count( distinct case when channel_name ='大客户' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
+--   count( distinct case when channel_name ='大' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
 -- group by  province_code,province_name) b on a.province_name=b.province_name
 -- ;
- --计算渠道客户数
+ --计算渠道数
 -- drop table if exists temp.factory_cust_04;
 -- CREATE temporary table temp.factory_cust_04
 -- as 
@@ -585,11 +585,11 @@ group by  province_code,province_name) b on a.province_code=b.province_code and 
 -- big_cust from
 -- (select province_code,province_name,channel,channel_name,
 --   count( distinct case when channel_name ='商超' and sale!=0 then customer_no end) as shop_dept_cust,
---   count( distinct case when channel_name ='大客户'and sale!=0 then customer_no end) as big_dept_cust  from temp.factory_sale
+--   count( distinct case when channel_name ='大'and sale!=0 then customer_no end) as big_dept_cust  from temp.factory_sale
 -- group by  province_code,province_name,channel,channel_name)a
 -- left join 
 -- (select province_code,province_name,
---   count( distinct case when channel_name ='大客户' then customer_no end) as big_cust  from temp.factory_sale
+--   count( distinct case when channel_name ='大' then customer_no end) as big_cust  from temp.factory_sale
 -- group by  province_code,province_name) b on a.province_code=b.province_code and a.province_code=b.province_name
 -- ;
 -- 工厂销售
@@ -860,7 +860,7 @@ FROM
 0 negative_value,
 0 	receive_amt,
   count( distinct case when channel_name ='商超' and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust ,
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust ,
    0 sale_cust_ratio,
   0 big_cust,
   0 mon_big_dept_cust
@@ -887,7 +887,7 @@ union all
 0 negative_value,
 0 	receive_amt,
   count( distinct case when channel_name ='商超' and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust ,
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust ,
    0 sale_cust_ratio,
   0 big_cust,
   0 mon_big_dept_cust
@@ -960,7 +960,7 @@ GROUP BY province_code,province_name
 ;
 
 
--- 计算非加工客户数 temp.factory_no_02;
+-- 计算非加工数 temp.factory_no_02;
 drop table if exists temp.factory_no_02;
 CREATE temporary table temp.factory_no_02
 as 
@@ -968,14 +968,14 @@ select a.province_code,a.province_name,c.workshop_code,a.workshop_name,shop_dept
 mon_big_dept_cust from
 (select province_code,province_name,'非加工'workshop_name,
   count( distinct case when channel_name ='商超'and coalesce(sale,0)!=0 then customer_no end) as shop_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
-  count( distinct case when channel_name ='大客户'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
+  count( distinct case when channel_name ='大'and coalesce(sale,0)!=0 then customer_no end) as big_dept_cust,
+  count( distinct case when channel_name ='大'and coalesce(mom_sale,0)!=0 then customer_no end) as mon_big_dept_cust from temp.factory_sale 
   where label='0'
 group by  province_code,province_name
 )a
 left join 
 (select province_code,province_name,
-  count( distinct case when channel_name ='大客户' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
+  count( distinct case when channel_name ='大' and coalesce(sale,0)!=0 then customer_no end) as big_cust  from temp.factory_sale
   where label='0'
 group by  province_code,province_name) b on a.province_code=b.province_code and a.province_name=b.province_name
 left join 
@@ -1304,11 +1304,11 @@ group by a.province_code ,
   `negative_sku` decimal(26,6) COMMENT '负库存SKU', 
   negative_value decimal(26,6) comment '负库存金额',
   `receive_amt` decimal(26,6) COMMENT '入库金额', 
-  `shop_dept_cust` decimal(26,6) COMMENT '销售商超客户数', 
-  `big_dept_cust` decimal(26,6) COMMENT '销售大客户数', 
-  `sale_cust_ratio` decimal(26,6) COMMENT '大客户数占比 销售客户数/大客户总数', 
-  `big_cust` decimal(26,6) COMMENT '大客户总数', 
-  `mom_big_cust` decimal(26,6) COMMENT '环期客户数',
+  `shop_dept_cust` decimal(26,6) COMMENT '销售商超数', 
+  `big_dept_cust` decimal(26,6) COMMENT '销售大数', 
+  `sale_cust_ratio` decimal(26,6) COMMENT '大数占比 销售数/大总数', 
+  `big_cust` decimal(26,6) COMMENT '大总数', 
+  `mom_big_cust` decimal(26,6) COMMENT '环期数',
   reality_receive_qty decimal(26,6) COMMENT '实际产量物料计划使用数量',
   fact_qty	decimal(26,6) COMMENT '原料数量（领料-退料）即：实际产量物料计划使用数量（reality_receive_qty/fact_qty为出品率,1-出品率为损耗率）',
   fact_values 	decimal(26,6) COMMENT '产值',

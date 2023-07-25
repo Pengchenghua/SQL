@@ -1,5 +1,5 @@
 -- 20200825 增加DC用途及更改dctype 工厂 、仓库、门店
--- 20200825 调整销售业务类型，将客户直送、客户配送、一件代发 剔除，入库剔除客退入库、客户直送 03、货到即配 54
+-- 20200825 调整销售业务类型，将直送、配送、一件代发 剔除，入库剔除客退入库、直送 03、货到即配 54
 -- set mapreduce.job.reduces =80;
 set hive.execution.engine=tez;
 set tez.queue.name=caishixian;
@@ -43,7 +43,7 @@ group by
 ;
 
 
--- 剔除 18 客户配送、19客户直送、73一件代发 据号
+-- 剔除 18 配送、19直送、73一件代发 据号
 
 	
 --最近出库日期 20200807
@@ -65,7 +65,7 @@ GROUP BY
 
 		
 --末次入库日期及数量
--- 入库剔除 客退入库 、客户直送 03、货到即配 54
+-- 入库剔除 客退入库 、直送 03、货到即配 54
 drop table if exists csx_tmp.p_entry_max;
 
 create temporary table if not exists csx_tmp.p_entry_max as
@@ -101,7 +101,7 @@ group by
 	
 
 
---- 计算销售数据剔除相关的单据号 单据类型客户配送 18、客户直送 19、 一件代发 73
+--- 计算销售数据剔除相关的单据号 单据类型配送 18、直送 19、 一件代发 73
 drop TABLE if exists csx_tmp.p_sales_data ;
 create TEMPORARY TABLE csx_tmp.p_sales_data as 
 select dc_code,
@@ -452,7 +452,7 @@ drop table csx_tmp.ads_wms_r_d_goods_turnover;
   entry_days int  comment  '最近入库日期天数',
   dc_uses string  comment  'DC用途',
   update_time timestamp comment '更新日期'
- ) comment  '物流库存周转剔除客户直送、一件代发业务'
+ ) comment  '物流库存周转剔除直送、一件代发业务'
   partitioned by (sdt string comment '日期分区' )
   STORED AS parquet
 ;

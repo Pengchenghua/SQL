@@ -192,7 +192,7 @@ IF NOT EXISTS temp.scm_order_01 AS
 	
 	-- select * from temp.scm_order_01;
 	-- super_class 单据类型(1-供应商订单、2-供应商退货订单、3-配送订单、4-返配订单)
-	-- source_type 来源类型(1-采购导入、2-直送客户、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)
+	-- source_type 来源类型(1-采购导入、2-直送、3-一键代发、4-项目合伙人、5-无单入库、6-寄售调拨、7-自营调拨、8-云超采购、9-工厂采购)
 	-- status 状态(1-已创建、2-已发货、3-部分入库、4-已完成、5-已取消)
 	-- system_status 系统状态(1-订单已提交、2-已同步WMS、3-WMS已回传、4-修改已提交、5-修改已同步WMS、6-修改成功、7-修改失败)
 	SELECT
@@ -216,7 +216,7 @@ IF NOT EXISTS temp.scm_order_01 AS
 		received_order_code      , --入库单号
 		direct_flag              , --是否直通
 		zm_direct_flag           , --是否帐面直通
-		customer_direct_flag     , --是否客户直送
+		customer_direct_flag     , --是否直送
 		local_purchase_flag      , --是否地采
 		addition_order_flag      , --是否加配
 		a.status AS order_status , --订单单据状态
@@ -226,7 +226,7 @@ IF NOT EXISTS temp.scm_order_01 AS
 			WHEN source_type='1'
 				THEN '采购导入'
 			WHEN source_type='2'
-				THEN '直送客户'
+				THEN '直送'
 			WHEN source_type='3'
 				THEN '一键代发'
 			WHEN source_type='4'

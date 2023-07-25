@@ -21,7 +21,7 @@ create table `csx_tmp.ads_sale_r_d_zone_sales_fr` (
     `daily_negative_profit` decimal(26, 6) comment '负毛利金额',
     `daily_often_cust_sale` decimal(26, 6) comment '昨日老客销售额，首次成交未在本月',
     `daily_new_cust_sale` decimal(26, 6) comment '昨日新额销售额，首次成交在本月',
-    `daily_sale_cust_num` bigint comment '昨日成交客户数',
+    `daily_sale_cust_num` bigint comment '昨日成交数',
     `month_plan_sale` decimal(26, 6) comment '月至今销售预算',
     month_sale_value decimal(26, 6) comment '月至今销售额',
     month_sale_fill_rate decimal(26, 6) comment '月至今销售达成率',
@@ -34,7 +34,7 @@ create table `csx_tmp.ads_sale_r_d_zone_sales_fr` (
     `month_negative_profit` decimal(26, 6) comment '负毛利额',
     `month_often_cust_sale` decimal(26, 6) comment '月老客销售额',
     `month_new_cust_sale` decimal(26, 6) comment '新客销售额',
-    `month_sale_cust_num` bigint comment '成交客户数',
+    `month_sale_cust_num` bigint comment '成交数',
     `last_months_daily_sale` decimal(26, 6) comment '上月同日销售额',
     update_time timestamp comment '更新时间戳'
 ) comment '战区月累计销售跟踪' 
@@ -42,7 +42,7 @@ partitioned by(months string comment '按日分区')
 stored as parquet;
 
 drop table  `csx_tmp.ads_sale_r_d_zone_cust_attribute_fr`;
--- 1.1 客户属性销售
+-- 1.1 属性销售
 create table `csx_tmp.ads_sale_r_d_zone_cust_attribute_fr`
 	(   level_id string comment '展示层级，1 明细、2 总计',
 		sales_month string comment '销售月份'                          ,
@@ -50,8 +50,8 @@ create table `csx_tmp.ads_sale_r_d_zone_cust_attribute_fr`
 		`zone_name` string comment '战区名称'                     ,
 		`province_code` string comment '省区编码'                 ,
 		`province_name` string comment '省区名称'                 ,
-		`attribute_code` int comment '客户属性编码'                 ,
-		`attribute` string comment '客户属性名称'                   ,
+		`attribute_code` int comment '属性编码'                 ,
+		`attribute` string comment '属性名称'                   ,
 	 	 daily_plan_sale            decimal(26,6) comment '昨日计划销售额'  ,
 		`daily_sales_value`        decimal(26,6) comment '昨日销售额'    ,
 		daily_sale_fill_rate       decimal(26,6) comment '昨日销售达成率'  ,
@@ -66,13 +66,13 @@ create table `csx_tmp.ads_sale_r_d_zone_cust_attribute_fr`
 		`month_profit`             decimal(26,6) comment '月至今毛利额'   ,
 		 month_profit_fill_rate decimal(26, 6) comment '月度毛利完成率',
 		`month_profit_rate`        decimal(26,6) comment '月至今毛利率'   ,
-		`month_sale_cust_num`      bigint comment '月至今成交客户数'        ,
-		`mom_diff_sale_cust`       bigint comment '月至今成交客户差异数'      ,
+		`month_sale_cust_num`      bigint comment '月至今成交数'        ,
+		`mom_diff_sale_cust`       bigint comment '月至今成交差异数'      ,
 		`last_month_profit`        decimal(26,6) comment '环比毛利额'    ,
-		`last_month_sale_cust_num` bigint comment '环比客户数',
+		`last_month_sale_cust_num` bigint comment '环比数',
 		update_time timestamp comment '更新时间'
 	)
-	comment '客户属性销售大客户' 
+	comment '属性销售大' 
 	partitioned by	(months string comment '按日分区')
 	stored as parquet
 ;
@@ -142,13 +142,13 @@ create table `csx_tmp.ads_sale_r_d_zone_catg_sales_fr`
 		month_profit_fill_rate decimal(26, 6) comment '月度毛利完成率',
 		`month_profit_rate`    decimal(26,6) comment '月至今毛利率'     ,
 		month_sales_sku bigint comment '销售SKU数',
-		`month_sale_cust_num` bigint comment '课组成交客户数',		
-		cust_penetration_rate decimal(26,6) comment '客户渗透率'      ,
-		all_sale_cust_num bigint comment '合计客户数',
+		`month_sale_cust_num` bigint comment '课组成交数',		
+		cust_penetration_rate decimal(26,6) comment '渗透率'      ,
+		all_sale_cust_num bigint comment '合计数',
 		row_num bigint comment '行数',
 		update_time timestamp comment '更新时间'
 	)
-	comment '大客户大区部类、课组销售与客户渗透率' 
+	comment '大大区部类、课组销售与渗透率' 
 	partitioned by(months string comment '按月分区')
 	stored as parquet
 ;
@@ -165,8 +165,8 @@ create table `csx_tmp.ads_sale_r_d_zone_province_dept_fr`
 		`zone_name` string comment '战区名称',
 		province_code string comment '省区编码',
 		province_name string comment '省区名称',
-		attribute_code string comment '客户属性编码：1、日配单，2、福利订单(WELFARE)，贸易客户(3)、合伙人客户(5)、BBC (7)',
-		attribute_name string comment '客户属性名称',
+		attribute_code string comment '属性编码：1、日配单，2、福利订单(WELFARE)，贸易(3)、合伙人(5)、BBC (7)',
+		attribute_name string comment '属性名称',
 		business_division_code string comment '采购部编码',
 		business_division_name string comment '采购部名称',		
 		division_code string comment '部类编码'  ,
@@ -184,15 +184,15 @@ create table `csx_tmp.ads_sale_r_d_zone_province_dept_fr`
 		`last_month_sale`      decimal(26,6) comment '月环比销售额'     ,
 		`mom_sale_growth_rate` decimal(26,6) comment '月环比增长率'     ,
 		month_sale_ratio decimal(26,6) comment '月销售占比',
-		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/客户数',
+		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/数',
 		month_plan_profit decimal(26, 6) comment '月度毛利计划',
 		`month_profit`         decimal(26,6) comment '月至今毛利额'     ,
 		month_profit_fill_rate decimal(26, 6) comment '月度毛利完成率',
 		`month_profit_rate`    decimal(26,6) comment '月至今毛利率'     ,
 		month_sales_sku bigint comment '销售SKU数',
-		`month_sale_cust_num` bigint comment '课组成交客户数',
-		cust_penetration_rate decimal(26,6) comment '客户渗透率'      ,
-		all_sale_cust_num bigint comment '合计客户数',
+		`month_sale_cust_num` bigint comment '课组成交数',
+		cust_penetration_rate decimal(26,6) comment '渗透率'      ,
+		all_sale_cust_num bigint comment '合计数',
 		row_num bigint comment '行数',
 		update_time timestamp comment '更新时间'
 	)
@@ -224,15 +224,15 @@ create table `csx_tmp.ads_sale_r_d_zone_supervisor_fr`
 		`last_month_sale`      decimal(26,6) comment '月环比销售额'     ,
 		`mom_sale_growth_rate` decimal(26,6) comment '月环比增长率'     ,
 		month_sale_ratio decimal(26,6) comment '月销售占比',
-		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/客户数',
+		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/数',
 		month_plan_profit decimal(26, 6) comment '月度毛利计划',
 		`month_profit`         decimal(26,6) comment '月至今毛利额'     ,
 		month_profit_fill_rate decimal(26, 6) comment '月度毛利完成率',
 		`month_profit_rate`    decimal(26,6) comment '月至今毛利率'     ,
 		month_sales_sku bigint comment '销售SKU数',
-		`month_sale_cust_num` bigint comment '课组成交客户数',
-		cust_penetration_rate decimal(26,6) comment '客户渗透率'      ,
-		all_sale_cust_num bigint comment '合计客户数',
+		`month_sale_cust_num` bigint comment '课组成交数',
+		cust_penetration_rate decimal(26,6) comment '渗透率'      ,
+		all_sale_cust_num bigint comment '合计数',
 		row_num bigint comment '行数',
 		update_time timestamp comment '更新时间'
 	)
@@ -253,8 +253,8 @@ create table `csx_tmp.ads_sale_r_d_zone_province_dept_fr`
 		province_name string comment '省区名称',
 		channel string COMMENT '渠道编码',
 		channel_name string comment '渠道名称',
-		attribute_code string comment '客户属性编码：1、日配单，2、福利订单(WELFARE)，贸易客户(3)、合伙人客户(5)、BBC (7)',
-		attribute_name string comment '客户属性名称',
+		attribute_code string comment '属性编码：1、日配单，2、福利订单(WELFARE)，贸易(3)、合伙人(5)、BBC (7)',
+		attribute_name string comment '属性名称',
 		business_division_code string comment '采购部编码',
 		business_division_name string comment '采购部名称',		
 		division_code string comment '部类编码'  ,
@@ -272,15 +272,15 @@ create table `csx_tmp.ads_sale_r_d_zone_province_dept_fr`
 		`last_month_sale`      decimal(26,6) comment '月环比销售额'     ,
 		`mom_sale_growth_rate` decimal(26,6) comment '月环比增长率'     ,
 		month_sale_ratio decimal(26,6) comment '月销售占比',
-		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/客户数',
+		month_avg_cust_sale decimal(26,6) comment '月客均销售额 销售额/数',
 		month_plan_profit decimal(26, 6) comment '月度毛利计划',
 		`month_profit`         decimal(26,6) comment '月至今毛利额'     ,
 		month_profit_fill_rate decimal(26, 6) comment '月度毛利完成率',
 		`month_profit_rate`    decimal(26,6) comment '月至今毛利率'     ,
 		month_sales_sku bigint comment '销售SKU数',
-		`month_sale_cust_num` bigint comment '课组成交客户数',
-		cust_penetration_rate decimal(26,6) comment '客户渗透率'      ,
-		all_sale_cust_num bigint comment '合计客户数',
+		`month_sale_cust_num` bigint comment '课组成交数',
+		cust_penetration_rate decimal(26,6) comment '渗透率'      ,
+		all_sale_cust_num bigint comment '合计数',
 		row_num bigint comment '行数',
 		update_time timestamp comment '更新时间'
 	)

@@ -16,7 +16,7 @@ CREATE TABLE csx_tmp.dws_basic_supply_dc (
   `location_type_name` string COMMENT '仓库类型名称',
   `location_status` string COMMENT '状态  1 开启 2 禁用',
   `financial_body` string COMMENT '1:彩食鲜 2:其它',
-  `purpose` string comment'地点用途： 01大客户仓库 02商超仓库 03工厂 04寄售门店 05彩食鲜小店 06合伙人物流 07BBC物流 08代加工工厂',
+  `purpose` string comment'地点用途： 01大仓库 02商超仓库 03工厂 04寄售门店 05彩食鲜小店 06合伙人物流 07BBC物流 08代加工工厂',
   `purpose_name` string COMMENT '地点用途名称',
   `is_frozen_dc` string COMMENT '是否冻品仓',
   `is_purchase_dc` string COMMENT '是否采购入库仓',
