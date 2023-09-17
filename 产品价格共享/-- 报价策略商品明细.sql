@@ -916,14 +916,21 @@ where max_week=1
  ;
  
 
-
- WITH AA AS (
- select csx_week,
- id,
+ -- 过滤销售为NULL
+WITH AA AS (
+  select
+    csx_week,
+    id,
     customer_code,
     a.warehouse_code,
-    case when dimension_type=3 then '大类' when dimension_type=2 then '中类' when dimension_type=1 then '小类' when dimension_type=0 then '商品' end dimension_type,      -- 商品 =0 小类 =1 中类 =2 大类 =3
-    dimension_value_code ,
+    case
+      when dimension_type = 3 then '大类'
+      when dimension_type = 2 then '中类'
+      when dimension_type = 1 then '小类'
+      when dimension_type = 0 then '商品'
+    end dimension_type,
+    -- 商品 =0 小类 =1 中类 =2 大类 =3
+    dimension_value_code,
     bmk_type,
     bmk_type_name,
     bmk_code,
@@ -933,228 +940,62 @@ where max_week=1
     float_amount,
     float_type,
     a.update_time,
-    case when a.suggest_price_type=1 then '建议售价高' when a.suggest_price_type=2 then '建议售价中' when a.suggest_price_type=3 then '建议售价低' end suggest_price_type,
+    case
+      when a.suggest_price_type = 1 then '建议售价高'
+      when a.suggest_price_type = 2 then '建议售价中'
+      when a.suggest_price_type = 3 then '建议售价低'
+    end suggest_price_type,
     price_type,
-    case when price_type=1 then '建议售价' when price_type=2 then '对标对象' when price_type=3 then '销售成本价' when price_type=4 then '上一周价格' when price_type=5 then '售价' when price_type=6 then '采购/库存成本' end price_type_name,
+    case
+      when price_type = 1 then '建议售价'
+      when price_type = 2 then '对标对象'
+      when price_type = 3 then '销售成本价'
+      when price_type = 4 then '上一周价格'
+      when price_type = 5 then '售价'
+      when price_type = 6 then '采购/库存成本'
+    end price_type_name,
     addition_rate,
-   case when second_priceType=1 then '建议售价' when second_priceType=2 then '对标对象' when second_priceType=3 then '销售成本价' when second_priceType=4 then '上一周价格' when second_priceType=5 then '售价' when second_priceType=6 then '采购/库存成本' end  second_priceType  ,  
+    case
+      when second_priceType = 1 then '建议售价'
+      when second_priceType = 2 then '对标对象'
+      when second_priceType = 3 then '销售成本价'
+      when second_priceType = 4 then '上一周价格'
+      when second_priceType = 5 then '售价'
+      when second_priceType = 6 then '采购/库存成本'
+    end second_priceType,
     second_config,
     second_addition_rate,
-    case when a.second_suggestPriceType=1 then '建议售价高' when a.second_suggestPriceType=2 then '建议售价中' when a.second_suggestPriceType=3 then '建议售价低' end second_suggestPriceType, --f 建议售价类型: 1-高;2:中;3:低
-    goods_code ,
+    case
+      when a .second_suggestPriceType = 1 then '建议售价高'
+      when a .second_suggestPriceType = 2 then '建议售价中'
+      when a .second_suggestPriceType = 3 then '建议售价低'
+    end second_suggestPriceType,
+    --f 建议售价类型: 1-高;2:中;3:低
+    goods_code,
     b.suggest_price_high,
     b.suggest_price_mid,
     b.suggest_price_low,
     b.yh_shop_price,
-   case when b.suggest_price_type=1 then '目标定价法' when b.suggest_price_type=2 then '市调价格' when b.suggest_price_type=3 then '手动导入' end suggest_type,
+    case
+      when b.suggest_price_type = 1 then '目标定价法'
+      when b.suggest_price_type = 2 then '市调价格'
+      when b.suggest_price_type = 3 then '手动导入'
+    end suggest_type,
     b.price_begin_time,
     b.price_end_time,
     b.update_time as goods_update_time,
     d.suggest_price_high disable_suggest_price_high,
-    d.suggest_price_mid  disable_suggest_price_mid,
-    d.suggest_price_low  disable_suggest_price_low,
+    d.suggest_price_mid disable_suggest_price_mid,
+    d.suggest_price_low disable_suggest_price_low,
     d.yh_shop_price disable_yh_shop_price,
-    case when d.suggest_price_type=1 then '目标定价法' when d.suggest_price_type=2 then '市调价格' when d.suggest_price_type=3 then '手动导入' end disable_suggest_type,
+    case
+      when d.suggest_price_type = 1 then '目标定价法'
+      when d.suggest_price_type = 2 then '市调价格'
+      when d.suggest_price_type = 3 then '手动导入'
+    end disable_suggest_type,
     d.price_begin_time as disable_price_begin_time,
     d.price_end_time disable_price_end_time,
     d.update_time as disable_goods_update_time,
-   change_before_bmkCode,
-   change_before_bmkName,
-    change_before_additionRate,
-    change_before_floatDownRate,
-    change_before_priceType,
-    change_before_suggestPriceType,
-    change_before_2_suggestPriceType,
-    change_before_2_additionRate,
-    change_before_2_floatDownRate ,
-    change_before_2_bmkCode,
-    change_before_2_bmkName,
-    change_before,
-    create_time
-from csx_analyse_tmp.csx_analyse_tmp_price_guide_config_01 a 
-left join 
--- 商品售价指导生效
-(select warehouse_code,product_code,suggest_price_high,suggest_price_mid,suggest_price_low,yh_shop_price,suggest_price_type,price_begin_time,price_end_time,update_time
-from csx_ods.csx_ods_csx_price_prod_goods_price_guide_df	 -- 关联商品售价指导
-    where sdt=regexp_replace('${edate}','-','') 
-       AND is_expired='false'
-    ) b on a.goods_code=b.product_code and a.warehouse_code=b.warehouse_code 
--- 商品售价指导失效
-left join 
-(select * from
-(select warehouse_code,
-    product_code,
-    suggest_price_high,
-    suggest_price_mid,
-    suggest_price_low,
-    yh_shop_price,
-    suggest_price_type,
-    price_begin_time,
-    price_end_time,
-    update_time,
-    is_expired,
-    row_number()over(partition by warehouse_code,product_code order by price_begin_time desc ) as num 
-from    csx_ods.csx_ods_csx_price_prod_goods_price_guide_df	 -- 关联商品售价指导
-    where sdt=regexp_replace('${edate}','-','')
-       AND is_expired='true'
-    )a
- where num =1
- ) d on a.goods_code=d.product_code and a.warehouse_code=d.warehouse_code and a.update_time>d.price_begin_time
-
-    where 
-    -- a.warehouse_code='W0A7'
-     b.update_time is not null 
-  -- and a.CUSTOMER_CODE='103826' 
-   -- AND GOODS_CODE='1456631'
-   ) ,
-   BB AS (select 
-    a.customer_code,
-    customer_name,
-    a.warehouse_code,
-    a.goods_code ,
-    goods_name,
-     sum(qty)qty,
-    sum(sale_amt) sale_amt ,
-    sum(profit) profit
-from csx_analyse_tmp.csx_analyse_tmp_price_guide_config_01 a 
-  left join 
-(select sale_time,inventory_dc_code,customer_code,customer_name,goods_code,goods_name,sum(sale_qty)qty,sum(sale_amt) sale_amt ,sum(profit) profit 
-from    csx_dws.csx_dws_sale_detail_di a 
-join 
-(select shop_code from csx_dim.csx_dim_shop where sdt='current' and shop_low_profit_flag=0) b on a.inventory_dc_code=b.shop_code
-where sdt >=regexp_replace(date_sub('${edate}',30),'-','') and business_type_code =1
-group by inventory_dc_code,customer_code,goods_code,sale_time,customer_name,goods_name) b
-on a.goods_code=b.goods_code and a.warehouse_code=b.inventory_dc_code and a.customer_code=b.customer_code
-and to_date(Sale_time)<= to_date(update_time) AND to_date(sale_time) > to_date(date_sub(update_time,7)) 
-where  1=1
-and b.customer_name is not null 
--- and warehouse_code='W0A7'
-group by  a.customer_code,
-    customer_name,
-    a.warehouse_code,
-    a.goods_code ,
-    goods_name ),
-cc as (select
-  warehouse_code,
-  customer_code,
-  product_code,
-   guide_price  guide_price,
-   estimated_sales_price   estimated_sales_price,
-   price_type  price_type,
-   floating_point floating_point,
-   customer_price customer_price,
-   guide_price_type  guide_price_type,
-   price_begin_time price_begin_time,
-   guide_price_strategy_type,
-  num 
-from(
-select
-  warehouse_code,
-  customer_code,
-  product_code,
-  guide_price,
-  estimated_sales_price,
-  price_type,
-  floating_point,
-  customer_price,
-  guide_price_strategy_type,
-  price_begin_time,
-  effective,
-  CREATE_TIME,
-  guide_price_type,
-  row_number()over(partition by warehouse_code,product_code,customer_code,effective order by price_begin_time desc ) num 
-from
-  csx_ods.csx_ods_csx_price_prod_customer_price_guide_df
-where
-  sdt = regexp_replace('${edate}','-','')
---  and effective IS NULL
- ) A
- WHERE NUM=1),
- DD AS (select
-  warehouse_code,
-  customer_code,
-  product_code,
-  guide_price invalid_guide_price,
-  estimated_sales_price invalid_estimated_sales_price,
-  price_type        invalid_price_type,
-  floating_point    invalid_floating_point,
-  customer_price    invalid_customer_price,
-  guide_price_type  invalid_guide_price_type,
-  price_begin_time  invalid_price_begin_time,
-  num 
-from(
-select
-  warehouse_code,
-  customer_code,
-  product_code,
-  guide_price,
-  estimated_sales_price,
-  price_type,
-  floating_point,
-  customer_price,
-  guide_price_strategy_type,
-  price_begin_time,
-  effective,
-  CREATE_TIME,
-  guide_price_type,
-  row_number()over(partition by warehouse_code,product_code,customer_code,effective order by price_begin_time desc ) num 
-from
-  csx_dwd.csx_dwd_price_customer_price_guide_invalid_di
-where
-  sdt >= regexp_replace(date_sub('${edate}',60),'-','')
- -- and effective='0'
- ) A WHERE NUM=1
- )
-
-SELECT csx_week,AA.id,
-    performance_province_name,
-    performance_city_name, 
-    aa.customer_code,
-    d.customer_name,
-    aa.warehouse_code,
-    dimension_type,      -- 商品 =0 小类 =1 中类 =2 大类 =3
-    dimension_value_code ,
-    aa.goods_code ,
-    c.goods_name,
-    classify_large_code,
-    classify_large_name,
-    classify_middle_code,
-    classify_middle_name,
-    classify_small_code,
-    classify_small_name,
-    bmk_type,
-    bmk_type_name,
-    bmk_code,
-    bmk_name,
-    float_up_rate,
-    float_down_rate,
-    float_amount,
-    float_type,
-    aa.update_time,
-    suggest_price_type,
-    AA.price_type,
-    price_type_name,
-    addition_rate,
-    second_priceType  ,  
-    second_config,
-    second_addition_rate,
-    second_suggestPriceType, --f 建议售价类型: 1-高;2:中;3:低
-    suggest_price_high,
-    suggest_price_mid,
-    suggest_price_low,
-    yh_shop_price,
-    suggest_type,
-    aa.price_begin_time,
-    price_end_time,
-    goods_update_time,
-    disable_suggest_price_high,
-    disable_suggest_price_mid,
-    disable_suggest_price_low,
-    disable_yh_shop_price,
-    disable_suggest_type,
-    disable_price_begin_time,
-    disable_price_end_time,
-    disable_goods_update_time,
     change_before_bmkCode,
     change_before_bmkName,
     change_before_additionRate,
@@ -1163,63 +1004,385 @@ SELECT csx_week,AA.id,
     change_before_suggestPriceType,
     change_before_2_suggestPriceType,
     change_before_2_additionRate,
-    change_before_2_floatDownRate ,
+    change_before_2_floatDownRate,
     change_before_2_bmkCode,
     change_before_2_bmkName,
     change_before,
     create_time,
-    BB.qty,
-    sale_amt ,
-    profit ,
-    guide_price,
-    estimated_sales_price,
-    case when cc.price_type=1 then '建议售价' when cc.price_type=2 then '对标对象' 
-        when cc.price_type=3 then '销售成本价' when cc.price_type=4 then '上一周价格'
-        when cc.price_type=5 then '售价' when cc.price_type=6 then '采购/库存成本' end customer_price_type,
-    floating_point,
-    customer_price,
+    bmk_second_bmk_type,
+    bmk_second_bmk_code,
+    bmk_second_bmk_name,
+    bmk_second_addition_rate,
+    bmk_second_float_amount,
+    bmk_second_sort,
+    bmk_second_float_type,
+    bmk_second_bmk_price_type,
+    bmk_three_bmk_type,
+    bmk_three_bmk_code,
+    bmk_three_bmk_name,
+    bmk_three_addition_rate,
+    bmk_three_float_amount,
+    bmk_three_sort,
+    bmk_three_float_type,
+    bmk_three_bmk_price_type
+  from
+    csx_analyse_tmp.csx_analyse_tmp_price_guide_config_01 a
+    left join -- 商品售价指导生效
+    (
+      select
+        warehouse_code,
+        product_code,
+        suggest_price_high,
+        suggest_price_mid,
+        suggest_price_low,
+        yh_shop_price,
+        suggest_price_type,
+        price_begin_time,
+        price_end_time,
+        update_time
+      from
+        csx_ods.csx_ods_csx_price_prod_goods_price_guide_df -- 关联商品售价指导
+      where
+        sdt = regexp_replace('${edate}','-','')
+        AND is_expired = 'false'
+    ) b on a .goods_code = b.product_code
+    and a .warehouse_code = b.warehouse_code -- 商品售价指导失效
+    left join (
+      select
+        *
+      from
+        (
+          select
+            warehouse_code,
+            product_code,
+            suggest_price_high,
+            suggest_price_mid,
+            suggest_price_low,
+            yh_shop_price,
+            suggest_price_type,
+            price_begin_time,
+            price_end_time,
+            update_time,
+            is_expired,
+            row_number() over(
+              partition by warehouse_code,
+              product_code
+              order by
+                price_begin_time desc
+            ) as num
+          from
+            csx_ods.csx_ods_csx_price_prod_goods_price_guide_df -- 关联商品售价指导
+          where
+            sdt = regexp_replace('${edate}','-','')
+            AND is_expired = 'true'
+        ) a
+      where
+        num = 1
+    ) d on a .goods_code = d.product_code
+    and a .warehouse_code = d.warehouse_code
+    and a .update_time > d.price_begin_time
+  where 1=1
+  --  a .warehouse_code = 'W0A7'
+    -- b.update_time is not null 
+     -- and a.CUSTOMER_CODE='103826'
+     -- AND GOODS_CODE='1456631'
+),
+BB AS (select 
+    a.customer_code,
+    customer_name,
+    a.warehouse_code,
+    a.goods_code ,
+    goods_name,
+    sum(qty)qty,
+    sum(sale_amt) sale_amt ,
+    sum(profit) profit
+from csx_analyse_tmp.csx_analyse_tmp_price_guide_config_01 a 
+  left join 
+(select csx_week,sale_time,inventory_dc_code,customer_code,customer_name,goods_code,goods_name,sum(sale_qty)qty,sum(sale_amt) sale_amt ,sum(profit) profit 
+from    csx_dws.csx_dws_sale_detail_di a
+join 
+(select distinct csx_week,csx_week_begin,csx_week_end,calday from csx_dim.csx_dim_basic_date )c on a.sdt=c.calday
+join 
+(select shop_code from csx_dim.csx_dim_shop where sdt='current' and shop_low_profit_flag=0) b on a.inventory_dc_code=b.shop_code
+where sdt >=regexp_replace(date_sub('${edate}',30),'-','') and business_type_code =1
+group by inventory_dc_code,customer_code,goods_code,sale_time,customer_name,goods_name,csx_week) b
+on a.goods_code=b.goods_code and a.warehouse_code=b.inventory_dc_code and a.customer_code=b.customer_code
+and a.csx_week=b.csx_week
+where  1=1
+and b.customer_name is not null 
+-- and warehouse_code='W0A7'
+group by  a.customer_code,
+    customer_name,
+    a.warehouse_code,
+    a.goods_code ,
+    goods_name ),
+cc as (
+  select
+    warehouse_code,
+    customer_code,
+    product_code,
+    guide_price guide_price,
+    estimated_sales_price estimated_sales_price,
+    price_type price_type,
+    floating_point floating_point,
+    customer_price customer_price,
+    guide_price_type guide_price_type,
+    price_begin_time price_begin_time,
+    price_end_time,
     guide_price_strategy_type,
-    case when cc.guide_price_type=0 then '建议售价'
-        when cc.guide_price_type=1 then '智能建议售价'
-        when cc.guide_price_type=2 then '市场售价中位数'
-        when cc.guide_price_type=3 then '门店售价中位数'
-        when cc.guide_price_type=4 then '建议售价高'
-        when cc.guide_price_type=5 then '建议售价中'
-        when cc.guide_price_type=6 then '建议售价低'
-        end guide_price_type_name,-- 建议售价取值类型  0=建议售价 1= 智能建议售价 2=市场售价中位数 3=门店售价中位数 4=建议售价-高  5=建议售价-中 6建议售价-低
-    cc.price_begin_time as customer_price_begin_time,
-    invalid_guide_price,
-    invalid_estimated_sales_price,
-    case when dd.invalid_price_type=1 then '建议售价' when dd.invalid_price_type=2 then '对标对象' 
-        when dd.invalid_price_type=3 then '销售成本价' when dd.invalid_price_type=4 then '上一周价格'
-        when dd.invalid_price_type=5 then '售价' when invalid_price_type=6 then '采购/库存成本' end invalid_price_type ,
-    invalid_floating_point,
-    invalid_customer_price,
-    Case when invalid_guide_price_type=0 then '建议售价'
-        when invalid_guide_price_type=1 then '智能建议售价'
-        when invalid_guide_price_type=2 then '市场售价中位数'
-        when invalid_guide_price_type=3 then '门店售价中位数'
-        when invalid_guide_price_type=4 then '建议售价高'
-        when invalid_guide_price_type=5 then '建议售价中'
-        when invalid_guide_price_type=6 then '建议售价低'
-        end invalid_guide_price_type_name,-- 建议售价取值类型  0=建议售价 1= 智能建议售价 2=市场售价中位数 3=门店售价中位数 4=建议售价-高  5=建议售价-中 6建议售价-低
-    invalid_price_begin_time
-FROM AA 
-    LEFT JOIN 
-    BB ON AA.customer_code=BB.customer_code AND AA.warehouse_code=BB.warehouse_code AND AA.goods_code=BB.goods_code
-    LEFT JOIN 
-    cc on aa.customer_code=cc.customer_code and aa.warehouse_code=cc.warehouse_code and aa.goods_code=cc.product_code
-    LEFT JOIN 
-    DD on aa.customer_code=DD.customer_code and aa.warehouse_code=DD.warehouse_code and aa.goods_code=DD.product_code
-    left join 
-    (select goods_code,goods_name,classify_large_code,classify_large_name,classify_middle_code,classify_middle_name,classify_small_code,classify_small_name
-    from csx_dim.csx_dim_basic_goods where sdt='current') c on aa.goods_code=c.goods_code
-    left join 
-    (select performance_province_name,performance_city_name,customer_code,customer_name 
-    from csx_dim.csx_dim_crm_customer_info where sdt='current')d on aa.customer_code=d.customer_code
-    
-
-;
+    num
+  from
+(
+      select
+        warehouse_code,
+        customer_code,
+        product_code,
+        guide_price,
+        estimated_sales_price,
+        price_type,
+        floating_point,
+        customer_price,
+        guide_price_strategy_type,
+        price_begin_time,
+        price_end_time,
+        effective,
+        CREATE_TIME,
+        guide_price_type,
+        row_number() over(
+          partition by warehouse_code,
+          product_code,
+          customer_code,
+          effective
+          order by
+            price_begin_time desc
+        ) num
+      from
+        csx_ods.csx_ods_csx_price_prod_customer_price_guide_df  -- 客户报价生效
+      where
+        sdt = regexp_replace('${edate}','-','') 
+       -- and effective IS NULL
+    ) A
+  WHERE
+    NUM = 1
+),
+DD AS (
+  select
+    warehouse_code,
+    customer_code,
+    product_code,
+    guide_price invalid_guide_price,
+    estimated_sales_price invalid_estimated_sales_price,
+    price_type invalid_price_type,
+    floating_point invalid_floating_point,
+    customer_price invalid_customer_price,
+    guide_price_type invalid_guide_price_type,
+    price_begin_time invalid_price_begin_time,
+    num
+  from
+(
+      select
+        warehouse_code,
+        customer_code,
+        product_code,
+        guide_price,
+        estimated_sales_price,
+        price_type,
+        floating_point,
+        customer_price,
+        guide_price_strategy_type,
+        price_begin_time,
+        effective,
+        CREATE_TIME,
+        guide_price_type,
+        row_number() over(
+          partition by warehouse_code,
+          product_code,
+          customer_code,
+          effective
+          order by
+            price_begin_time desc
+        ) num
+      from
+        csx_dwd.csx_dwd_price_customer_price_guide_invalid_di
+      where
+        sdt >= regexp_replace(date_sub('${edate}',60),'-','') -- 
+        and effective='0' --  失效标识
+    ) A
+  WHERE
+    NUM = 1
+)
+SELECT
+    csx_week,
+  AA.id,
+  performance_province_name,
+  performance_city_name,
+  aa.customer_code,
+  d.customer_name,
+  aa.warehouse_code,
+  dimension_type,
+  -- 商品 =0 小类 =1 中类 =2 大类 =3
+  dimension_value_code,
+  aa.goods_code,
+  c .goods_name,
+  classify_large_code,
+  classify_large_name,
+  classify_middle_code,
+  classify_middle_name,
+  classify_small_code,
+  classify_small_name,
+  bmk_type,
+  bmk_type_name,
+  bmk_code,
+  bmk_name,
+  float_up_rate,
+  float_down_rate,
+  float_amount,
+  float_type,
+  aa.update_time,
+  suggest_price_type,
+  AA.price_type,
+  price_type_name,
+  addition_rate,
+  second_priceType,
+  second_config,
+  second_addition_rate,
+  second_suggestPriceType,
+  --f 建议售价类型: 1-高;2:中;3:低
+  suggest_price_high,
+  suggest_price_mid,
+  suggest_price_low,
+  yh_shop_price,
+  suggest_type,
+  aa.price_begin_time,
+  aa.price_end_time,
+  goods_update_time,
+  disable_suggest_price_high,
+  disable_suggest_price_mid,
+  disable_suggest_price_low,
+  disable_yh_shop_price,
+  disable_suggest_type,
+  disable_price_begin_time,
+  disable_price_end_time,
+  disable_goods_update_time,
+  change_before_bmkCode,
+  change_before_bmkName,
+  change_before_additionRate,
+  change_before_floatDownRate,
+  change_before_priceType,
+  change_before_suggestPriceType,
+  change_before_2_suggestPriceType,
+  change_before_2_additionRate,
+  change_before_2_floatDownRate,
+  change_before_2_bmkCode,
+  change_before_2_bmkName,
+  change_before,
+  create_time,
+  BB.qty,
+  sale_amt,
+  profit,
+  guide_price,
+  estimated_sales_price,
+  case
+    when cc.price_type = 1 then '建议售价'
+    when cc.price_type = 2 then '对标对象'
+    when cc.price_type = 3 then '销售成本价'
+    when cc.price_type = 4 then '上一周价格'
+    when cc.price_type = 5 then '售价'
+    when cc.price_type = 6 then '采购/库存成本'
+  end customer_price_type,
+  floating_point,
+  customer_price,
+  guide_price_strategy_type,
+  case
+    when cc.guide_price_type = 0 then '建议售价'
+    when cc.guide_price_type = 1 then '智能建议售价'
+    when cc.guide_price_type = 2 then '市场售价中位数'
+    when cc.guide_price_type = 3 then '门店售价中位数'
+    when cc.guide_price_type = 4 then '建议售价高'
+    when cc.guide_price_type = 5 then '建议售价中'
+    when cc.guide_price_type = 6 then '建议售价低'
+  end guide_price_type_name,
+  -- 建议售价取值类型 0=建议售价 1= 智能建议售价 2=市场售价中位数 3=门店售价中位数 4=建议售价-高 5=建议售价-中 6建议售价-低
+  cc.price_begin_time as customer_price_begin_time,
+  cc.price_end_time as customer_price_end_time,
+  invalid_guide_price,
+  invalid_estimated_sales_price,
+  case
+    when dd.invalid_price_type = 1 then '建议售价'
+    when dd.invalid_price_type = 2 then '对标对象'
+    when dd.invalid_price_type = 3 then '销售成本价'
+    when dd.invalid_price_type = 4 then '上一周价格'
+    when dd.invalid_price_type = 5 then '售价'
+    when invalid_price_type = 6 then '采购/库存成本'
+  end invalid_price_type,
+  invalid_floating_point,
+  invalid_customer_price,
+  Case
+    when invalid_guide_price_type = 0 then '建议售价'
+    when invalid_guide_price_type = 1 then '智能建议售价'
+    when invalid_guide_price_type = 2 then '市场售价中位数'
+    when invalid_guide_price_type = 3 then '门店售价中位数'
+    when invalid_guide_price_type = 4 then '建议售价高'
+    when invalid_guide_price_type = 5 then '建议售价中'
+    when invalid_guide_price_type = 6 then '建议售价低'
+  end invalid_guide_price_type_name,
+  -- 建议售价取值类型 0=建议售价 1= 智能建议售价 2=市场售价中位数 3=门店售价中位数 4=建议售价-高 5=建议售价-中 6建议售价-低
+  invalid_price_begin_time,
+  bmk_second_bmk_type,
+  bmk_second_bmk_code,
+  bmk_second_bmk_name,
+  bmk_second_addition_rate,
+  bmk_second_float_amount,
+  bmk_second_sort,
+  bmk_second_float_type,
+  bmk_second_bmk_price_type,
+  bmk_three_bmk_type,
+  bmk_three_bmk_code,
+  bmk_three_bmk_name,
+  bmk_three_addition_rate,
+  bmk_three_float_amount,
+  bmk_three_sort,
+  bmk_three_float_type,
+  bmk_three_bmk_price_type
+FROM
+  AA
+  LEFT JOIN BB ON AA.customer_code = BB.customer_code
+  AND AA.warehouse_code = BB.warehouse_code
+  AND AA.goods_code = BB.goods_code
+  LEFT JOIN cc on aa.customer_code = cc.customer_code
+  and aa.warehouse_code = cc.warehouse_code
+  and aa.goods_code = cc.product_code
+  LEFT JOIN DD on aa.customer_code = DD.customer_code
+  and aa.warehouse_code = DD.warehouse_code
+  and aa.goods_code = DD.product_code
+  left join (
+    select
+      goods_code,
+      goods_name,
+      classify_large_code,
+      classify_large_name,
+      classify_middle_code,
+      classify_middle_name,
+      classify_small_code,
+      classify_small_name
+    from
+      csx_dim.csx_dim_basic_goods
+    where
+      sdt = 'current'
+  ) c on aa.goods_code = c .goods_code
+  left join (
+    select
+      performance_province_name,
+      performance_city_name,
+      customer_code,
+      customer_name
+    from
+      csx_dim.csx_dim_crm_customer_info
+    where
+      sdt = 'current'
+  ) d on aa.customer_code = d.customer_code
+  where bb.customer_code is not null 
+  ;
 
 
 

@@ -1,5 +1,5 @@
 -- 临时地采商品成本销售跟踪  CB20230627058958 CB20230627056571    PURCHASE_IN 采购订单  SALE_OUT 销售出库  ON_WAY  出库在途
-
+-- 销售追溯入库成本
 -- 查找采购订单号 
 select * from csx_analyse.csx_analyse_scm_purchase_order_flow_di where order_code='IN230627018509'
 
@@ -22,3 +22,6 @@ select * from csx_dws.csx_dws_sale_detail_di where sdt>='20230401' and id like '
 
 select * from csx_dws.csx_dws_wms_shipped_detail_di where order_code='CO23062700020267'
 -- original_order_code  地采源单号销售单
+
+
+下周财务增加字段 、OEM 迭代、
