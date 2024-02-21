@@ -34,15 +34,15 @@
     "editor.acceptSuggestionOnEnter": "on",
     "editor.quickSuggestionsDelay": 10,
     "editor.suggestOnTriggerCharacters": true,
-    "editor.tabCompletion": "off",
+    "editor.tabCompletion": "on",
     // Controls whether sorting favours words that appear close to the cursor
     "editor.suggest.localityBonus": true,
 
     // Controls how suggestions are pre-selected when showing the suggest list
-    "editor.suggestSelection": "recentlyUsedByPrefix",
+    "editor.suggestSelection": "recentlyUsed",
 
     // Enable word based suggestions
-    "editor.wordBasedSuggestions": "matchingDocuments",
+    "editor.wordBasedSuggestions": "allDocuments",
 
     // Enable parameter hints
     "editor.parameterHints.enabled": true,
@@ -124,16 +124,17 @@
       },
       {
         "mysqlOptions": {
-          "authProtocol": "default"
+          "authProtocol": "default",
+          "enableSsl": "Disabled"
         },
         "previewLimit": 50,
-        "server": "10.0.74.154",
-        "port": 3306,
+        "server": "10.0.74.8",
+        "port": 4000,
         "driver": "MySQL",
-        "name": "154从库",
-        "username": "fansoft",
-        "password": "xfJX0cXH8XfJjlyB",
-        "database": "csx_b2b_ucenter"
+        "name": "TIDB",
+        "username": "csx_data_market_user",
+        "password": "2*gJhLHt^*q0wNkW",
+        "database": "csx_data_market"
       }
     ],
     "editor.suggest.shareSuggestSelections": true,
@@ -200,7 +201,10 @@
     },
     "files.autoGuessEncoding": true,
     "editor.fontSize": 18,
-    "search.useGlobalIgnoreFiles": true
+    "search.useGlobalIgnoreFiles": true,
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "editor.suggest.preview": true,
+    "editor.suggest.showStatusBar": true
   },
   "extensions": {
     "recommendations": [
