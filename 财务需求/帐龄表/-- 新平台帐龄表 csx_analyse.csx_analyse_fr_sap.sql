@@ -75,7 +75,7 @@ sale_sdt string comment '销售日期')
  STORED AS PARQUET
  ;
 
-CREATE external TABLE IF NOT EXISTS csx_dws.csx_dws_sap_subject_customer_settle_detail( 
+CREATE external TABLE IF NOT EXISTS csx_dws.csx_dws_sap_subject_customer_credit_settle_detail        ( 
 
 `subject_code` STRING  COMMENT '科目编码',
 `customer_code` STRING  COMMENT '编码',
@@ -135,7 +135,7 @@ CREATE external TABLE IF NOT EXISTS csx_dws.csx_dws_sap_subject_customer_settle_
 `no_overdue_amount_month_last_day` DECIMAL (36,6) COMMENT '月末未到期账款',
 `max_overdue_day` BIGINT  COMMENT '最大逾期天数',
 `overdue_rate` DECIMAL (36,6) COMMENT '逾期率' ) 
- COMMENT 'csx_dws_sap_subject_customer_settle_detail' 
+ COMMENT 'csx_dws_sap_subject_customer_credit_settle_detail        ' 
  PARTITIONED BY
  (
 `sdt` STRING  COMMENT '统计日期{"FORMAT":"yyyymmdd"}' )
@@ -294,7 +294,8 @@ select
 	max(max_overdue_day)max_overdue_day
 	x.sdt
 from
-    csx_dws.csx_dws_sap_subject_customer_settle_detail x
+-- csx_dws_sap_subject_customer_settle_detail 旧表切换
+    csx_dws.csx_dws_sap_subject_customer_credit_settle_detail         x
 LEFT JOIN 
 (
   SELECT customer_code, 
