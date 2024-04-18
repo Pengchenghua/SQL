@@ -53,7 +53,7 @@
     },
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "merge-conflict.autoNavigateNextConflict.enabled": true,
-    "sqltools.autoOpenSessionFiles": false,
+    "sqltools.autoOpenSessionFiles": true,
     "sqltools.codelensLanguages": [
       "sql",
       "hive",
@@ -200,11 +200,16 @@
       "typescript": ".ts"
     },
     "files.autoGuessEncoding": true,
-    "editor.fontSize": 18,
+    "editor.fontSize": 20,
     "search.useGlobalIgnoreFiles": true,
     "editor.inlineSuggest.suppressSuggestions": true,
     "editor.suggest.preview": true,
-    "editor.suggest.showStatusBar": true
+    "editor.suggest.showStatusBar": true,
+    "application.experimental.rendererProfiling": true,
+    "editor.formatOnPaste": false,
+    "Prettier-SQL.SQLFlavourOverride": "bigquery",
+    "extension.as_loc_cnt": 50,
+    "extension.comma_location": true
   },
   "extensions": {
     "recommendations": [
