@@ -209,7 +209,8 @@
     "editor.formatOnPaste": false,
     "Prettier-SQL.SQLFlavourOverride": "bigquery",
     "extension.as_loc_cnt": 50,
-    "extension.comma_location": false
+    "extension.comma_location": false,
+    "CodeGPT.apiKey": "CodeGPT Plus Beta"
   },
   "extensions": {
     "recommendations": [
