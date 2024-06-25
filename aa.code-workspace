@@ -79,7 +79,7 @@
     },
     "python.dataScience.jupyterLaunchTimeout": 240000,
     "[python]": {
-      "editor.defaultFormatter": "ms-python.python"
+      "editor.defaultFormatter": "mikoz.black-py"
     },
     "files.autoSave": "afterDelay",
     "sqltools.connections": [
@@ -129,12 +129,26 @@
         },
         "previewLimit": 50,
         "server": "10.0.74.8",
-        "port": 4000,
+        "port": 5000,
+        "driver": "TiDB",
+        "name": "TIDB_8",
+        "username": "data_group_user",
+        "password": "A8PT2I#mU5yCpTY7",
+        "database": "csx_data_real"
+      },
+      {
+        "mysqlOptions": {
+          "authProtocol": "default",
+          "enableSsl": "Disabled"
+        },
+        "previewLimit": 50,
+        "server": "10.0.74.8",
+        "port": 5000,
         "driver": "MySQL",
         "name": "TIDB",
         "username": "csx_data_market_user",
         "password": "2*gJhLHt^*q0wNkW",
-        "database": "csx_data_market"
+        "database": "csx_data_real"
       }
     ],
     "editor.suggest.shareSuggestSelections": true,
@@ -221,4 +235,4 @@
     "mtxr.sqltools",
     "guillaumeisabelle.gixdeko-comments"
   ]
-}
+ }
