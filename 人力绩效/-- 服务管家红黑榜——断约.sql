@@ -1,10 +1,10 @@
 -- 服务管家红黑榜
 -- drop table csx_analyse_tmp.csx_analyse_tmp_hr_service_performance ;
 
--- 销售数据
-
-
-    select substr(sdt, 1, 6) sale_month,
+-- 销售BD数据
+-- drop table  csx_analyse_tmp.csx_analyse_tmp_hr_sale_detail ;
+create table csx_analyse_tmp.csx_analyse_tmp_hr_sale_detail as
+select substr(sdt, 1, 6) sale_month,
         performance_province_name,
         performance_region_name,
         performance_city_name,
@@ -17,9 +17,11 @@
         business_attribute_code,
         first_business_sale_date ,
         last_business_sale_date,
-        diff_days,
+        next_sale_date,
         sum(sale_amt) sale_amt,
-        sum(profit) profit
+        sum(profit) profit,
+        min(sdt) min_sdt,
+        max(sdt) max_sdt
     from csx_dws.csx_dws_sale_detail_di a
     left join 
     (select customer_code,
@@ -27,14 +29,176 @@
         business_attribute_code,
         first_business_sale_date ,
         last_business_sale_date,
-        datediff(current_date(),from_unixtime(unix_timestamp(last_business_sale_date,'yyyyMMdd'),'yyyy-MM-dd')) as diff_days
+        regexp_replace(cast(date_add(from_unixtime(unix_timestamp(last_business_sale_date,'yyyyMMdd'),'yyyy-MM-dd'),90) as string),'-','') as next_sale_date
     from  csx_dws.csx_dws_crm_customer_business_active_di 
     where sdt='current'
     ) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code
+    where sdt >= '20240601'
+        and sdt <= '20240630'   
+        and a.business_type_code in ('1','2','6')  -- 1-日配、2-福利、6-BBC
+    group by substr(sdt, 1, 6) ,
+        performance_province_name,
+        performance_region_name,
+        performance_city_name,
+        a.business_type_code,
+        a.customer_code,
+        customer_name,
+        sales_user_name,
+        sales_user_number,
+        sales_user_position,
+        business_attribute_code,
+        first_business_sale_date ,
+        last_business_sale_date,
+        next_sale_date
+;
+
+-- 断约客户明细 90天未履约      
+with sale as 
+(select a.*,b.max_sdt as max_sale_sdt,
+    b.next_sale_date b_nex_sale_date,
+    if((sale_amt>0 and b.next_sale_date<='20240630' and a.next_sale_date!=b.next_sale_date and a.min_sdt>=c.business_sign_date) 
+        or (sale_month= substr(first_business_sale_date,1,6)),1,0 ) as new_customer 
+
+from csx_analyse_tmp.csx_analyse_tmp_hr_sale_detail a 
+left join 
+(select * from 
+(select
+  business_number,
+  customer_code,
+  business_attribute_code,
+  business_sign_time,
+  regexp_replace(to_date(business_sign_time),'-','') business_sign_date,
+  row_number()over(partition by customer_code order by business_sign_time desc ) as rn
+from
+  `csx_dim`.`csx_dim_crm_business_info`
+where
+  sdt = 'current'
+  and to_date(business_sign_time) <= '2024-06-30'
+  and to_date(business_sign_time) >=date_add(from_unixtime(unix_timestamp('2024-06-30','yyyy-MM-dd'),'yyyy-MM-dd'),-90)
+  and business_attribute_code=1
+  and status=1 
+  and business_stage=5
+  )a 
+  where rn=1 
+) c on a.customer_code=c.customer_code and a.business_attribute_code=c.business_attribute_code
+left join 
+(select      '1' as type,
+		    performance_province_name,
+		    business_type_code,
+			customer_code,
+			max(sdt) max_sdt,
+			regexp_replace(cast(date_add(from_unixtime(unix_timestamp(max(sdt),'yyyyMMdd'),'yyyy-MM-dd'),90) as string),'-','') as next_sale_date
+		from 
+		(select 
+		    performance_province_name,
+		    business_type_code,
+		    sdt,
+			customer_code,
+			sum(sale_amt)sale_amt
+		from 
+			csx_dws.csx_dws_sale_detail_di 
+		where 
+			sdt between '20240101' and '20240630'
+			and business_type_code=1           --  业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)
+		--	and channel_code in('1','7','9')    --  渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
+			and order_channel_code not in (4,6)
+		--	and customer_code='103145'
+		-- 	and sdt='20240201'
+		group by 
+			performance_province_name,
+		    business_type_code,
+			customer_code,
+			sdt
+			)a 
+		where sale_amt>0
+		group by  performance_province_name,
+		    business_type_code,
+			customer_code
+union all 
+select  '2'type,
+        performance_province_name,
+        business_type_code,
+        customer_code,
+        last_business_sale_date,
+        regexp_replace(cast(date_add(from_unixtime(unix_timestamp(last_business_sale_date,'yyyyMMdd'),'yyyy-MM-dd'),90) as string),'-','') as next_sale_date
+    from  csx_dws.csx_dws_crm_customer_business_active_di 
+    where sdt='current'
+        and last_business_sale_date <='20240101'
+        and business_type_code=1
+) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code
+   )
+   select * from sale where new_customer=1
+
+-- 断约客户明细 90天未履约      
+select 	performance_province_name, 
+        business_type_code,
+		after_date, 
+		a.customer_code,
+		max_sdt
+from
+		(
+		select 
+		    performance_province_name,
+		    business_type_code,
+			customer_code,
+			max(sdt) max_sdt,
+			regexp_replace(cast(date_add(from_unixtime(unix_timestamp(max(sdt),'yyyyMMdd'),'yyyy-MM-dd'),90) as string),'-','') as after_date
+		from 
+			csx_dws.csx_dws_sale_detail_di 
+		where 
+			sdt between '20240101' and '20240630'
+			and business_type_code=1           --  业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)
+			and channel_code in('1','7','9')    --  渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
+			and order_channel_code not in (4,6)
+		group by 
+			performance_province_name,
+		    business_type_code,
+			customer_code
+		) a
+	   where 1=1
+	    and after_date<='20240630'
+			group by performance_province_name, 
+			business_type_code,
+			after_date, 
+			a.customer_code,
+			max_sdt 
 
 
+-- 销售员信息
 
--- 断约客户明细
+
+-- ======断约客户明细==========
+select 	performance_province_name, 
+			after_month, 
+			a.customer_code,
+			c.customer_name
+			from
+				(
+				select 
+					customer_code,
+					substr(regexp_replace(cast(date_add(from_unixtime(unix_timestamp(max(sdt),'yyyyMMdd')),90) as string),'-',''),1,6) as after_month
+				from 
+					csx_dws.csx_dws_sale_detail_di 
+				where 
+					sdt between '20210901' and '20230630'
+					and business_type_code=1 --  业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)
+					and channel_code in('1','7','9') --  渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
+					and order_channel_code not in (4,6)
+
+				group by 
+					customer_code
+				) a
+		left join   (
+			  select *
+			  from csx_dim.csx_dim_crm_customer_info
+			  where sdt= 'current'
+				and channel_code  in ('1','7','9')
+			        ) c on a.customer_code=c.customer_code 
+	   where after_month='202306'
+			group by performance_province_name, 
+			after_month, 
+			a.customer_code,
+			c.customer_name;
 
 create table csx_analyse_tmp.csx_analyse_tmp_hr_service_performance as 
 with sale as(

@@ -19,6 +19,7 @@ select
   sum(performance_profit) performance_profit -- 履约利润
 from
   csx_analyse.csx_analyse_report_sss_customer_capital_takes_up_di a
+  
   left join (
     select
       customer_code,
