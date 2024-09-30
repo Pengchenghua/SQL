@@ -10,7 +10,7 @@ var $last_tr;
 /*遍历计数器*/
 var i = 0;
 /* 首行除外，tr:gt(0)定位首行，索引从0开始，标题行为多行时注意此位置代码要做相应修改*/
-$('.x-table tr:gt(1)') .bind("mouseenter", function () {
+$('.x-table tr:gt(2)') .bind("mouseenter", function () {
 /*$(".x-table tr")*/
 /*判断元素是否可以获取到，防止空指针操作*/
     if (typeof($last_tr) != "undefined") {
@@ -79,7 +79,7 @@ $('.x-table tr:gt(1)') .bind("mouseenter", function () {
     }
 });
 /*首行除外的元素如果发生鼠标离开事件，tr:gt(0)定位首行，索引从0开始，标题多行时此位置代码要做相应修改*/
-$('.x-table tr:gt(1)') .bind("mouseleave", function () {
+$('.x-table tr:gt(2)') .bind("mouseleave", function () {
     /*判断元素是否可以获取到，防止空指针异常*/
     if (typeof($(this).attr("id")) != "undefined") {
         /*将当前对象赋予$last_tr  方便后续操作*/
