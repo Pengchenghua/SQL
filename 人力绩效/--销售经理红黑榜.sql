@@ -2,8 +2,7 @@
 -- 销售员红黑榜1.0
 -- 销售员信息
 -- 只有一名销售经理的省区/城市：河北（詹娟），陕西（曹杰），苏州（章明新）、广东深圳（何渊）合肥胡艳
-
--- drop table csx_analyse_tmp.csx_analyse_tmp_hr_sale_info;
+-- drop table csx_analyse_tmp.csx_analyse_tmp_hr_sale_info; select * from  csx_analyse_tmp.csx_analyse_tmp_hr_sale_info
 create table csx_analyse_tmp.csx_analyse_tmp_hr_sale_info as 
 with position_dic as 
 (select dic_key as code,dic_value as name
@@ -12,15 +11,15 @@ with position_dic as
        and dic_type = 'POSITION'
 ),
 leader_info as 
-  (  select a.*,
+  (select a.*,
     c.name as leader_user_position_name,
     b.name as leader_source_user_position_name 
     from 
     (SELECT
       *,
-      row_number() over(PARTITION BY user_id ORDER BY distance asc) AS rank
+      row_number() over(PARTITION BY user_id,sdt ORDER BY distance asc) AS rank
     FROM     csx_dim.csx_dim_uc_user_extend 
-    WHERE sdt = 'current'
+    WHERE sdt in ('current')
    -- and  leader_user_position in ('POSITION-26064','POSITION-26623','POSITION-25844')
    -- and user_position_type='SALES'
     AND status=0
@@ -29,7 +28,9 @@ leader_info as
     left join position_dic c on a.user_position_type=c.code
     where rank=1
   )
-select a.user_id,
+select 
+  a.sdt,
+  a.user_id,
   a.user_number,
   a.user_name,
   coalesce(a.user_position,source_user_position)user_position ,
@@ -39,6 +40,8 @@ select a.user_id,
   a.source_user_position,
   a.leader_user_id,
   a.new_leader_user_id,
+  f.user_number as new_leader_user_number,
+  f.user_name as new_leader_user_name,
   a.province_id,
   a.province_name,
   a.city_code,
@@ -50,7 +53,9 @@ select a.user_id,
   b.user_position leader_source_user_position,
   b.leader_source_user_position_name  
 from 
- (select
+ (
+select
+  a.sdt,
   user_id,
   user_number,
   user_name,
@@ -76,27 +81,33 @@ from
         employee_name,
         employee_code,
         begin_date,
-        record_type_name
+        record_type_name,
+        sdt
     from csx_dim.csx_dim_basic_employee 
-        where sdt='current' 
+        where sdt in ('20240930') 
         and card_type=0 
       --  and record_type_code	!=4
-    )b on a.user_number=b.employee_code
-    
+    )b on a.user_number=b.employee_code and a.sdt=b.sdt
     where
-    sdt = 'current'
- --  and status=0 
+    a.sdt in ('20240930')
+  --  and status=0 
  -- and (user_position like 'SALES%'
+-- and user_name in ('江苏B','许佳惠')
   )a 
- left join leader_info  b on a.leader_user_id=b.user_id
+ left join leader_info  b on a.leader_user_id=b.user_id and a.sdt=b.sdt
  left join position_dic c on a.user_position=c.code
  left join position_dic d on a.source_user_position=d.code
+ left join leader_info f on a.new_leader_user_id=f.user_id  and a.sdt=f.sdt
+
   ;
 
   
+
 -- 1.0 -- 销售明细
 -- drop table  csx_analyse_tmp.csx_analyse_tmp_hr_sales_sale ;
 create table csx_analyse_tmp.csx_analyse_tmp_hr_sales_sale as 
+-- select * from   csx_analyse_tmp.csx_analyse_tmp_hr_sales_sale
+ 
 with 
     sale as 
     (select substr(sdt, 1, 6) sale_month,
@@ -115,18 +126,21 @@ with
     from csx_dws.csx_dws_sale_detail_di a   
     left join 
     -- 关联商机新客
-      (select a.customer_no customer_code,
-              business_type_code
+      (select smonth,
+            a.customer_no customer_code,
+            business_type_code
         from
         (
-        select customer_no,business_type_code from csx_analyse.csx_analyse_sale_d_customer_sign_new_about_di 
-        where smonth in ('202408')
+        select smonth,customer_no,business_type_code
+        from csx_analyse.csx_analyse_sale_d_customer_sign_new_about_di 
+            where smonth in ('202409')
         union all
-        select customer_no,business_type_code from  csx_analyse.csx_analyse_sale_d_customer_new_about_di
-        where smonth in  ('202408')
-         )a) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code 
-    where sdt >= '20240801'
-        and sdt <= '20240831'   
+        select smonth,customer_no,business_type_code 
+        from  csx_analyse.csx_analyse_sale_d_customer_new_about_di
+            where smonth in  ('202409')
+         )a) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code  and substr(sdt,1,6)=b.smonth
+    where sdt >= '20240901'
+        and sdt <= '20240930'   
         and (a.business_type_code in ('1','2','6')  -- 1-日配、2-福利、6-BBC
             or (sales_user_number in ('81244592','81079752','80897025','81022821','81190209','81102471') and a.business_type_code =4)
             )
@@ -141,8 +155,9 @@ with
         sales_user_number,
         sales_user_position,
         if(b.customer_code is not null, 1, 0) 
-    )
-    select  sale_month,
+    ),
+    sale_01 as 
+    (select  a.sale_month,
         performance_province_name,
         performance_region_name,
         performance_city_name,
@@ -157,7 +172,8 @@ with
         begin_date,
         leader_user_number,
         leader_user_name,
-        leader_source_user_position_name,
+        leader_user_position_name,
+        leader_source_user_position_name ,
         new_leader_user_number,
         new_leader_user_name,
         new_customer_flag,
@@ -165,12 +181,45 @@ with
         profit
     from sale a 
     left join 
-    csx_analyse_tmp.csx_analyse_tmp_hr_sale_info b on a.sales_user_number=b.user_number
- ;
+    ( select * ,
+        substr(sdt,1,6) sale_month
+    from csx_analyse_tmp.csx_analyse_tmp_hr_sale_info
+   --  where user_number ='80879367'
+    ) b on a.sales_user_number=b.user_number 
+        and a.sale_month=b.sale_month
+    ) 
+    select a.sale_month,
+        performance_province_name,
+        performance_region_name,
+        performance_city_name,
+        business_type_code,
+        customer_code,
+        customer_name,
+        sales_user_name,
+        sales_user_number,
+        sales_user_position,
+        user_position_name,
+        sub_position_name,
+        begin_date,
+        leader_user_number,
+        leader_user_name,
+        leader_user_position_name,
+        leader_source_user_position_name,
+        new_leader_user_number,
+        new_leader_user_name,
+        new_customer_flag,
+        (sale_amt) sale_amt ,
+        (profit) profit,
+        (profit)/(sale_amt) profit_rate
+    from sale_01 a 
+    -- where leader_user_number != coalesce(new_leader_user_number,'')
+
+    ;
+ 
  
  
 -- select * from csx_analyse_tmp.csx_analyse_tmp_hr_red_black_turnover_days;
------应收周转天数用期末城市 销售取含税计算
+-- 应收周转天数用期末城市 销售取含税计算
 -- drop table csx_analyse_tmp.csx_analyse_tmp_hr_red_black_turnover_days;
 create table csx_analyse_tmp.csx_analyse_tmp_hr_red_black_turnover_days as 
 select
@@ -187,14 +236,14 @@ select
     c.leader_source_user_position,
     c.new_leader_user_number,
     c.new_leader_user_name,
-  DATEDIFF('2024-09-01','2024-08-01')as accounting_cnt,
+  DATEDIFF('2024-10-01','2024-09-01')as accounting_cnt,
   coalesce(sum(sale_amt),0) sale_amt,
   coalesce(sum(excluding_tax_sales),0) excluding_tax_sales,
   sum(qm_receivable_amount) qm_receivable_amount,
   sum(qc_receivable_amount) qc_receivable_amount,
   sum(qm_receivable_amount+qc_receivable_amount)/2 receivable_amount,
   if(sum(qm_receivable_amount+qc_receivable_amount)/2 =0 or coalesce(sum(sale_amt),0)=0,0,
-        DATEDIFF('2024-09-01','2024-08-01')/(coalesce(sum(sale_amt),0)/(sum(qm_receivable_amount+qc_receivable_amount)/2 ))) as turnover_days
+        DATEDIFF('2024-10-01','2024-09-01')/(coalesce(sum(sale_amt),0)/(sum(qm_receivable_amount+qc_receivable_amount)/2 ))) as turnover_days
 from 
 ( select
     c.performance_region_name,
@@ -210,22 +259,24 @@ from
     c.leader_source_user_position,
     c.new_leader_user_number,
     c.new_leader_user_name,
+    a.customer_code,
+    c.customer_name,
     sum(b.excluding_tax_sales) excluding_tax_sales,
     sum(sale_amt) sale_amt,
     sum(a.qm_receivable_amount) qm_receivable_amount,
-    sum(qc_receivable_amount) qc_receivable_amount
+    sum(a.qc_receivable_amount) qc_receivable_amount
   from 
    ( 
   	 select
          channel_name,
          customer_code,
-         sum(if(sdt='20240831',receivable_amount,0))  qm_receivable_amount,
-         sum(if(sdt='20240731',receivable_amount,0))  qc_receivable_amount
+         sum(if(sdt='20240930',receivable_amount,0))  qm_receivable_amount,
+         sum(if(sdt='20240831',receivable_amount,0))  qc_receivable_amount
          --应收账款
        from 
          -- csx_dws.csx_dws_sss_customer_credit_invoice_bill_settle_stat_di
-	csx_analyse.csx_analyse_fr_sap_subject_customer_credit_account_analyse_df
-       where (sdt='20240831' or sdt='20240731')  
+	      csx_analyse.csx_analyse_fr_sap_subject_customer_credit_account_analyse_df
+       where sdt in ('20240831' ,'20240930')  
         group by  
          channel_name ,
          customer_code
@@ -234,9 +285,9 @@ from
   	select 			
           customer_code,
           sum(sale_amt) sale_amt,
-  	    sum(sale_amt_no_tax) as excluding_tax_sales
+  	      sum(sale_amt_no_tax) as excluding_tax_sales
       from   csx_dws.csx_dws_sale_detail_di
-           where sdt >='20240801'   and sdt <='20240831'
+           where sdt >='20240901'   and sdt <='20240930'
   		and  channel_code in ('1','7','9') 
   		group by customer_code
   		)b on a.customer_code=b.customer_code 
@@ -263,7 +314,7 @@ from
                 p.new_leader_user_name
             from  csx_dim.csx_dim_crm_customer_info m 
             left join csx_analyse_tmp.csx_analyse_tmp_hr_sale_info p on m.sales_user_number=p.user_number
-              where sdt= '20240831'
+              where m.sdt= '20240930'
                 and (dev_source_code!=3 
                     or   (sales_user_number in ('81244592','81079752','80897025','81022821','81190209','81102471')
                     and dev_source_code=3)
@@ -271,7 +322,7 @@ from
              and channel_code  in ('1','7','9')
            ) c on a.customer_code=c.customer_code 
  where c.customer_code is not null 
-  group by    c.performance_region_name,
+  group by  c.performance_region_name,
     c.performance_province_name,
     c.performance_city_name,
     c.sales_user_id,
@@ -283,7 +334,9 @@ from
     c.leader_user_position,
     c.leader_source_user_position,
     c.new_leader_user_number,
-    c.new_leader_user_name
+    c.new_leader_user_name,
+    a.customer_code,
+    c.customer_name
  )c	
 group by  performance_region_name,
     c.performance_province_name,
@@ -302,7 +355,7 @@ group by  performance_region_name,
      
 
 
-with sales_manager_sale as 
+with tmp_sales_manager_sale as 
 (select sale_month,
       performance_region_name,
       sales_manager_number,
@@ -321,7 +374,7 @@ from
       sales_user_position,
       user_position_name,
       sub_position_name,
-      if(substr(begin_date,1,6)>='202401',0,1 ) new_sales_flag,
+      if(substr(begin_date,1,6)>='202406',0,1 ) new_sales_flag,
       leader_user_number sales_manager_number,
       leader_user_name,
       leader_source_user_position_name leader_user_position_name,
@@ -340,7 +393,7 @@ from
       sales_user_position,
       user_position_name,
       sub_position_name,
-      if(substr(begin_date,1,6)>='202401',0,1 ) ,
+      if(substr(begin_date,1,6)>='202406',0,1 ) ,
       leader_user_number ,
       leader_user_name,
       leader_source_user_position_name ,
@@ -353,7 +406,7 @@ from
       new_leader_user_number,
       new_leader_user_name
 ),
-sales_sale as  (
+tmp_sales_sale as  (
 select smt,
     performance_region_name,
     sales_user_number,
@@ -373,7 +426,10 @@ select smt,
     sum(trunover_sale_amt )trunover_sale_amt,
     sum(qc_receivable_amount)qc_receivable_amount,
     sum(qm_receivable_amount) qm_receivable_amount,
-    sum(turnover_days) turnover_days
+    if(sum(qm_receivable_amount+qc_receivable_amount)/2 =0 or coalesce(sum(trunover_sale_amt),0)=0,0,
+        DATEDIFF('2024-10-01','2024-09-01')/(coalesce(sum(trunover_sale_amt),0)/(sum(qm_receivable_amount+qc_receivable_amount)/2 ))) as turnover_days,
+    max(lave_customer_cn) lave_customer_cn,
+    max(lave_write_off_amount) as lave_write_off_amount
 from 
 (-- 目标表
     select smt,
@@ -394,11 +450,10 @@ from
     0 turnover_days
 from 
      csx_analyse.csx_analyse_source_write_hr_sales_manager_red_black_target_mf a 
-where smt='202408' 
-    and sale_month='202408'
+where smt='202409' 
+    and sale_month='202409'
 union all 
-
-select '202408'sale_month,
+select '202409'sale_month,
     performance_region_name,
     sales_manager_number,
     0 sales_team_number,
@@ -415,11 +470,11 @@ select '202408'sale_month,
     0 qc_receivable_amount,
     0 turnover_days
 from 
-    sales_manager_sale    
+    tmp_sales_manager_sale    
   where sales_manager_number != coalesce(new_leader_user_number,'')
  union all
  
- select '202408'sale_month,
+ select '202409'sale_month,
     performance_region_name,
     leader_user_number sales_manager_number,
     0 sales_team_number,
@@ -434,15 +489,14 @@ from
     sum(sale_amt) as trunover_sale_amt,
     sum(qm_receivable_amount) qm_receivable_amount,
     sum(qc_receivable_amount) qc_receivable_amount,
-    if(sum(qm_receivable_amount+qc_receivable_amount)/2 =0 or coalesce(sum(sale_amt),0)=0,0,
-        DATEDIFF('2024-08-01','2024-07-01')/(coalesce(sum(sale_amt),0)/(sum(qm_receivable_amount+qc_receivable_amount)/2 ))) as turnover_days
+    0 turnover_days
 from  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_turnover_days
       where leader_user_number != coalesce(new_leader_user_number,'')
       group by  performance_region_name,
     leader_user_number 
   union all 
   -- 单独处理城市经理
-select '202408'sale_month,
+select '202409'sale_month,
     performance_region_name,
     new_leader_user_number as sales_manager_number,
     0 sales_team_number,
@@ -459,11 +513,10 @@ select '202408'sale_month,
     0 qc_receivable_amount,
     0 turnover_days
 from 
-    sales_manager_sale    
+    tmp_sales_manager_sale    
   where new_leader_user_number is not null 
- 
 union all 
-   select '202408'sale_month,
+   select '202409'sale_month,
     performance_region_name,
     new_leader_user_number as  sales_manager_number,
     0 sales_team_number,
@@ -478,13 +531,56 @@ union all
     sum(sale_amt) as trunover_sale_amt,
     sum(qm_receivable_amount) qm_receivable_amount,
     sum(qc_receivable_amount) qc_receivable_amount,
-    if(sum(qm_receivable_amount+qc_receivable_amount)/2 =0 or coalesce(sum(sale_amt),0)=0,0,
-        DATEDIFF('2024-09-01','2024-08-01')/(coalesce(sum(sale_amt),0)/(sum(qm_receivable_amount+qc_receivable_amount)/2 ))) as turnover_days
+    0 as turnover_days
 from  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_turnover_days
       where new_leader_user_number is not null 
       group by performance_region_name,
       new_leader_user_number
 )a 
+left join 
+(select  
+  leader_user_number,
+  leader_user_name,
+  sum(lave_write_off_amount)lave_write_off_amount,
+  count(distinct customer_code) as lave_customer_cn  
+from
+  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract a
+  left join (
+    select
+      *,
+      substr(sdt, 1, 6) sale_month
+    from
+      csx_analyse_tmp.csx_analyse_tmp_hr_sale_info --  where user_number ='80879367'
+
+  ) b on a.follow_up_user_code = b.user_number -- and a.sale_month=b.sale_month
+         where leader_user_number != coalesce(new_leader_user_number,'') 
+            and is_oveder_flag='是'
+    group by leader_user_number,
+        leader_user_name
+union all   
+select  
+  new_leader_user_number leader_user_number,
+  new_leader_user_name leader_user_name,
+
+  sum(lave_write_off_amount)lave_write_off_amount,
+  count(distinct customer_code) as lave_customer_cn  
+from
+  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract a
+  left join (
+    select
+      *,
+      substr(sdt, 1, 6) sale_month
+    from
+      csx_analyse_tmp.csx_analyse_tmp_hr_sale_info --  where user_number ='80879367'
+
+  ) b on a.follow_up_user_code = b.user_number -- and a.sale_month=b.sale_month
+   where new_leader_user_number is not null
+    and is_oveder_flag='是'
+    group by  
+  new_leader_user_number,
+  new_leader_user_name
+  
+  ) c on a.sales_user_number=c.leader_user_number
 left join   
    csx_analyse_tmp.csx_analyse_tmp_hr_sale_info b on a.sales_user_number=b.user_number	
 --   left join 
@@ -498,7 +594,7 @@ group by smt,
     b.sub_position_name,
     begin_date
 ),
-sales_manager_cnt as 
+tmp_sales_manager_cnt as 
 (select count(sales_user_number) as cnt ,
     max(sale_rank) max_sale_rank,
     max(profit_rank) max_profit_rank,
@@ -510,12 +606,12 @@ from
     dense_rank()over( order by profit/10000/plan_profit  desc ) profit_rank,
     dense_rank()over( order by nvl(new_customer_sale_amt/10000/sales_team_number,0) desc)  as new_cust_rank,
     dense_rank()over( order by turnover_days asc)  as turnover_rank
-from sales_sale
+from tmp_sales_sale
  where plan_sales_amt<>0
 -- group by sales_user_number
 )a 
 ),
-score as  (
+tmp_score as  (
 select performance_region_name,
     sales_user_number,
     sales_user_name,
@@ -560,7 +656,9 @@ select performance_region_name,
      END  AS turnover_score,
     trunover_sale_amt,
     qc_receivable_amount,
-    qm_receivable_amount
+    qm_receivable_amount,
+    lave_customer_cn,
+    lave_write_off_amount
   from  (
 select performance_region_name,
     sales_user_number,
@@ -595,9 +693,11 @@ select performance_region_name,
     max_turnover_rank,
     max_cust_rank,
     max_profit_rank,
-    max_sale_rank
-from sales_sale 
-left join sales_manager_cnt on 1=1 
+    max_sale_rank,
+    lave_customer_cn,
+    lave_write_off_amount
+from tmp_sales_sale 
+left join tmp_sales_manager_cnt on 1=1 
 where plan_sales_amt<>0
 )a
 )
@@ -640,7 +740,10 @@ select performance_region_name,
     turnover_score,
     trunover_sale_amt,
     qc_receivable_amount,
-    qm_receivable_amount
+    qm_receivable_amount,
+    coalesce(lave_customer_cn,'')lave_customer_cn,
+    coalesce(lave_score,'')lave_score,
+    coalesce(lave_write_off_amount,'')lave_write_off_amount
   from 
 (select performance_region_name,
     sales_user_number,
@@ -650,9 +753,9 @@ select performance_region_name,
     begin_date,
     -- sales_team_number,
     sales_user_base_profit,
-    dense_rank()over( order by (sale_score+profit_score+new_cust_score+turnover_score) desc  ) as total_rank,
-    dense_rank()over( order by (sale_score+profit_score+new_cust_score+turnover_score) asc  ) as last_total_rank,
-    (sale_score+profit_score+new_cust_score+turnover_score) total_score,
+    dense_rank()over( order by (sale_score+profit_score+new_cust_score+turnover_score+if(lave_customer_cn>0,turnover_score*0.2*-1,0)) desc  ) as total_rank,
+    dense_rank()over( order by (sale_score+profit_score+new_cust_score+turnover_score+if(lave_customer_cn>0,turnover_score*0.2*-1,0)) asc  ) as last_total_rank,
+    (sale_score+profit_score+new_cust_score+turnover_score+if(lave_customer_cn>0,turnover_score*0.2*-1,0)) total_score,
     plan_sales_amt,
     sale_amt,
     sale_achieve_rate,
@@ -677,7 +780,10 @@ select performance_region_name,
     turnover_score,
     trunover_sale_amt,
     qc_receivable_amount,
-    qm_receivable_amount
-  from  score a 
+    qm_receivable_amount,
+    lave_customer_cn,
+    lave_write_off_amount,
+    if(lave_customer_cn>0,turnover_score*0.2*-1,0) lave_score
+  from  tmp_score a 
 ) a 
 order by total_rank asc 

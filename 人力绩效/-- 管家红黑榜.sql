@@ -1,5 +1,6 @@
 -- 管家红黑榜
 -- 管家销售额毛利额
+drop table csx_analyse_tmp.csx_analyse_tmp_hr_service_sale ;
 create table csx_analyse_tmp.csx_analyse_tmp_hr_service_sale as 
 with sales_info as 
 (
@@ -20,7 +21,7 @@ with sales_info as
       count()over(partition by customer_code,business_attribute_code) as cnt,
       row_number() over(partition by customer_code, business_attribute_code    order by service_manager_user_number asc  ) as ranks
     from csx_dim.csx_dim_crm_customer_business_ownership
-    where sdt= '20240831'
+    where sdt= '20240930'
    -- and customer_code='237857'
     --  and service_manager_user_id <> 0 -- and customer_code='111207'
     --  and business_attribute_code='1'
@@ -30,7 +31,8 @@ with sales_info as
         performance_province_name,
         performance_region_name,
         performance_city_name,
-        a.business_type_code,
+        -- 这样判断主要是管家信息中没有前置仓业务，日配业务中包含前置仓
+        if(a.business_type_code='4','1',a.business_type_code) business_type_code,
         a.customer_code,
         customer_name,
         sales_user_name,
@@ -47,21 +49,21 @@ with sales_info as
         from
         (
         select customer_no,business_type_code from csx_analyse.csx_analyse_sale_d_customer_sign_new_about_di 
-        where smonth in ('202408')
+        where smonth in ('202409')
         union all
         select customer_no,business_type_code from  csx_analyse.csx_analyse_sale_d_customer_new_about_di
-        where smonth in  ('202408')
+        where smonth in  ('202409')
          )a) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code 
-    where sdt >= '20240801'
-        and sdt <= '20240831'   
-        and (a.business_type_code in ('1','2','6')  -- 1-日配、2-福利、6-BBC
-            or (sales_user_number in ('81244592','81079752','80897025','81022821','81190209') and a.business_type_code =4)
+    where sdt >= '20240901'
+        and sdt <= '20240930'   
+        and (a.business_type_code in ('1','2','6','4')  -- 1-日配、2-福利、6-BBC 、4-前置仓
+          --  or (sales_user_number in ('81244592','81079752','80897025','81022821','81190209') and a.business_type_code =4)
             )
     group by substr(sdt, 1, 6),
         performance_province_name,
         performance_region_name,
         performance_city_name,
-        a.business_type_code,
+        if(a.business_type_code='4','1',a.business_type_code),
         a.customer_code,
         customer_name,
         sales_user_name,
@@ -126,7 +128,7 @@ with over_rate as
 from 
    -- csx_dws.csx_dws_sss_customer_credit_invoice_bill_settle_stat_di
      csx_analyse.csx_analyse_fr_sap_subject_customer_credit_account_analyse_df a
-    where sdt in ('20240831')
+    where sdt in ('20240930')
     and ( channel_name in ('大客户','业务代理') 
       or (sales_employee_code in ('81244592','81079752','80897025','81022821','81190209') 
       and a.channel_name in ('项目供应商','前置仓'))
@@ -166,7 +168,7 @@ sales_info as
       count()over(partition by customer_code,business_attribute_code) as cnt,
       row_number() over(partition by customer_code, business_attribute_code    order by service_manager_user_id asc  ) as ranks
     from csx_dim.csx_dim_crm_customer_business_ownership
-    where sdt= '20240831'
+    where sdt= '20240930'
    -- and customer_code='237857'
     --  and service_manager_user_id <> 0 -- and customer_code='111207'
     --  and business_attribute_code='1'
@@ -282,16 +284,15 @@ from
   where a.type='RADIO'
     and rn=1 ;
 
+-- 输出结果集
 
 
-
-with service_evaluation as ( 
-with sales_info as   
+with tmp_service_evaluation as ( 
+with tmp_sales_info as   
 (  
     select    
         performance_region_name,  
         performance_province_name,
-    
         a.customer_code as customer_no, 
         customer_name,
         service_manager_user_number as service_user_work_no,  
@@ -303,9 +304,9 @@ with sales_info as
     join 
     (select customer_code
     from  csx_dws.csx_dws_sale_detail_di 
-        where sdt>='20240601' and sdt<='20240831'
+        where sdt>='20240601' and sdt<='20240930'
     group by customer_code ) b on a.customer_code=b.customer_code
-    where sdt = '20240831'  
+    where sdt = '20240930'  
         and business_attribute_code in ('1','2','5')
       --  and service_manager_user_position='CUSTOMER_SERVICE_MANAGER'
     group by performance_region_name,  
@@ -336,7 +337,7 @@ from (
             when se.answer = '非常不满意' then 0  
             else 30   
         end as answer_score  
-    from sales_info si  
+    from tmp_sales_info si  
     left join csx_analyse_tmp.csx_analyse_tmp_hr_service_evaluation  se on se.customer_code = si.customer_no  
 ) a  
 where service_user_work_no is not null and  service_user_work_no!=''
@@ -344,10 +345,10 @@ group by performance_region_name,
   service_user_work_no,
   customer_no
 ),
- full_total as(
+ tmp_full_total as(
 select sale_month,
     performance_region_name,
-    service_user_work_no,
+    a.service_user_work_no,
     sales_user_name,
     user_position	,
     sub_position_name,
@@ -371,7 +372,9 @@ select sale_month,
     answer_rank,
     answer_weight,
     customer_cnt,
-    all_answer_score
+    all_answer_score,
+    lave_customer_cn,
+    lave_write_off_amount
 from (
 select sale_month,
     performance_region_name,
@@ -440,10 +443,10 @@ select smt as sale_month,
     0 all_answer_score
 from 
      csx_analyse.csx_analyse_source_write_hr_service_red_black_target_mf a 
-where smt='202408' 
-    and sale_month='202408'
+where smt='202409' 
+    and sale_month='202409'
     union all 
-select  '202408'sale_month,
+select  '202409'sale_month,
         performance_region_name,
         service_user_work_no,
         0 plan_sales_amt,
@@ -458,7 +461,7 @@ select  '202408'sale_month,
     from csx_analyse_tmp.csx_analyse_tmp_hr_service_sale
      where service_user_work_no !='' or service_user_work_no is not null 
  union all 
- select '202408' sale_month,
+ select '202409' sale_month,
     region_name as performance_region_name,
     service_user_work_no,
     0 plan_sales_amt,
@@ -478,7 +481,7 @@ from
     service_user_work_no
   union all 
   select 
-    '202408' sale_month,
+    '202409' sale_month,
     performance_region_name,  
     service_user_work_no,      
     0 plan_sales_amt,
@@ -491,13 +494,14 @@ from
     count(distinct customer_no) as customer_cnt,
     sum(answer_score) all_answer_score
   from   
-   service_evaluation a 
+   tmp_service_evaluation a 
    
     group by performance_region_name,  
     service_user_work_no
 ) a 
 left join
 csx_analyse_tmp.csx_analyse_tmp_hr_sale_info b on a.service_user_work_no=b.user_number
+
  -- where plan_sales_amt <> 0
 group by sale_month,
     performance_region_name,
@@ -509,34 +513,91 @@ group by sale_month,
 ) a 
  where plan_sales_amt<>0
 )as a
+-- 管家保证金
+left join 
+(
+select  
+  coalesce(service_user_work_no,'')service_user_work_no,
+  sum(lave_write_off_amount)/count(a.customer_code) lave_write_off_amount,
+  count(distinct a.customer_code) as lave_customer_cn  
+from
+(
+select  
+  customer_code,
+  (lave_write_off_amount)lave_write_off_amount,
+  service_user_work_no,
+  service_user_name
+ from (
+select  
+  customer_code,
+  is_oveder_flag,
+  (lave_write_off_amount)lave_write_off_amount
+from
+   csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract a
+   
+ )a 
+  left join 
+   (  
+    select    
+        performance_region_name,  
+        performance_province_name,
+        a.customer_code as customer_no, 
+        customer_name,
+        service_manager_user_number as service_user_work_no,  
+        service_manager_user_name as service_user_name,  
+        service_manager_user_position,  
+        count(*) over(partition by customer_code) as cnt,  
+        row_number() over(partition by customer_code order by service_manager_user_number asc) as ranks  
+    from      csx_dim.csx_dim_crm_customer_business_ownership  a 
+    join 
+    (select customer_code
+    from  csx_dws.csx_dws_sale_detail_di 
+        where sdt>='20240601' and sdt<='20240930'
+    group by customer_code ) b on a.customer_code=b.customer_code
+    where sdt = '20240930'  
+        and business_attribute_code in ('1','2','5')
+      --  and service_manager_user_position='CUSTOMER_SERVICE_MANAGER'
+    group by performance_region_name,  
+        a.customer_code, 
+        customer_name,
+        service_manager_user_number ,  
+        service_manager_user_name ,  
+        -- service_manager_user_id ,
+        service_manager_user_position,
+        performance_province_name
+)   b on a.customer_code = b.customer_no 
+    where  a.is_oveder_flag='是'
+        and  coalesce(service_user_work_no,'')!=''
+) a 
+group by coalesce(service_user_work_no,'')
+)c on a.service_user_work_no=c.service_user_work_no
 )
 -- select * from full_total 
 ,
-max_rnk as 
+tmp_max_rnk as 
 (
 select sale_month,
   performance_region_name,
   max(sale_rank) max_sale_rank,
   max(overdue_rank) max_overdue_rank,
   max(answer_rank) max_answer_rank
-  from full_total
+  from tmp_full_total
   group by sale_month,
   performance_region_name
-)  
-
+) 
 select a.sale_month,
   a.performance_region_name,
-  service_user_work_no,
+  a.service_user_work_no,
   sales_user_name,
   user_position	,
   sub_position_name,
   begin_date,
-  case when (dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score) desc  ))<11 then '红榜'
-        when dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score) asc  )<11 then '黑榜'
-  else '' end  as top_rank,
-  dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score) desc  ) as total_rank,
-  dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score) asc  ) as last_total_rank,
-  (sale_score+profit_score+overdue_score+new_answer_score) total_score,
+  case when (total_rank/max(total_rank)over()<=0.10)  then '红榜'
+        when (last_total_rank/max(last_total_rank)over()<=0.10) then '黑榜'
+        else '' end  as top_rank,
+  total_rank,
+  last_total_rank,
+  total_score,
   plan_sales_amt,
   sale_amt,
   sale_achieve_rate,
@@ -560,7 +621,50 @@ select a.sale_month,
   answer_weight,
   new_answer_score,
   customer_cnt,
-  all_answer_score
+  all_answer_score,
+  lave_customer_cn,
+  if(lave_customer_cn>0,overdue_score*0.2*-1,0) lave_score,
+  lave_write_off_amount
+from
+(
+select a.sale_month,
+  a.performance_region_name,
+  a.service_user_work_no,
+  sales_user_name,
+  user_position	,
+  sub_position_name,
+  begin_date,
+  
+  dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score+if(lave_customer_cn>0,overdue_score*0.2*-1,0)) desc  ) as total_rank,
+  dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score+if(lave_customer_cn>0,overdue_score*0.2*-1,0)) asc  ) as last_total_rank,
+   (sale_score+profit_score+overdue_score+new_answer_score+if(lave_customer_cn>0,overdue_score*0.2*-1,0)) total_score,
+  plan_sales_amt,
+  sale_amt,
+  sale_achieve_rate,
+  sale_rank,
+  sale_weight,
+  sale_score,
+  plan_profit,
+  profit,
+  profit_achieve_rate,
+  profit_rank,
+  profit_weight,
+  profit_score,
+  overdue_rate,
+  overdue_rank,
+  overdue_amount,
+  receivable_amount,
+  overdue_weight,
+  overdue_score,
+  answer_score,
+  answer_rank,
+  answer_weight,
+  new_answer_score,
+  customer_cnt,
+  all_answer_score,
+  lave_customer_cn,
+  if(lave_customer_cn>0,overdue_score*0.2*-1,0) lave_score,
+  lave_write_off_amount
 from
 ( select a.sale_month,
     a.performance_region_name,
@@ -607,14 +711,17 @@ from
     ELSE 30 - (answer_rank - 1) *(30/(max_answer_rank-1) ) 
     end new_answer_score,
     customer_cnt,
-    all_answer_score
+    all_answer_score,
+    lave_customer_cn,
+    lave_write_off_amount
 from
-     full_total a 
-     left join max_rnk b on a.performance_region_name=b.performance_region_name and a.sale_month=b.sale_month
+     tmp_full_total a 
+     left join tmp_max_rnk b on a.performance_region_name=b.performance_region_name and a.sale_month=b.sale_month
+) a 
 ) a 
 -- where performance_region_name='华东大区'
 order by performance_region_name,
-dense_rank()over(partition by a.performance_region_name order by (sale_score+profit_score+overdue_score+new_answer_score) desc  )
+total_rank
 ;
 
 
@@ -649,9 +756,9 @@ with sales_info as
     join 
     (select customer_code
     from  csx_dws.csx_dws_sale_detail_di 
-        where sdt>='20240601' and sdt<='20240831'
+        where sdt>='20240601' and sdt<='20240930'
     group by customer_code ) b on a.customer_code=b.customer_code
-    where sdt = '20240831'  
+    where sdt = '20240930'  
         and business_attribute_code in ('1','2','5')
       --  and service_manager_user_position='CUSTOMER_SERVICE_MANAGER'
     group by performance_region_name,  
@@ -731,7 +838,7 @@ with sales_info as
         count(*) over(partition by customer_code) as cnt,  
         row_number() over(partition by customer_code order by service_manager_user_number asc) as ranks  
     from      csx_dim.csx_dim_crm_customer_business_ownership  
-    where sdt = '20240831'  
+    where sdt = '20240930'  
         and business_attribute_code in ('1','2','5')
       --  and service_manager_user_position='CUSTOMER_SERVICE_MANAGER'
     group by performance_region_name,  
@@ -755,7 +862,7 @@ tmp_study_fm_user_form_data as (
     LEFT JOIN csx_ods.csx_ods_csx_b2b_study_questionnaire_paper_df b ON a.paper_id = b.id
   WHERE
     b.is_delete = 0
-    AND a.form_key = 'Gznp3ieG'
+   -- AND a.form_key = 'Gznp3ieG'
 ),
 tmp_study_fm_user_form_data_clean as (
   select
@@ -867,9 +974,9 @@ from
     join 
     (select customer_code
     from  csx_dws.csx_dws_sale_detail_di 
-        where sdt>='20240601' and sdt<='20240831'
+        where sdt>='20240601' and sdt<='20240930'
     group by customer_code ) b on a.customer_code=b.customer_code
-    where sdt = '20240831'  
+    where sdt = '20240930'  
         and business_attribute_code in ('1','2','5')
         and service_manager_user_number !=''
     group by performance_region_name,  
@@ -949,9 +1056,9 @@ from
     join 
     (select customer_code
     from  csx_dws.csx_dws_sale_detail_di 
-        where sdt>='20240601' and sdt<='20240831'
+        where sdt>='20240601' and sdt<='20240930'
     group by customer_code ) b on a.customer_code=b.customer_code
-    where sdt = '20240831'  
+    where sdt = '20240930'  
         and business_attribute_code in ('1','2','5')
         and service_manager_user_number !=''
     group by performance_region_name,  

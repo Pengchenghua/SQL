@@ -28,8 +28,6 @@ group by customer_code,
   is_history_compensate
 ) 
 --  select * from temp_company_credit where customer_code='243205'
-
- 
 (
 select  belong_region_code,
     belong_region_name,
@@ -86,7 +84,7 @@ from (
     follow_up_user_name	,
     responsible_person,
     responsible_person_number,
-    business_type_name,
+    coalesce(b.business_type_name,c.business_type_name) business_type_name,
     break_contract_date,
     break_contract,
     coalesce(real_perform_customer_code,'') real_perform_customer_code,
@@ -98,7 +96,23 @@ from (
     (  select incidental_expenses_no,
       customer_code,
       busniess_type_code business_type_name 
-    from csx_analyse_tmp.csx_analyse_tmp_incidental_customer_history) b on a.receiving_customer_code=b.customer_code and a.incidental_expenses_no=b.incidental_expenses_no
+    from csx_analyse_tmp.csx_analyse_tmp_incidental_customer_history
+    ) b on a.receiving_customer_code=b.customer_code and a.incidental_expenses_no=b.incidental_expenses_no
+    left join 
+    (select incidental_expenses_no,
+        purchase_code,
+        purchase_name,
+        company_code,
+        company_name,
+        customer_code,
+        customer_name,
+        business_type,
+        regexp_replace(business_type_name,'单','') as business_type_name
+    from csx_ods.csx_ods_csx_b2b_sss_sss_incidental_config_ss_df  
+      where sdt=regexp_replace(date_sub(current_date(),1),'-','')
+    ) c on a.incidental_expenses_no= c.incidental_expenses_no 
+        and c.customer_code=a.customer_code
+
   where
     self_employed = 1
     and cast(lave_write_off_amount as decimal(26, 2)) > 0
@@ -375,9 +389,11 @@ from temp_incidental_01 a
 
 ;
 
-
+-- 创建临时表结果
+-- drop table csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract;
+create table csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract as 
 with 
-receive_amt as (
+tmp_receive_amt as (
 select  a.company_code,
     a.customer_code,
     a.credit_code,
@@ -395,7 +411,7 @@ from
     1=1
    -- and receivable_amount<=0
    -- and a.sdt>=c.max_paid_date
-   and sdt='20240924'
+   and sdt='20240930'
   group by
     a.company_code,
     a.customer_code,
@@ -486,7 +502,7 @@ from csx_analyse.csx_analyse_dws_crm_w_a_uf_xshttz
    ),
 -- -- 取断约客户
 -- 合同结束日期
- business as  
+ tmp_business as  
 (select  a.company_code,
     business_number,
     credit_code,
@@ -583,7 +599,7 @@ temp_sale as
     company_code,
     sign_company_code
 )
--- select * from business where customer_code='103207'
+-- select * from tmp_business where customer_code='103207'
 
 ,
 temp_result as 
@@ -596,6 +612,8 @@ temp_result as
     a.new_real_customer_code as customer_code,
     a.customer_name,
     create_time,
+    a.follow_up_user_code,
+    a.follow_up_user_name	,
     e.sales_user_number,
     e.sales_user_name,
     a.new_business_type_name,
@@ -630,10 +648,10 @@ from
         break_contract_date,
         customer_name
     from csx_analyse_tmp.csx_analyse_tmp_incidental_01 a
-        where break_contract!=1
+        where break_contract=1
     )a  
 left join 
-    (select * from receive_amt where receivable_amount<=0) b on a.new_real_customer_code=b.customer_code and a.payment_company_code=b.company_code and a.new_real_credit_code=b.credit_code
+    (select * from tmp_receive_amt where receivable_amount<=0) b on a.new_real_customer_code=b.customer_code and a.payment_company_code=b.company_code and a.new_real_credit_code=b.credit_code
 
 left join 
 (select * from 
@@ -647,7 +665,7 @@ left join
   business_attribute_name	,
   business_type_code, 
   row_number() over(partition by customer_code,credit_code,company_code,business_attribute_code order by contract_end_date desc) rn
-from business
+from tmp_business
   where create_time>='2023-02-09'
  )a 
   where rn=1 
@@ -695,39 +713,11 @@ left join temp_sale j on a.new_real_customer_code=j.customer_code and a.new_real
  -- where a.new_real_customer_code='112189'
 )
 
--- select 
---     a.belong_region_name,
---     a.performance_province_name,
---     a.payment_company_code,
---     a.credit_customer_code,
---     a.sign_customer_code,
-    
---     a.customer_name,
---   -- a.create_time,
---     -- b.sales_user_number,
---     -- b.sales_user_name,
---     a.new_business_type_name,
---     a.responsible_person,
---     a.responsible_person_number,
---     a.lave_write_off_amount,
-    
---     max(a.receive_sdt) receive_sdt,
---     max(a.contract_end_date) contract_end_date,
---     max(a.break_contract_date) break_contract_date,
---     max(max_sdt) max_sdt,
---     max(a.max_sale_sdt) max_sale_sdt,
---     b.receivable_amount,
---     if(b.receivable_amount>0,'否','是') is_receive_oveder_flag,
---   case when date_add(from_unixtime(unix_timestamp(max(max_sdt),'yyyyMMdd'),'yyyy-MM-dd'),30)>'2024-09-25' or b.receivable_amount>0 then '否'
---     when date_add(from_unixtime(unix_timestamp(max(max_sdt),'yyyyMMdd'),'yyyy-MM-dd'),30)<='2024-09-25' and b.receivable_amount < 0 then '是'
---     else '否' end  as is_oveder_flag,
---     concat_ws(',',collect_set(a.customer_code) ) as full_real_customer_code ,
---     concat_ws(',',collect_set(a.new_real_credit_code) ) full_new_real_credit_code
---  from (
 select * ,
   if(receivable_amount>0,'否','是') is_receive_oveder_flag,
-  case when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)>'2024-09-25' or receivable_amount>0 then '否'
-    when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)<='2024-09-25' and receivable_amount < 0 then '是'
+  case when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)>'2024-09-30' or receivable_amount>0 then '否'
+    when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)<='2024-09-30' 
+        and coalesce(receivable_amount,0) <= 0   then '是'
     else '否' end  as is_oveder_flag
   
 from 
@@ -741,6 +731,8 @@ select
     a.customer_code,
     a.customer_name,
     a.create_time,
+    a.follow_up_user_name,
+    a.follow_up_user_code,
     a.sales_user_number,
     a.sales_user_name,
     a.new_business_type_name,
@@ -756,33 +748,59 @@ select
     b.receivable_amount
  from temp_result a 
  left join 
- (select * from receive_amt ) b on a.customer_code=b.customer_code and a.payment_company_code=b.company_code and a.new_real_credit_code=b.credit_code
+ (select * from tmp_receive_amt ) b on a.customer_code=b.customer_code and a.payment_company_code=b.company_code and a.new_real_credit_code=b.credit_code
 )a
-   
- )a 
-  left join 
-   
-    (select * from receive_amt  ) b on a.sign_customer_code=b.customer_code and a.payment_company_code=b.company_code and a.credit_customer_code=b.credit_code
-group by a.belong_region_name,
-    a.performance_province_name,
-    a.payment_company_code,
-    a.credit_customer_code,
-    a.sign_customer_code,
-    
-    a.customer_name,
-   -- a.create_time,
-    -- b.sales_user_number,
-    -- b.sales_user_name,
-    a.new_business_type_name,
-    a.responsible_person,
-    a.responsible_person_number,
-    a.lave_write_off_amount,
-     b.receivable_amount
+ 
  ;
+ 
+ 
+select
+  belong_region_name,
+  performance_province_name,
+  payment_company_code,
+  credit_customer_code,
+  sign_customer_code,
+  customer_code,
+  customer_name,
+  create_time,
+  sales_user_number,
+  sales_user_name,
+  new_business_type_name,
+  responsible_person,
+  responsible_person_number,
+  lave_write_off_amount,
+  new_real_credit_code,
+  receive_sdt,
+  contract_end_date,
+  break_contract_date,
+  max_sdt,
+  max_sale_sdt,
+  receivable_amount,
+  is_receive_oveder_flag,
+  is_oveder_flag,
+  user_position sales_user_position,
+  user_position_name,
+  sub_position_name,
+  begin_date,
+  leader_user_number,
+  leader_user_name,
+  leader_user_position_name,
+  leader_source_user_position_name,
+  new_leader_user_number,
+  new_leader_user_name
+from
+  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract a
+  left join (
+    select
+      *,
+      substr(sdt, 1, 6) sale_month
+    from
+      csx_analyse_tmp.csx_analyse_tmp_hr_sale_info --  where user_number ='80879367'
+  ) b on a.responsible_person_number = b.user_number -- and a.sale_month=b.sale_month
+  ;
 
-
-
--- 保证金断约客户
+------------------------------------------------------------------------------------------------------------------------------------
+-- 历史版本 保证金断约客户
 with incidental as (
 select  payment_company_code,
     credit_customer_code,
@@ -1696,8 +1714,9 @@ left join temp_sale j on a.new_real_customer_code=j.customer_code and a.new_real
 )
 select * ,
   if(receivable_amount>0,'否','是') is_receive_oveder_flag,
-  case when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)>'2024-09-25' or receivable_amount>0 then '否'
-    when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)<='2024-09-25' and receivable_amount < 0 then '是'
+  case when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)>'2024-09-30' or receivable_amount>0 then '否'
+    when date_add(from_unixtime(unix_timestamp(max_sdt,'yyyyMMdd'),'yyyy-MM-dd'),30)<='2024-09-30' 
+          and (receivable_amount <= 0 or receivable_amount ='')  then '是'
     else '否' end  as is_oveder_flag,
     row_number() over(partition by sign_customer_code,credit_customer_code,payment_company_code order by max_sdt desc) as rn
   

@@ -96,13 +96,13 @@ from
  left join 
  (select dic_key as code,dic_value as name
        from csx_ods.csx_ods_csx_b2b_ucenter_user_dic_df
-       where sdt='20240821'
+       where sdt='20240921'
        and dic_type = 'POSITION'
     ) b on a.user_position	=b.code
  left join 
  (select dic_key as code,dic_value as sub_name
        from csx_ods.csx_ods_csx_b2b_ucenter_user_dic_df
-       where sdt='20240821'
+       where sdt='20240921'
        and dic_type = 'POSITION'
     ) c on a.source_user_position=c.code
  where user_name='李佩丽'
@@ -136,13 +136,13 @@ with
         from
         (
         select customer_no,business_type_code from csx_analyse.csx_analyse_sale_d_customer_sign_new_about_di 
-        where smonth in ('202408')
+        where smonth in ('202409')
         union all
         select customer_no,business_type_code from  csx_analyse.csx_analyse_sale_d_customer_new_about_di
-        where smonth in  ('202408')
+        where smonth in  ('202409')
          )a) b on a.customer_code=b.customer_code and a.business_type_code=b.business_type_code 
-    where sdt >= '20240801'
-        and sdt <= '20240831'   
+    where sdt >= '20240901'
+        and sdt <= '20240930'   
         and (a.business_type_code in ('1','2','6')  -- 1-日配、2-福利、6-BBC
             or (sales_user_number in ('81244592','81079752','80897025','81022821','81190209','81102471') and a.business_type_code =4)
             )
@@ -208,7 +208,7 @@ over_rate as
 from 
    -- csx_dws.csx_dws_sss_customer_credit_invoice_bill_settle_stat_di
     csx_analyse.csx_analyse_fr_sap_subject_customer_credit_account_analyse_df a
-    where sdt in ('20240831')
+    where sdt in ('20240931')
     and ( channel_name in ('大客户','业务代理') 
       or (sales_employee_code in ('81244592','81079752','80897025','81022821','81190209','81102471')
       and a.channel_name in ('项目供应商','前置仓'))
@@ -414,7 +414,7 @@ from
 		from 
 			csx_dws.csx_dws_sale_detail_di 
 		where 
-			sdt between '20220101' and '20240831'
+			sdt between '20220101' and '20240930'
 			and business_type_code=1           --  业务类型编码(1.日配业务 2.福利业务 3.批发内购 4.城市服务商 5.省区大宗 6.BBC 7.大宗一部 8.大宗二部 9.商超)
 			and channel_code in('1','7','9')    --  渠道编码(1:大客户 2:商超 4:大宗 5:供应链(食百) 6:供应链(生鲜) 7:bbc 8:其他 9:业务代理)
 			and order_channel_code not in (4,6)
@@ -424,7 +424,7 @@ from
 			customer_code
 		) a
 	   where 1=1
-	    and after_date>='20240801'  -- 大于当月的正在履约
+	    and after_date>='20240901'  -- 大于当月的正在履约
 			group by performance_province_name, 
 			business_type_code,
 			after_date, 
@@ -437,14 +437,16 @@ from
      where sdt= 'current'
         and channel_code  in ('1','7','9')
 ) c on a.customer_code=c.customer_code     
-	where after_date<'20240801' or after_date is null    
+	where after_date<'20240901' or after_date is null    
 ;
 
-select * from  csx_analyse_tmp.csx_analyse_tmp_business where rn=1
+-- select *
+--  from csx_analyse_tmp.csx_analyse_tmp_business ;
+
 
 -- drop table csx_analyse_tmp.csx_analyse_tmp_hr_full_total ;
 create table csx_analyse_tmp.csx_analyse_tmp_hr_full_total as 
-with sales_sale as 
+with tmp_sales_sale as 
 (
 select smt,
       performance_region_name,
@@ -489,8 +491,8 @@ from
    csx_analyse.csx_analyse_source_write_hr_sales_red_black_target_mf a 
    left join 
    csx_analyse_tmp.csx_analyse_tmp_hr_sale_info b on a.sales_user_number=b.user_number	
-where smt='202408' 
-    and sale_month='202408'
+where smt='202409' 
+    and sale_month='202409'
 union all 
 
 select sale_month,
@@ -581,12 +583,18 @@ group by smt,
     begin_date,
     leader_user_name
 )
-select * from sales_sale  
+select * from tmp_sales_sale  
 ;
 
 
 -- 计算得分结果集
-with performance as 
+
+
+-- 计算得分结果集
+
+
+-- 计算得分结果集
+with tmp_performance as 
 (select smt
 ,performance_region_name
 ,sales_user_number
@@ -628,7 +636,7 @@ with performance as
 from  csx_analyse_tmp.csx_analyse_tmp_hr_full_total
 where plan_sales_amt<>0
 ) ,
-max_rnk as 
+tmp_max_rnk as 
 (
 select smt,
   performance_region_name,
@@ -638,12 +646,12 @@ select smt,
   max(overdue_rank) max_overdue_rank,
   max(business_cnt_rnk) max_business_cnt,
   max(business_amt_rnk) max_business_amt
-  from performance
+  from tmp_performance
   group by smt,
   performance_region_name
 )  
 ,
-score as (
+tmp_score as (
 select 
 a.smt
 ,a.performance_region_name
@@ -713,8 +721,8 @@ a.smt
     when business_amt_rnk=max_business_amt then 0 
     ELSE 10 - (business_amt_rnk - 1) *(10/(max_business_amt-1) )
   END  AS business_amt_score
-from performance a
-left join   max_rnk c on a.smt=c.smt and a.performance_region_name=c.performance_region_name
+from tmp_performance a
+left join   tmp_max_rnk c on a.smt=c.smt and a.performance_region_name=c.performance_region_name
 ) 
 select a.smt
 ,a.performance_region_name
@@ -765,6 +773,8 @@ select a.smt
 ,business_amt_rnk
 ,business_amt_weight
 ,business_amt_score
+,lave_customer_cn
+,lave_score
 from 
 
 (select a.smt
@@ -772,15 +782,13 @@ from
 ,sales_user_number
 ,sales_user_name
 ,user_position
-,sub_position_name
+,a.sub_position_name
 ,begin_date
 ,leader_user_name
 --,sales_user_base_profit
-,case when (dense_rank()over( partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score) desc  ))<11 then '红榜'
-        when dense_rank()over(partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score) asc  )<11 then '黑榜'
-        else '' end  as top_rank
-,dense_rank()over(partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score) desc ) as total_rank
-,dense_rank()over(partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score) asc  ) as low_rank
+
+,dense_rank()over(partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score+if(lave_customer_cn>0,overdue_score*0.2*-1,0) ) desc ) as total_rank
+,dense_rank()over(partition by performance_region_name order by (sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score+if(lave_customer_cn>0,overdue_score*0.2*-1,0) ) asc  ) as low_rank
 ,(sale_score+profit_score+new_cust_score+overdue_score+business_cnt_score+business_amt_score) as total_score
 ,plan_sales_amt
 ,sale_amt
@@ -817,7 +825,33 @@ from
 ,business_amt_rnk
 ,business_amt_weight
 ,business_amt_score
-from score a 
+,lave_customer_cn
+,lave_write_off_amount
+,if(lave_customer_cn>0,overdue_score*0.2*-1,0) as lave_score
+from tmp_score a 
+left join 
+(select  
+  follow_up_user_code,
+  follow_up_user_name,
+  sub_position_name,
+  user_position_name,
+  sum(lave_write_off_amount)lave_write_off_amount,
+  count(distinct customer_code) as lave_customer_cn  
+from
+  csx_analyse_tmp.csx_analyse_tmp_hr_red_black_break_contract a
+  left join (
+    select
+      *,
+      substr(sdt, 1, 6) sale_month
+    from
+      csx_analyse_tmp.csx_analyse_tmp_hr_sale_info --  where user_number ='80879367'
+
+  ) b on a.follow_up_user_code = b.user_number -- and a.sale_month=b.sale_month
+         where   is_oveder_flag='是'
+    group by  follow_up_user_code,
+  follow_up_user_name,
+  sub_position_name,
+  user_position_name) b on b.follow_up_user_code=a.sales_user_number
 )a 
 order by performance_region_name,
 total_rank
