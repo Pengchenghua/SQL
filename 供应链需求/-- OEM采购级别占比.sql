@@ -1,0 +1,82 @@
+-- OEM采购级别占比
+with tmp_goods_info as 
+(SELECT goods_code,
+       goods_bar_code,
+       goods_name,
+       unit_name,
+       brand_name,
+       standard,
+       classify_large_code,
+       classify_large_name,
+       classify_middle_code,
+       classify_middle_name,
+       classify_small_code,
+       classify_small_name,
+       division_code,
+       division_name,
+       purchase_group_code,
+       purchase_group_name,
+       category_small_code,
+	   csx_purchase_level_code,
+       csx_purchase_level_name,
+       is_factory_goods_flag
+FROM csx_dim.csx_dim_basic_goods
+WHERE sdt='current'
+)select s_month, csx_purchase_level_name,
+sum(sale_qty) sale_qty,
+        sum(sale_cost) sale_cost,
+        sum(sale_amt) sale_amt,
+        sum(profit) profit 
+from (
+select  substr(sdt,1,6) s_month, 
+        a.goods_code,
+        b.goods_bar_code,
+        b.goods_name,
+        b.unit_name,
+        b.brand_name,
+        b.standard,
+        b.classify_large_code,
+        b.classify_large_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+        b.classify_small_name,
+        b.division_code,
+        b.division_name,
+        b.purchase_group_code,
+        b.purchase_group_name,
+        b.category_small_code,
+        csx_purchase_level_code,
+        csx_purchase_level_name,
+        b.is_factory_goods_flag,
+        sum(sale_qty) sale_qty,
+        sum(sale_cost) sale_cost,
+        sum(sale_amt) sale_amt,
+        sum(profit) profit 
+from csx_dws.csx_dws_sale_detail_di a 
+join
+tmp_goods_info  b on a.goods_code=b.goods_code
+where sdt>= '20250101'
+group by  substr(sdt,1,6) ,
+        a.goods_code,
+        b.goods_bar_code,
+        b.goods_name,
+        b.unit_name,
+        b.brand_name,
+        b.standard,
+        b.classify_large_code,
+        b.classify_large_name,
+        b.classify_middle_code,
+        b.classify_middle_name,
+        b.classify_small_code,
+        b.classify_small_name,
+        b.division_code,
+        b.division_name,
+        b.purchase_group_code,
+        b.purchase_group_name,
+        b.category_small_code,
+        csx_purchase_level_code,
+        csx_purchase_level_name,
+        b.is_factory_goods_flag
+ ) a   
+ group by s_month, csx_purchase_level_name;
