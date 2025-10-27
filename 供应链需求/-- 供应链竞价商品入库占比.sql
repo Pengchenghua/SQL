@@ -1,5 +1,4 @@
 -- 供应链竞价商品入库占比
--- 供应链竞价商品入库占比
 
 with entry as 
 (select  
@@ -56,8 +55,7 @@ select  substr(sdt,1,6) as month_sdt,
         a.performance_province_code,
         a.performance_province_name,
         a.performance_city_code,
-        a.performance_city_name,
-      
+        a.performance_city_name,      
         classify_middle_name,
         classify_small_name,
         div_name,
