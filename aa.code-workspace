@@ -229,7 +229,8 @@
   },
   "extensions": {
     "recommendations": [
-      "mtxr.sqltools"
+      "mtxr.sqltools",
+      "alibaba-cloud.tongyi-lingma"
     ]
   },
   "recommendations": [
