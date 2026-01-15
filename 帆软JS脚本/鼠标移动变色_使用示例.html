@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>鼠标移动变色效果演示</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="鼠标移动变色.js"></script>
+</head>
+<body>
+    <h1>鼠标移动变色效果演示</h1>
+    
+    <div>
+        <button onclick="testHoverEffect()">测试效果</button>
+        <button onclick="clearEffects()">清除效果</button>
+        <button onclick="changeColor()">改变颜色</button>
+    </div>
+    
+    <h3>普通表格演示</h3>
+    <table class="x-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>城市</th>
+            </tr>
+            <tr>
+                <th colspan="4">二级表头</th>
+            </tr>
+            <tr>
+                <th>编号</th>
+                <th>全名</th>
+                <th>岁数</th>
+                <th>所在地</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>张三</td>
+                <td>25</td>
+                <td>北京</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>李四</td>
+                <td>30</td>
+                <td>上海</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>王五</td>
+                <td>28</td>
+                <td>广州</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        function testHoverEffect() {
+            console.log("当前配置:", TableHoverEffect.getConfig());
+            TableHoverEffect.init();
+            alert("鼠标悬停效果已初始化！");
+        }
+        
+        function clearEffects() {
+            TableHoverEffect.clear();
+            alert("所有悬停效果已清除！");
+        }
+        
+        function changeColor() {
+            var colors = ["#E0FFFF", "#FFF0F5", "#F0FFF0", "#FFFACD", "#E6E6FA"];
+            var randomColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            TableHoverEffect.setConfig({
+                HOVER_BACKGROUND: randomColor
+            });
+            
+            alert("悬停颜色已改为: " + randomColor);
+        }
+        
+        // 页面加载后自动初始化
+        $(document).ready(function() {
+            setTimeout(function() {
+                TableHoverEffect.init();
+                console.log("鼠标悬停效果已自动初始化");
+            }, 500);
+        });
+    </script>
+</body>
+</html>
